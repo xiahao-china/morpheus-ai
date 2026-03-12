@@ -1,0 +1,118 @@
+@import "@/assest/globalStyle/commonStyle.less";
+
+.bottom-section {
+  position: relative;
+  bottom: 0;
+  width: calc(100% - 48rpx);
+  background: #ffffff;
+  border-radius: 24rpx 24rpx 0 0;
+  padding: 24rpx;
+  overflow: hidden;
+
+  .sheet-handle {
+    position: absolute;
+    top: 12rpx;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80rpx;
+    height: 8rpx;
+    border-radius: 8rpx;
+    background: #e5e7eb;
+  }
+  .section:nth-child(2){
+    margin-top: 24rpx;
+  }
+
+  .section {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+    margin-bottom: 24rpx;
+  }
+
+  .section-title {
+    display: inline-flex;
+    align-items: center;
+    font-size: 28rpx;
+    font-weight: 600;
+    color: @main-text-color;
+    position: relative;
+    padding-left: 16rpx;
+    &:before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 6rpx;
+      height: 28rpx;
+      border-radius: 6rpx;
+      background: #8b5cf6;
+    }
+  }
+
+  .prompt-box {
+    width: calc(100% - 48rpx);
+    min-height: 88rpx;
+    border-radius: 16rpx;
+    border: 2rpx solid #e5e7eb;
+    background: #f8fafc;
+    color: @second-text-color;
+    font-size: 28rpx;
+    display: flex;
+    align-items: center;
+    padding: 20rpx 24rpx;
+  }
+
+  .params-grid {
+    display: flex;
+    flex-direction: row;
+    gap: 16rpx;
+    width: 100%;
+  }
+
+  .param-card {
+    flex: 1;
+    border: 2rpx solid #e5e7eb;
+    background: #f9fafb;
+    border-radius: 16rpx;
+    padding: 16rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+    align-items: flex-start;
+  }
+
+  .param-label {
+    font-size: 24rpx;
+    color: @weak-text-gray2;
+  }
+
+  .param-value {
+    font-size: 30rpx;
+    font-weight: 600;
+    color: @main-text-color;
+  }
+
+  .engine-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8rpx;
+    margin-top: 16rpx;
+    padding: 16rpx;
+    border-radius: 12rpx;
+    border: 2rpx solid #e5e7eb;
+    background: #f8f9ff;
+    color: @main-color;
+    font-size: 28rpx;
+    width: calc(100% - 48rpx);
+  }
+
+  .status-dot {
+    width: 14rpx;
+    height: 14rpx;
+    margin-right: 8rpx;
+    border-radius: 7rpx;
+    background: #22c55e;
+  }
+}

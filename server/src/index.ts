@@ -6,6 +6,7 @@ import { initMinio } from "@/lib/minio";
 import apiRouter from "@/routes/api/index";
 import { logger } from "@/lib/log4js";
 import "@/lib/redis"; // Ensure Redis connects
+import { serverConfig } from "@/utils/common";
 
 const app = new Koa();
 const router = new RouterClass();
@@ -27,7 +28,7 @@ app.use(bodyParser({
 apiRouter(router);
 app.use(router.routes()).use(router.allowedMethods());
 
-const PORT = 3000;
+const PORT = serverConfig.server?.port || 3000;
 app.listen(PORT, () => {
   logger.info(`Server running on port ${PORT}`);
 });

@@ -1,0 +1,69 @@
+services:
+  # MongoDB 服务
+  mongodb:
+    image: mongo:7.0
+    container_name: mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: Morpheus@2024_MongoStrongPass!
+    volumes:
+      - ./data/mongodb:/data/db
+      - ./config/mongodb:/etc/mongo
+    networks:
+      - backend
+
+  # Redis 服务
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass Morpheus@2024_RedisSecureKey# --appendonly yes
+    volumes:
+      - ./data/redis:/data
+      - ./config/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - backend
+
+  # MinIO 服务
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    restart: always
+    ports:
+      - "9000:9000"   # API 端口
+      - "9002:9001"   # Web 控制台端口 (修改为 9002 以避免与 Portainer 9001 冲突)
+    environment:
+      MINIO_ROOT_USER: minio_admin
+      MINIO_ROOT_PASSWORD: Morpheus@2024_MinioSecretKey$$
+    volumes:
+      - ./data/minio:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - backend
+
+  # Server Application
+  server:
+    build:
+      context: ../server
+      dockerfile: Dockerfile
+    container_name: server
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+    depends_on:
+      - mongodb
+      - redis
+      - minio
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge

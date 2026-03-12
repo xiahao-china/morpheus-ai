@@ -1,0 +1,148 @@
+@import "@/assest/globalStyle/commonStyle.less";
+
+
+
+.phone-login {
+  display: flex;
+  flex-direction: column;
+
+  .form-item {
+    margin-bottom: 40rpx;
+
+    .form-label {
+      display: block;
+      font-size: 28rpx;
+      font-weight: bold;
+      color: #9CA3AF;
+      margin-bottom: 16rpx;
+    }
+
+    .input-wrapper {
+      display: flex;
+      align-items: center;
+      background-color: #F1F5F9;
+      border-radius: 16rpx;
+      padding: 0 32rpx;
+      height: 112rpx;
+      border: 1px solid transparent;
+      transition: border-color 0.2s;
+
+      &:hover, &:focus-within {
+        border-color: @main-color;
+      }
+
+      .no-border-input {
+        flex: 1;
+        height: 100%;
+        font-size: 32rpx;
+        color: #111827;
+        background-color: transparent !important;
+
+        &::placeholder {
+          color: #9CA3AF;
+        }
+      }
+    }
+
+    .verify-code-shell {
+      display: flex;
+      align-items: center;
+      background-color: #F1F5F9;
+      border-radius: 16rpx;
+      padding: 0 32rpx;
+      height: 112rpx;
+      border: 1px solid transparent;
+      transition: border-color 0.2s;
+
+      &:hover, &:focus-within {
+        border-color: @main-color;
+      }
+
+      .input-wrapper {
+        flex: 1;
+        background-color: transparent;
+        border: none;
+        padding: 0;
+      }
+
+      .divider {
+        width: 1px;
+        height: 40rpx;
+        background-color: #D1D5DB;
+        margin: 0 24rpx;
+      }
+
+      .get-code-btn {
+        color: #8B5CF6;
+        background: transparent;
+        border: none;
+        font-weight: 600;
+        font-size: 28rpx;
+        padding: 0;
+        height: auto;
+
+        &.disabled {
+          color: #9CA3AF;
+          cursor: not-allowed;
+        }
+      }
+    }
+
+    .password-check-result {
+      font-size: 24rpx;
+      color: red;
+      margin-top: 8rpx;
+    }
+  }
+
+  .form-item:nth-child(2) {
+    margin-bottom: 24rpx;
+  }
+
+  /* 登录按钮 */
+  .login-btn {
+    width: 100%;
+    height: 112rpx;
+    margin-top: 24rpx;
+    background: #0F172A;
+    border-color: #0F172A;
+    border-radius: 16rpx;
+    font-size: 36rpx;
+    font-weight: 600;
+    margin-bottom: 24rpx;
+  }
+
+  /* 底部协议 */
+  .login-auxiliary {
+    justify-content: center;
+    margin-top: 0px;
+
+    .login-switch {
+      font-size: 24rpx;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-end;
+      color: #9CA3AF;
+
+      .refresh-icon{
+        font-size: 24rpx;
+        transform: translateY(4px);
+      }
+
+      text {
+        color: #9CA3AF;
+        font-size: 24rpx;
+
+        &.active {
+          color: @main-color;
+          font-weight: 500;
+        }
+
+        &.separator {
+          margin: 0 24rpx;
+        }
+      }
+    }
+  }
+}

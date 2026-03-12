@@ -1,0 +1,146 @@
+@import "@/assest/globalStyle/commonStyle.less";
+
+.work-card{
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: visible;
+  border-radius: 24rpx;
+  width: 100%;
+  background: #ffffff;
+  box-shadow: 0 8rpx 24rpx rgba(17, 24, 39, 0.08);
+
+  .card-content-wrapper {
+    position: relative;
+    overflow: hidden;
+    height: 331rpx;
+    width: 100%;
+
+    &.loading {
+      opacity: 0.7;
+    }
+    .card-image{
+      width: 100%;
+      object-fit: cover;
+      cursor: pointer;
+      border-top-left-radius: 24rpx;
+      border-top-right-radius: 24rpx;
+      display: block;
+    }
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.3);
+      z-index: 10;
+      border-top-left-radius: 24rpx;
+      border-top-right-radius: 24rpx;
+    }
+    .loading-spinner {
+      width: 60rpx;
+      height: 60rpx;
+      border: 4rpx solid rgba(255, 255, 255, 0.3);
+      border-top: 4rpx solid #ffffff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+  }
+
+
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+
+
+  .card-body{
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+    padding: 16rpx;
+    background: #ffffff;
+    border-bottom-left-radius: 24rpx;
+    border-bottom-right-radius: 24rpx;
+
+    .card-title{
+      font-size: 28rpx;
+      font-weight: 600;
+      color: @main-text-color;
+    }
+
+    .card-footer{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      .author{
+        display: inline-flex;
+        align-items: center;
+        gap: 8rpx;
+
+        .card-avatar{
+          width: 36rpx;
+          height: 36rpx;
+          border-radius: 50%;
+          border: 2rpx solid #f5f5f5;
+        }
+
+        .author-name{
+          font-size: 22rpx;
+          color: @second-text-color;
+          max-width: 150rpx;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+      }
+
+      .like-block{
+        display: inline-flex;
+        align-items: center;
+        font-size: 22rpx;
+        padding: 6rpx 14rpx;
+        background: #f5f6fa;
+        border-radius: 32rpx;
+        color: #666;
+        cursor: pointer;
+
+        .like-icon{
+          display: inline-flex;
+          font-size: 24rpx;
+          width: 20rpx;
+          height: 20rpx;
+          margin-right: 10rpx;
+          color: @main-color;
+          margin-top: 4rpx;
+        }
+
+        .card-stats{
+          display: inline-flex;
+          color: @second-text-color;
+        }
+
+        &.active{
+          background: @gradient-primary2;
+          color: #ffffff;
+
+          .like-icon{
+            color: #ffffff;
+          }
+          .card-stats{
+            color: #ffffff;
+          }
+        }
+      }
+    }
+  }
+
+
+}

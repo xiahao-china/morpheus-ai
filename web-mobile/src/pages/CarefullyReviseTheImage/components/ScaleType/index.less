@@ -1,0 +1,98 @@
+@import "@/assest/globalStyle/commonStyle.less";
+
+.scale-type-container {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  border: 1px solid oklch(87.2% 0.01 258.338);
+  padding: 8px;
+  border-radius: 4px;
+
+  .title {
+    font-size: 16px;
+    font-weight: bold;
+    color: @main-text-color;
+    margin-bottom: 12px;
+  }
+
+  .scale-type{
+    display: flex;
+    .scale-radio-btn-group{
+      width: 100%;
+      /deep/.el-radio-button{
+      }
+      /deep/.is-active{
+        .el-radio-button__inner{
+          background-color: @main-color;
+          border-color: transparent;
+        }
+      }
+
+    }
+  }
+
+
+  .detail-supplement {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    .progress-label {
+      font-size: 14px;
+      color: @gray-600;
+      margin-right: 4px;
+      margin-bottom: 24px;
+    }
+    .progress-slider{
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      .level-tip{
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+
+        .level-tip-info{
+          font-size: 12px;
+          color: @table-weak-text-gray;
+          position: relative;
+          &:before{
+            content: '';
+            position: absolute;
+            border: 5px solid transparent;
+            left: 0;
+            right: 0;
+            margin: auto;
+            top: -8px;
+            width: 0;
+            height: 0;
+            border-bottom-color: @table-weak-text-gray;
+          }
+        }
+        .level-tip-info:nth-child(2){
+          color: @main-color;
+          &:before{
+            border-bottom-color: @main-color;
+          }
+        }
+      }
+    }
+  }
+}
+
+.scale-detail-collapse {
+  margin-top: 8px;
+  border: none;
+
+  /deep/.el-collapse-item__header{
+    height: 0;
+    overflow: hidden;
+    border: none;
+  }
+  /deep/.el-collapse-item__content,
+  /deep/.el-collapse-item__wrap{
+    padding: 0;
+    border: none;
+  }
+}

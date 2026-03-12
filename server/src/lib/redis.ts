@@ -1,11 +1,6 @@
 import Redis from "ioredis";
 import { logger } from "./log4js";
-
-const REDIS_CONFIG = {
-  host: "127.0.0.1",
-  port: 6379,
-  password: "", // Default no password
-};
+import { REDIS_CONFIG } from "@/config/index";
 
 export const redis = new Redis(REDIS_CONFIG);
 

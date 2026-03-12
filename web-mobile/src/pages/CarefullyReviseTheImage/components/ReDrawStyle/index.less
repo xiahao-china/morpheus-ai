@@ -1,0 +1,38 @@
+@import "@/assest/globalStyle/commonStyle.less";
+
+.re-draw-style {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  border: 1px solid oklch(87.2% 0.01 258.338);
+  padding: 8px;
+  border-radius: 4px;
+  .title {
+    font-size: 16px;
+    font-weight: bold;
+    color: @main-text-color;
+    margin-bottom: 12px;
+  }
+}
+
+.re-draw-collapse {
+  margin-top: 8px;
+  border: none;
+
+  /deep/.el-collapse-item__header{
+    height: 0;
+    overflow: hidden;
+    border: none;
+  }
+}
+
+.re-draw-radio-btn-group{
+  /deep/.is-active{
+    .el-radio-button__inner{
+      background-color: @main-color!important;
+      border-color: transparent!important;
+    }
+  }
+}
+
+

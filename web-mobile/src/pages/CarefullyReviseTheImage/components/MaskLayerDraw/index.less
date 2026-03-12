@@ -1,0 +1,174 @@
+@import "@/assest/globalStyle/commonStyle.less";
+
+.mask-layer-draw-shell {
+  display: flex;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  z-index: 1;
+
+  .mask-layer-draw {
+    width: 100%;
+    height: 100%;
+    transform-origin: left top;
+    z-index: 2;
+    .top-mask-img{
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    /deep/.canvas-container{
+      .upper-canvas{
+        z-index: 2;
+        opacity: 0.6;
+      }
+    }
+    /deep/.mid-mask-img{
+      .abs-center();
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      z-index: 1;
+      opacity: 0.4;
+      user-select: none;
+    }
+  }
+
+  .tip-text{
+    position: absolute;
+    z-index: 9999;
+    margin: auto;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-family: "PingFang SC";
+    color: @second-text-color;
+    padding-top: 128px;
+  }
+
+  .mask-layer-draw-tools-container {
+    .abs-hor-center();
+    display: inline-flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    top: 0;
+
+    .mask-layer-draw-tools {
+      position: relative;
+      z-index: 9;
+      padding: 4px 16px;
+      border-radius: 24px;
+      background: white;
+      box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+
+      .draw-action-icon {
+        border-radius: 8px;
+        width: 24px;
+        height: 24px;
+        font-size: 16px;
+        transition: all 0.2s;
+        cursor: pointer;
+
+        &.lasso-eraser{
+          position: relative;
+          &::after{
+            content: '';
+            position: absolute;
+            width: 6px;
+            height: 2px;
+            right: 2px;
+            bottom: 4px;
+            background-color: #2E2E2E;
+            transform: translateY(-1px);
+          }
+        }
+
+        &.lasso{
+          &::before,
+          &::after{
+            content: '';
+            position: absolute;
+            width: 6px;
+            height: 2px;
+            background-color: #2E2E2E;
+            right: 2px;
+            bottom: 4px;
+          }
+          &::before{
+            width: 2px;
+            height: 6px;
+            right: 4px;
+            bottom: 2px;
+          }
+        }
+
+        &:hover,
+        &.active {
+          color: white;
+          background-color: @main-color;
+          &::after,
+          &::before{
+            background-color: white;
+          }
+        }
+        &.disabled {
+          color: #ccc;
+          cursor: not-allowed;
+        }
+
+
+
+      }
+
+      .draw-action-icon + .draw-action-icon {
+        margin-left: 4px;
+      }
+    }
+
+    .brush-width-slider-shell {
+      position: absolute;
+      padding: 2px 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: row;
+      border-radius: 24px;
+      background: white;
+      top: 100%;
+      width: 224px;
+      margin-top: 8px;
+      box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+      z-index: 9;
+
+      .brush-width-slider {
+        display: flex;
+        margin-top: 0;
+        /deep/.el-slider__runway{
+        }
+        /deep/.el-slider__marks-text{
+          width: 32px;
+          margin-top: 6px;
+          text-align: center;
+          font-size: 10px;
+        }
+
+        /deep/.el-slider__marks-stop{
+          display: none;
+        }
+      }
+    }
+
+  }
+
+
+}
+

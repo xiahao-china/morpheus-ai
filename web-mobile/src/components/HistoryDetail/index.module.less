@@ -1,0 +1,66 @@
+// 移动端专用样式，750基准
+.history-detail-dialog {
+  .history-detail-container {
+    padding: 114rpx 40rpx;
+    display: flex;
+    flex-direction: column;
+
+    .task-info {
+      order: 2;
+      display: flex;
+      flex-direction: column;
+
+      .left-block {
+        position: relative;
+        width: 100%;
+        margin-top: 24rpx;
+        margin-bottom: 32rpx;
+        padding-right: 0;
+        height: auto;
+
+        .image-block {
+          display: flex;
+          position: relative;
+          width: 100%;
+          height: auto;
+          .image-block-inner{
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+          }
+        }
+
+        .image-list {
+          padding-top: 32rpx;
+        }
+
+        .tool-list {
+          position: absolute;
+          top: 0;
+          transform: translateY(-100%);
+          right: 0;
+          padding-bottom: 8rpx;
+        }
+      }
+    }
+
+    .user-and-work-info {
+      order: 1;
+    }
+  }
+}
+
+
+
+/* 添加过渡动画样式 */
+.publish-block-enter-active,
+.publish-block-leave-active {
+  transition: all 0.3s ease;
+}
+
+.publish-block-enter-from,
+.publish-block-leave-to {
+  opacity: 0;
+  transform: translateX(20px);
+}

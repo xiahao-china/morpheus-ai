@@ -1,0 +1,22 @@
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  //background-color: rgb(249, 250, 251);
+  background: white;
+  position: relative;
+
+  .app-layout-content {
+    width: 100%;
+    flex: 1;
+    margin-top: -104rpx;
+    overflow: hidden;
+    padding-bottom: 70px; /* 为底部导航栏留出空间 */
+  }
+}
+.app-layout-mobile {
+  .app-layout-content {
+    margin-top: 0;
+    padding-bottom: 0;
+  }
+}

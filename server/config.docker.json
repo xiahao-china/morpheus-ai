@@ -1,0 +1,24 @@
+{
+  "mongodb": {
+    "url": "mongodb://admin:Morpheus@2024_MongoStrongPass!@mongodb:27017/morpheus-ai?authSource=admin"
+  },
+  "redis": {
+    "host": "redis",
+    "port": 6379,
+    "password": "Morpheus@2024_RedisSecureKey#"
+  },
+  "minio": {
+    "endPoint": "minio",
+    "port": 9000,
+    "useSSL": false,
+    "accessKey": "minio_admin",
+    "secretKey": "Morpheus@2024_MinioSecretKey$"
+  },
+  "server": {
+    "port": 3000,
+    "rootPath": "/data/morpheus-ai"
+  },
+  "auth": {
+    "secret": "morpheus-ai-secret"
+  }
+}

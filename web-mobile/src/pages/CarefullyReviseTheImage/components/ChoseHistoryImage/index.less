@@ -1,0 +1,157 @@
+@import "@/assest/globalStyle/commonStyle.less";
+/* 触发文本样式 */
+.trigger-text {
+  cursor: pointer;
+  font-size: 14px;
+  .trigger-text-history{
+    color: @main-color;
+    cursor: pointer;
+    &:hover{
+      color: #1890ff;
+    }
+  }
+}
+
+/* 弹出层样式 */
+.history-image-popover {
+  padding: 0;
+}
+
+.popup-content {
+  width: 100%;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+/* 筛选器样式 */
+.filter-container {
+  height: 40px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  .filter-item{
+    display: flex;
+    font-size: 15px;
+    color: @main-text-color;
+    align-items: center;
+    flex-direction: row;
+    .select-filter-label{
+      display: inline-flex;
+      width: 80px;
+    }
+    .select-filter-content{
+      display: inline-flex;
+      flex-direction: row;
+      .filter-select {
+        margin-right: 16px;
+        background: transparent;
+        cursor: pointer;
+        transition: ease 0.2s all;
+        &:hover{
+          color: @main-color;
+          border-color: @main-color;
+        }
+        &.active{
+          background: @main-color;
+          color: white;
+          border-color: @main-color;
+        }
+        &.disabled{
+          color: #999 !important;
+          border-color: @weak-gray !important;
+        }
+      }
+    }
+  }
+}
+
+
+
+/* 图片列表样式 */
+.images-container {
+  width: 100%;
+  height: 460px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  // 添加滚动条样式优化
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: #ddd;
+    border-radius: 3px;
+  }
+  .infinite-list{
+    display: flex;
+    height: 460px;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 4px;
+    overflow-y: auto;
+
+    .infinite-list-item {
+      overflow: hidden;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s; /* 优化过渡效果 */
+      position: relative;
+
+
+      .record-img {
+        border-radius: 6px; /* 增大圆角 */
+        width: 174px;
+        height: 174px;
+        overflow: hidden;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: border-color 0.2s;
+      }
+
+      .record-img:hover {
+        border-color: #1890ff;
+      }
+    }
+  }
+}
+
+
+
+// 添加无限滚动加载状态样式
+.loading-more {
+  width: 100%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: #999;
+}
+
+.image-thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.empty-tip {
+  width: 100%;
+  height: 200px; /* 增加空状态高度 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 14px;
+  border-radius: 6px;
+}
+
+
+
+
+.image-thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+

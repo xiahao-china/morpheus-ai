@@ -2,19 +2,18 @@ const path = require('path')
 const webpack = require('webpack')
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 const nodeExternals = require('webpack-node-externals')
+const fs = require('fs')
 
-// Dummy config for now
-const serverConfig = {
-  ngRootPath: '',
-  ngFilesName: '',
-  mailAuthPass: '',
-  aliAccessKeyId: '',
-  aliAccessKeySecret: '',
-  dbBackupToolPath: '',
-  serverRootPath: '',
-  dbBackupDataPathName: '',
-  dbBackupFilesPathName: '',
-};
+// Load config from root
+let serverConfig = {};
+try {
+  const configPath = path.join(__dirname, '../../config.json');
+  if (fs.existsSync(configPath)) {
+    serverConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  }
+} catch (e) {
+  console.error('Failed to load config.json', e);
+}
 
 const webpackConfig = {
   target: 'node',

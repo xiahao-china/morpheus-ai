@@ -1,8 +1,9 @@
 import {sign, verify} from 'jsonwebtoken';
 import {IUser} from "@/models/user";
 import {Context} from "koa";
+import { serverConfig } from "@/utils/common";
 
-export const SECRET_KEY = "morpheus-ai-secret";
+export const SECRET_KEY = serverConfig.auth?.secret || "morpheus-ai-secret";
 
 // Get token from header
 export const getToken = (ctx: Context) => {

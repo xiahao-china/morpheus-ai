@@ -1,0 +1,173 @@
+// 引入全局样式变量
+@import "@/assest/globalStyle/commonStyle.less";
+
+.bottomNavigation {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 110rpx;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(48rpx);
+  border-top: 2rpx solid rgb(243,244,246);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 10;
+  box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.02) 0px -5px 20px 0px;
+
+  .navItem {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8rpx 16rpx;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 24rpx;
+    margin: 0 8rpx;
+
+    .navIcon {
+      color: @third-text-color;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 2;
+      margin-bottom: 10rpx;
+      width: 60rpx;
+      height: 60rpx;
+      border-radius: 16rpx;
+
+
+      .iconfont {
+        font-size: 46rpx;
+        width: 46rpx;
+        height: 46rpx;
+        display: inline-block;
+      }
+    }
+
+    // 点击波纹效果
+    .ripple {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(45, 92, 242, 0.1);
+      transform: translate(-50%, -50%);
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+
+    &.active {
+
+      .navIcon {
+        color: white;
+        background: @gradient-primary2;
+      }
+
+      .navLabel {
+        color: @main-color;
+        font-weight: 600;
+      }
+    }
+
+    // 悬停效果（适用于支持的设备）
+    // &:hover {
+    //   background: rgba(45, 92, 242, 0.03);
+    //   transform: translateY(-2rpx);
+
+    //   .ripple {
+    //     width: 120rpx;
+    //     height: 120rpx;
+    //   }
+    // }
+
+    // 点击效果
+    &:active {
+      transform: translateY(0) scale(0.98);
+
+      .ripple {
+        width: 160rpx;
+        height: 120rpx;
+      }
+    }
+
+
+
+    .navLabel {
+      font-size: 22rpx;
+      color: @third-text-color;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      white-space: nowrap;
+      font-weight: 400;
+      letter-spacing: 0.5rpx;
+      text-align: center;
+      line-height: 1.1;
+      position: relative;
+      z-index: 2;
+      margin-bottom: 4rpx;
+    }
+  }
+
+  .navItem:first-child {
+    .navIcon{
+      .iconfont {
+        font-weight: bolder;
+      }
+    }
+  }
+  .navItem:nth-child(2) {
+    .navIcon {
+      .iconfont {
+        font-size: 54rpx;
+      }
+    }
+  }
+}
+
+// 动画关键帧
+@keyframes slideIn {
+  0% {
+    width: 0;
+    opacity: 0;
+  }
+  100% {
+    width: 60rpx;
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20rpx);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// 为有底部导航的页面添加底部间距
+:global(.page-with-bottom-nav) {
+  padding-bottom: 120rpx;
+}
+
+// 安全区域适配
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .bottomNavigation {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  :global(.page-with-bottom-nav) {
+    padding-bottom: calc(80rpx + env(safe-area-inset-bottom));
+  }
+}
+

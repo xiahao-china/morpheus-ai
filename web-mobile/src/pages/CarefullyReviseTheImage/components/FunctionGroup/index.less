@@ -1,0 +1,92 @@
+@import "@/assest/globalStyle/commonStyle.less";
+
+// 定义动画
+@keyframes button-hover {
+  0% {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  100% {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.function-group-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-bottom: 8px;
+  gap: 18px;
+  align-items: stretch;
+
+  .el-button {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    height: 44px;
+  }
+
+  .top-button {
+    background-color: @weak-main-color2;
+    color: @main-color;
+    &:hover {
+      background-color: @main-color;
+      color: white;
+      animation: button-hover 0.3s forwards;
+    }
+    &.selected {
+      background-color: @main-color;
+      color: white;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      transform: translateY(-2px);
+    }
+  }
+
+  .bottom-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: space-between;
+
+    .el-button {
+      display: inline-flex;
+      align-items: center;
+      width: calc(33% - 9px);
+      background-color: @weak-main-color2;
+      border: 1px solid @weak-main-color2;
+      &:hover {
+        background-color: @main-color;
+        color: white !important;
+        border-color: @main-color;
+        animation: button-hover 0.3s forwards;
+      }
+      &.selected {
+        background-color: @main-color;
+        color: white !important;
+        border-color: @main-color;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        transform: translateY(-2px);
+      }
+      /deep/.function-icon{
+        transform: scale(0.7);
+      }
+    }
+
+
+    .el-button:first-child {
+      width: 100%;
+      color: @main-color;
+      border: 1px solid #409eff;
+    }
+
+    .el-button:last-child,
+    .el-button:nth-last-child(2) {
+      flex: 1;
+    }
+  }
+
+  .el-button + .el-button{
+    margin-left: 0;
+  }
+}

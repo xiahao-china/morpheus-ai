@@ -1,0 +1,192 @@
+@import "@/assest/globalStyle/commonStyle.less";
+
+.style-select-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  margin-bottom: 24rpx;
+
+  .panel {
+    width: 100%;
+    background-color: #ffffff;
+    border: 2rpx solid @weak-gray2;
+    border-radius: 24rpx;
+    box-shadow: 0 8rpx 24rpx rgba(17, 24, 39, 0.08);
+  }
+
+  .panel-header {
+    padding: 28rpx 32rpx;
+    font-size: 30rpx;
+    color: @main-text-color;
+    font-weight: 600;
+    border-bottom: 2rpx solid @weak-gray2;
+  }
+
+  .scroll-shell {
+    padding: 20rpx 16rpx 28rpx 16rpx;
+  }
+
+  .scroll-view {
+    white-space: nowrap;
+    &::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
+      color: transparent;
+    }
+  }
+
+  .option-item {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 200rpx;
+    height: 180rpx;
+    margin: 0 12rpx;
+    border: 2rpx solid @weak-gray2;
+    border-radius: 16rpx;
+    background: #fff;
+    box-shadow: 0 6rpx 12rpx rgba(17, 24, 39, 0.06);
+    position: relative;
+    overflow: hidden;
+
+    .thumb {
+      width: 100%;
+      object-fit: cover;
+      border-bottom: 2rpx solid @weak-gray2;
+      border-top-left-radius: 16rpx;
+      border-top-right-radius: 16rpx;
+    }
+
+    .label {
+      position: absolute;
+      left: 12rpx;
+      right: 12rpx;
+      bottom: 12rpx;
+      padding: 12rpx 16rpx;
+      font-size: 26rpx;
+      color: #ffffff;
+      background-color: rgba(0, 0, 0, 0.35);
+      border-radius: 12rpx;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      text-align: center;
+    }
+  }
+
+  .selected-shell {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24rpx 32rpx;
+
+    .left {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 36rpx;
+      .title {
+        font-size: 30rpx;
+        color: @main-text-color;
+        font-weight: 600;
+      }
+      .selected-text {
+        font-size: 26rpx;
+        color: @second-text-color;
+      }
+    }
+
+    .right {
+      width: 240rpx;
+      overflow: hidden;
+
+      .scroll-view{
+        width: 240rpx;
+        white-space: nowrap;
+        &::-webkit-scrollbar {
+          display: none;
+          width: 0;
+          height: 0;
+          color: transparent;
+        }
+        .option-item:first-child{
+          margin-left: 60rpx;
+        }
+        .option-item:last-child{
+          margin-right: 60rpx;
+        }
+      }
+
+      .option-item {
+        position: relative;
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 120rpx;
+        height: 120rpx;
+        background: transparent;
+        box-shadow: none;
+        border: none;
+        margin: 0 -12rpx;
+
+        .clear-icon-wrapper {
+          position: absolute;
+          visibility: hidden;
+          top: 0;
+          right: 0;
+          width: 64rpx;
+          height: 64rpx;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 2;
+        }
+        .clear-icon {
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 30rpx;
+          height: 30rpx;
+          line-height: 30rpx;
+          background: #EF4444;
+          color: #ffffff;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 24rpx;
+          box-shadow: 0 6rpx 12rpx rgba(17, 24, 39, 0.06);
+          z-index: 1;
+        }
+
+        .thumb {
+          width: calc(100% - 8rpx);
+          object-fit: cover;
+          box-shadow: 0 6rpx 12rpx rgba(17,24,39,0.06);
+          overflow: hidden;
+          opacity: 0.5;
+          transition: opacity 0.2s ease;
+          border: 4rpx solid @weak-gray2;
+          border-radius: 50%;
+          background: #fff;
+          transform: scale(0.8);
+        }
+      }
+
+      .option-item-selected {
+        position: relative;
+        z-index: 2;
+        .thumb{
+          opacity: 1;
+          border-color: @main-color;
+          transform: none;
+        }
+        .clear-icon-wrapper{
+          visibility: visible;
+        }
+      }
+    }
+  }
+}

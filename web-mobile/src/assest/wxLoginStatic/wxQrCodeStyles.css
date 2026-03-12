@@ -1,0 +1,36 @@
+.web_qrcode_type_iframe > .web_qrcode_panel_area > .web_qrcode_panel_normal_login > .old-template > .impowerBox > .loginPanel > .title {
+  display: none;
+}
+.status_browser{
+  display: none;
+}
+.panelContent{
+  position: relative;
+}
+.info{
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%!important;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  overflow: hidden;
+
+}
+.status_succ,
+.status_fail{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%!important;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+}
+.status_txt{
+  display: inline-flex;
+  flex-direction: column;
+}

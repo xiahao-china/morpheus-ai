@@ -1,0 +1,69 @@
+/* CollapsiblePanel 组件样式 - CSS Module 模式 */
+/* 适配Taro小程序，基准750px设计稿 */
+
+.collapsiblePanelContainer {
+  display: flex;
+  // width: 100%;
+  flex-direction: column;
+  border: 2px solid #d1d5dc; /* 2px = 1px * 2 (750基准) */
+  padding: 16px; /* 16px = 8px * 2 */
+  border-radius: 8px; /* 8px = 4px * 2 */
+}
+
+.pluginContainer {
+  width: calc(100% - 36px); /* 36px = 18px * 2 */
+}
+
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panelTitle {
+  display: flex;
+  align-items: center;
+  font-size: 28px; /* 28px = 14px * 2 */
+  margin-bottom: 16px; /* 16px = 8px * 2 */
+  line-height: 40px; /* 40px = 20px * 2 */
+  font-weight: bold;
+  color: #374151;
+}
+
+.titleText {
+  display: inline-flex;
+}
+
+.questionIcon {
+  display: inline-flex;
+  margin-left: 8px; /* 8px = 4px * 2 */
+  color: #9ca3af;
+}
+
+.questionIcon:active {
+  color: #374151;
+}
+
+.panelRightContent {
+  display: flex;
+  align-items: center;
+}
+
+.detailCollapse {
+  border: none;
+  overflow: hidden;
+}
+
+.collapseContent {
+  padding: 0;
+  border: none;
+}
+
+.overflowShow {
+  overflow: visible;
+}
+
+/* NutUI Switch 样式调整 */
+.switchContainer {
+  margin-left: 16px; /* 16px = 8px * 2 */
+}

@@ -1,0 +1,43 @@
+@import "@/assest/globalStyle/commonStyle.less";
+
+.drawing-container {
+  padding: 20px;
+
+  .polish-action{
+    display: flex;
+    gap: 24rpx;
+  }
+  .history-action-btn{
+    .history-icon-content{
+      display: flex;
+      height: 100%;
+      width: 100%;
+      align-items: center;
+      justify-content: center;
+      .history-icon{
+        font-size: 36rpx;
+      }
+    }
+
+  }
+  .polish-action-btn{
+    height: 84rpx;
+    padding: 0 24rpx;
+    flex: 1;
+    font-size: 32rpx;
+    font-weight: 500;
+    background: @gradient-primary2;
+    border: 2rpx solid #e2e8f0;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+  }
+}
+
+.polish-action{
+  margin-top: 24rpx;
+  display: flex;
+  justify-content: flex-end;
+}

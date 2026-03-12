@@ -1,12 +1,9 @@
 import mongoose from "mongoose";
 import { logger } from "./log4js";
-
-const DB_CONFIG = {
-  URL: "mongodb://127.0.0.1:27017/morpheus-ai"
-};
+import { MONGO_CONFIG } from "@/config/index";
 
 export const connectMongoDB = () => {
-  mongoose.connect(DB_CONFIG.URL);
+  mongoose.connect(MONGO_CONFIG.URL);
 
   const db = mongoose.connection;
 

@@ -1,0 +1,195 @@
+@import "@/assest/globalStyle/commonStyle.less";
+
+.image-upload-container {
+  display: flex;
+  position: relative;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 32rpx;
+
+  .upload-area {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    min-height: 380rpx;
+    border: 2rpx dashed @weak-gray2;
+    border-radius: 24rpx;
+    box-sizing: border-box;
+    box-shadow: 0 8rpx 24rpx rgba(17, 24, 39, 0.08);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+
+    &:hover {
+      border-color: @weak-gray;
+      box-shadow: 0 12rpx 28rpx rgba(17, 24, 39, 0.06);
+    }
+
+    .upload-chose{
+      padding: 48rpx;
+
+      width: calc(100% - 96rpx);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32rpx;
+
+      .upload-info {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        .upload-icon {
+          font-size: 100rpx;
+          width: 100rpx;
+          height: 100rpx;
+          color: @main-text-color2;
+          margin-bottom: 12rpx;
+        }
+
+        .upload-text {
+          font-size: 28rpx;
+          color: @main-text-color;
+        }
+        .ai-tip{
+          font-size: 24rpx;
+          margin-top: 16rpx;
+          color: @third-text-color;
+        }
+      }
+
+      .actions {
+        display: flex;
+        width: 100%;
+        gap: 20rpx;
+
+        .action-button {
+          flex: 1;
+          height: 78rpx;
+          border-radius: 44rpx;
+          font-size: 28rpx;
+          background-color: white;
+          border: 2rpx solid @main-text-color;
+          color: @main-text-color;
+          transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+
+
+          .btn-inner{
+            display: flex;
+            height: 31rpx;
+            align-items: center;
+            .btn-icon {
+              color: @main-text-color;
+              display: inline-flex;
+              font-size: 36rpx;
+              margin-right: 8rpx;
+            }
+          }
+
+        }
+        .action-button-camera{
+          color: white;
+          background: @main-text-color;
+          .btn-inner{
+            .btn-icon{
+              color: white;
+            }
+          }
+
+        }
+      }
+    }
+
+    .preview-shell {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      .preview-image {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        object-fit: contain;
+      }
+
+
+      .preview-close {
+        position: absolute;
+        top: 16rpx;
+        right: 16rpx;
+        padding: 6rpx;
+
+        font-size: 24rpx;
+        width: 40rpx;
+        height: 40rpx;
+        color: @second-text-color;
+        background-color: rgba(255,255,255,0.9);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 6rpx 12rpx rgba(17,24,39,0.06);
+      }
+    }
+
+
+    .progress-shell {
+      width: calc(100% - 96rpx);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12rpx;
+      padding: 48rpx;
+
+      .upload-icon{
+        width: 100rpx;
+        height: 100rpx;
+        font-size: 100rpx;
+        margin-top: 24rpx;
+        margin-bottom: 32rpx;
+        color: @second-text-color;
+
+      }
+
+      .progress-track {
+        width: 100%;
+        height: 12rpx;
+        background-color: @weak-gray2;
+        border-radius: 6rpx;
+        overflow: hidden;
+
+        .progress-bar {
+          height: 100%;
+          background-color: @main-color;
+          border-radius: 6rpx;
+          transition: width 0.2s ease;
+        }
+      }
+
+      .progress-text {
+        font-size: 24rpx;
+        color: @second-text-color;
+      }
+    }
+  }
+
+  .preview-bg-container{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    border-radius: 24rpx;
+
+    .preview-bg{
+      width: 100%;
+      object-fit: cover;
+      opacity: 0.3;
+      filter: blur(12rpx);
+    }
+  }
+
+
+}

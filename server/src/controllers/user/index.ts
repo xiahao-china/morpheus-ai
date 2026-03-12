@@ -3,11 +3,47 @@ import User, { IUser, UserRoleEnum, UserStatusEnum } from "@/models/user";
 import { signToken } from "@/utils/token";
 import redis from "@/lib/redis";
 import { logger } from "@/lib/log4js";
+import axios from "axios";
+import qs from "qs";
+import { SMS_CONFIG, REDIS_KEYS, USER_CONSTANTS } from "@/config/index";
 
-// Mock SMS send
+// Real SMS send via 1cloudsp
 const sendSMS = async (phone: string, code: string) => {
+  if (SMS_CONFIG.mockSend) {
+    logger.info(`[MOCK] Sending SMS to ${phone}: ${code}`);
+    return true;
+  }
+
   logger.info(`Sending SMS to ${phone}: ${code}`);
-  return true;
+  
+  try {
+    const data = {
+      accesskey: SMS_CONFIG.accesskey,
+      secret: SMS_CONFIG.secret,
+      sign: SMS_CONFIG.sign,
+      templateId: SMS_CONFIG.templateId,
+      mobile: phone,
+      content: code
+    };
+
+    const response = await axios.post(SMS_CONFIG.baseUrl, qs.stringify(data), {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+      }
+    });
+
+    logger.info(`SMS Response: ${JSON.stringify(response.data)}`);
+    
+    if (response.data && response.data.code === "0") {
+      return true;
+    } else {
+      logger.error(`SMS Send Failed: ${JSON.stringify(response.data)}`);
+      return false;
+    }
+  } catch (error) {
+    logger.error(`SMS Send Error: ${error}`);
+    return false;
+  }
 };
 
 // Mock Email send
@@ -22,10 +58,10 @@ export const sendVerifyCode = async (ctx: Context) => {
   
   if (type === 'phone') {
     await sendSMS(target, code);
-    await redis.set(`verify:phone:${target}`, code, 'EX', 300); // 5 mins
+    await redis.set(`${REDIS_KEYS.SMS_LOGIN_CODE}${target}`, code, 'EX', USER_CONSTANTS.VERIFY_CODE_EXPIRE_SECONDS);
   } else if (type === 'email') {
     await sendEmail(target, code);
-    await redis.set(`verify:email:${target}`, code, 'EX', 300);
+    await redis.set(`${REDIS_KEYS.EMAIL_LOGIN_CODE}${target}`, code, 'EX', USER_CONSTANTS.VERIFY_CODE_EXPIRE_SECONDS);
   } else {
     ctx.body = { code: 400, msg: 'Invalid type' };
     return;
@@ -51,10 +87,19 @@ export const login = async (ctx: Context) => {
   }
 
   // Code login
-  const storedCode = await redis.get(`verify:${type}:${target}`);
-  // For testing, allow '123456' if configured or just stick to logic.
-  // I will just use the logic.
-  if (!storedCode || storedCode !== code) {
+  let redisKey = '';
+  if (type === 'phone') {
+    redisKey = `${REDIS_KEYS.SMS_LOGIN_CODE}${target}`;
+  } else if (type === 'email') {
+    redisKey = `${REDIS_KEYS.EMAIL_LOGIN_CODE}${target}`;
+  }
+
+  const storedCode = await redis.get(redisKey);
+  
+  // For testing, allow '123456' if mockSend is enabled
+  if (SMS_CONFIG.mockSend && code === '666666') {
+     // Allow mock login
+  } else if (!storedCode || storedCode !== code) {
     ctx.body = { code: 401, msg: 'Invalid code' };
     return;
   }

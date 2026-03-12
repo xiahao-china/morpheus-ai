@@ -1,0 +1,78 @@
+@import "@/assest/globalStyle/commonStyle.less";
+
+.wx-login {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+
+  .user-icon-container{
+    width: 124rpx;
+    height: 124rpx;
+    border-radius: 12rpx;
+    margin-bottom: 24rpx;
+    margin-top: 52rpx;
+    background: @weak-gray;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    .user-icon {
+      display: inline-flex;
+      font-size: 68rpx;
+      width: 68rpx;
+      height: 68rpx;
+      color: @table-weak-text-gray;
+    }
+  }
+
+  .hint-text {
+    font-size: 28rpx;
+    color: @table-weak-text-gray;
+    margin-bottom: 64rpx;
+    display: block;
+  }
+
+  .agreement-wrapper{
+    margin-top: 24rpx;
+  }
+
+
+  /* 登录按钮 - 仿照PhoneLogin组件样式 */
+  .login-btn {
+    width: 100%;
+    height: 112rpx;
+    font-size: 36rpx;
+    font-weight: 600;
+    background: #0F172A;
+    border-color: #0F172A;
+    border-radius: 12rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    .login-btn-text{
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .login-icon-container{
+      display: flex;
+      align-items: center;
+      height: 100%;
+      .login-icon {
+        display: inline-flex;
+        font-size: 32rpx;
+        width: 32rpx;
+        height: 32rpx;
+        margin-right: 12rpx;
+      }
+    }
+
+
+    text {
+      font-size: 32rpx;
+      display: inline-flex;
+    }
+  }
+}

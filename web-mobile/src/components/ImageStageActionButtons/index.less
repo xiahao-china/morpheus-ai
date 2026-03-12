@@ -1,0 +1,61 @@
+@import "@/assest/globalStyle/commonStyle.less";
+
+
+.contrast-active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+}
+
+.feedback-active {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+  color: white !important;
+}
+
+.feedback-active2 {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+  color: white !important;
+}
+
+.collection-active {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%) !important;
+  color: white !important;
+}
+
+.relative-styles {
+  position: relative;
+}
+
+.absolute-styles {
+  position: absolute;
+  bottom: 24rpx;
+  right: 24rpx;
+}
+
+.flex {
+  display: flex;
+  align-items: center;
+}
+
+.space-x-2 {
+  gap: 16rpx;
+}
+
+// NutUI button styles for mobile
+.action-button {
+  width: 80rpx !important;
+  height: 80rpx !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 2rpx solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1) !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 32rpx !important;
+  
+  &:active {
+    background: rgba(255, 255, 255, 1) !important;
+    border-color: rgba(0, 0, 0, 0.2) !important;
+    transform: scale(0.95);
+  }
+}

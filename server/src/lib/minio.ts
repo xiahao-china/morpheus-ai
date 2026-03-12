@@ -1,13 +1,6 @@
 import * as Minio from 'minio';
 import { logger } from "./log4js";
-
-const MINIO_CONFIG = {
-  endPoint: '127.0.0.1',
-  port: 9000,
-  useSSL: false,
-  accessKey: 'minioadmin',
-  secretKey: 'minioadmin'
-};
+import { MINIO_CONFIG } from "@/config/index";
 
 export const minioClient = new Minio.Client(MINIO_CONFIG);
 

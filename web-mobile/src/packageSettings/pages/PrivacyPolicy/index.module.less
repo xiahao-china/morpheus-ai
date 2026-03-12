@@ -1,0 +1,148 @@
+// 基于375px设计稿调整尺寸，保持原有样式设计
+.privacy-policy-container {
+  margin: 0 auto;
+  padding: 28px; // 增大容器内边距，优化整体布局
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  color: #333;
+  background-color: #fff;
+  min-height: 100vh;
+}
+
+.policy-header {
+  text-align: center;
+  margin-bottom: 32px;
+  padding: 24px 0;
+}
+
+.policy-content {
+  padding: 32px;
+  margin-bottom: 24px;
+}
+
+.policy-intro {
+  font-size: 28px;
+  line-height: 1.5;
+  margin-bottom: 16px;
+  text-indent: 2em;
+  color: #555;
+}
+
+.policy-text {
+  display: block;
+  font-size: 26px;
+  line-height: 1.7;
+  margin: 16px 0;
+  padding-left: 20px;
+  color: #444;
+  text-indent: 2em;
+}
+
+.policy-title {
+  text-align: center;
+  font-size: 44px; // 进一步增大标题字体
+  margin-bottom: 12px;
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+.policy-meta {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #666;
+  font-size: 26px; // 进一步增大元信息字体
+}
+
+.policy-meta text {
+  display: block;
+  margin: 4px 0;
+}
+
+.policy-meta p {
+  display: block;
+  margin: 4px 0;
+}
+
+.policy-body {
+  background-color: #fff;
+  padding: 24px; // 增大内边距
+  border-radius: 8px;
+  font-size: 26px; // 进一步增大正文字体
+  line-height: 1.7;
+
+  // 段落首行缩进
+  p {
+    text-indent: 2em; // 两个字符的缩进
+    margin: 14px 0;
+  }
+}
+
+.policy-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 20px 0;
+}
+
+.policy-list li {
+  margin: 10px 0;
+  padding-left: 40px; // 增大左边距，为内容提供缩进空间
+  position: relative;
+  font-size: 26px; // 进一步增大无序列表字体
+  line-height: 1.6;
+}
+
+.policy-list li:before {
+  content: "•";
+  position: absolute;
+  left: 22px; // 调整位置以配合新的字体大小
+  color: #3498db;
+  font-weight: bold;
+  font-size: 28px; // 稍微增大标记以配合更大的字体
+}
+
+.policy-divider {
+  border: none;
+  border-top: 1px solid #eee;
+  margin: 20px 0; // 原来是2rem(32px)，调整为20px
+}
+
+.policy-chapter {
+  color: #2c3e50;
+  margin: 20px 0 12px;
+  font-size: 36px; // 进一步增大章节标题字体
+  font-weight: 600;
+}
+
+.policy-section {
+  color: #34495e;
+  margin: 16px 0 8px;
+  font-size: 30px; // 进一步增大小节标题字体
+  font-weight: 500;
+}
+
+.policy-ol {
+  padding-left: 0; // 移除左边距
+  margin: 18px 0;
+  list-style-type: none; // 关闭自动序号显示
+}
+
+.policy-ol text {
+  display: block;
+  margin: 10px 0;
+  font-size: 26px; // 进一步增大有序列表字体
+  line-height: 1.6;
+  padding-left: 20px; // 增加左内边距，避免贴边
+  color: #444;
+}
+
+.policy-ol .policy-ol {
+  margin-left: 20px;
+  margin-top: 8px;
+}
+
+.policy-ol li {
+  margin: 10px 0;
+  font-size: 26px; // 进一步增大有序列表字体
+  line-height: 1.6;
+  padding-left: 20px; // 增加左内边距，避免贴边
+}

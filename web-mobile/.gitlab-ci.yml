@@ -1,0 +1,48 @@
+stages:
+  - build
+  - deploy
+
+workflow:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+variables:
+  TARGET_DIR: '/data/nginx/front'
+  BUILD_DIR: 'tuiqiao-mobile' # 定义打包目录变量
+
+build:
+  stage: build
+  image: node:22
+  before_script:
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - eval "$(ssh-agent -s)"
+    - ssh-add ~/.ssh/id_rsa
+    - ssh-keyscan -H "192.168.2.55" >> ~/.ssh/known_hosts
+  script:
+    - npm config set registry https://registry.npmmirror.com
+    - rm -rf .git
+    - rm -rf .[!.]* *
+    - git clone git@192.168.2.55:/ai-product/ai-design/ai-design-mobile-frontend.git .
+    - node -v # 明确指定 Node.js 路径
+    - npm -v # 明确指定 npm 路径
+    - npm install -legacy-peer-deps && npm run build:h5
+    - mv dist $BUILD_DIR
+    - cp -r $BUILD_DIR/ $TARGET_DIR/
+  tags:
+    - ai_design
+
+deploy:
+  stage: deploy
+  when: manual
+  services:
+    - docker:dind
+  script:
+    - docker restart nginx-4090 # 重启nginx容器
+  only:
+    - main
+  dependencies:
+    - build
+  tags:
+    - ai_design # Shell类型Runner的标签

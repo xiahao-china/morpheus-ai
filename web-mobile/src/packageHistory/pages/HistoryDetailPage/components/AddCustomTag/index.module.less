@@ -1,0 +1,67 @@
+// 移动端专用样式，750基准
+.add-custom-tag {
+  display: flex;
+
+  .to-add {
+    display: flex;
+    align-items: center;
+    height: 48rpx;
+    width: 0;
+    border-radius: 8rpx;
+    justify-content: center;
+    transition: width 0.2s ease;
+
+    &.active {
+      width: 48rpx;
+      border: 2rpx solid #ddd;
+    }
+  }
+
+  .to-close {
+    display: inline-flex;
+    align-items: center;
+    height: 48rpx;
+    margin-left: 8rpx;
+    color: #999;
+  }
+
+  .custom-input {
+    display: flex;
+    align-items: center;
+    width: 0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    
+    &.active {
+      width: 240rpx;
+    }
+
+    .nut-input {
+      flex: 1;
+      max-width: 480rpx;
+      height: 48rpx;
+      border: 2rpx solid #f5f5f5;
+      border-right: none;
+      border-radius: 8rpx 0 0 8rpx;
+      padding: 0 8rpx;
+      font-size: 24rpx;
+      
+      &:focus {
+        border-color: #667eea;
+        outline: none;
+      }
+    }
+
+    .nut-button {
+      white-space: nowrap;
+      background-color: #667eea;
+      border-color: #667eea;
+      border-radius: 0 8rpx 8rpx 0;
+      height: 48rpx;
+      padding: 0 16rpx;
+      transition: all 0.3s;
+      color: white;
+      font-size: 24rpx;
+    }
+  }
+}

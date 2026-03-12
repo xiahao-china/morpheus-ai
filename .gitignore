@@ -1,0 +1,31 @@
+# Node.js
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# 环境配置
+config.json
+
+# Claude Code
+.claude/
+
+# 构建产物
+dist/
+build/
+release.tar.gz
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 子项目目录（如需分开管理）
+blog-master/
+ai-design-backend-main/
+# tools/
