@@ -223,3 +223,35 @@ export const getTaskDetail = async (ctx: Context) => {
   }
 };
 
+/**
+ * 获取生图记录列表 (分页)
+ */
+export const getGenerationHistory = async (ctx: Context) => {
+  try {
+    const user = ctx.state.user;
+    const { page = 1, pageSize = 20 } = ctx.query;
+
+    const filter = { userId: user._id };
+
+    const list = await ImageGenInfo.find(filter)
+      .sort({ createdTime: -1 })
+      .skip((Number(page) - 1) * Number(pageSize))
+      .limit(Number(pageSize));
+
+    const total = await ImageGenInfo.countDocuments(filter);
+
+    ctx.body = {
+      code: 200,
+      data: {
+        list,
+        total,
+        page: Number(page),
+        pageSize: Number(pageSize)
+      }
+    };
+  } catch (error: any) {
+    logger.error("Get generation history error:", error);
+    ctx.body = { code: 500, msg: "Internal server error", error: error.message };
+  }
+};
+

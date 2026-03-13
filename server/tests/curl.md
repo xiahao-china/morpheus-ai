@@ -2,10 +2,7 @@
 
 > 服务地址：`http://localhost:3000`
 >
-> 注意事项：
-> - 需要登录的接口，使用 `-H "Authorization: Bearer <token>"` 传递 token
-> - `<token>` 需要替换为实际登录获取的 token
-> - `<id>`、`<taskId>`、`<filename>` 等需要替换为实际值
+> 校验方式：登录后通过 Cookie 传递 token（`token=<token>`），后续接口无需额外 header
 
 ---
 
@@ -28,14 +25,14 @@ curl -X POST http://localhost:3000/api/user/login \
 ### 1.3 获取当前用户信息（需登录）
 ```bash
 curl -X GET http://localhost:3000/api/user/info \
-  -H "Authorization: Bearer <token>"
+  -b "token=<token>"
 ```
 
 ### 1.4 更新用户信息（需登录）
 ```bash
 curl -X PUT http://localhost:3000/api/user/info \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <token>" \
+  -b "token=<token>" \
   -d '{"nickname": "测试用户", "avatar": "https://example.com/avatar.png", "personalSignature": "个人签名"}'
 ```
 
@@ -54,7 +51,7 @@ curl -X POST http://localhost:3000/api/users/wechat/mini/bind-phone \
 ```bash
 curl -X POST http://localhost:3000/api/users/wechat/bind-phone \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <token>" \
+  -b "token=<token>" \
   -d '{"phone": "手机号", "code": "验证码"}'
 ```
 
@@ -76,14 +73,13 @@ curl -X GET "http://localhost:3000/api/users/wechat/check-status?state=<state>"
 ```bash
 curl -X POST http://localhost:3000/api/image/generate \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <token>" \
+  -b "token=<token>" \
   -d '{
     "prompt": "a cute cat sitting on a chair",
     "negative_prompt": "low quality, blurry, distorted",
     "width": 512,
     "height": 512,
-    "count": 1,
-    "base_images": ["https://example.com/base.png"]
+    "count": 1
   }'
 ```
 
@@ -91,13 +87,13 @@ curl -X POST http://localhost:3000/api/image/generate \
 ```bash
 curl -X GET "http://localhost:3000/api/image/status/<taskId>" \
   -H "Accept: text/event-stream" \
-  -H "Authorization: Bearer <token>"
+  -b "token=<token>"
 ```
 
 ### 3.3 查询任务详情（JSON）
 ```bash
 curl -X GET http://localhost:3000/api/image/detail/<taskId> \
-  -H "Authorization: Bearer <token>"
+  -b "token=<token>"
 ```
 
 ---
@@ -107,14 +103,14 @@ curl -X GET http://localhost:3000/api/image/detail/<taskId> \
 ### 4.1 上传图片文件（需登录）
 ```bash
 curl -X POST http://localhost:3000/api/file/upload \
-  -H "Authorization: Bearer <token>" \
+  -b "token=<token>" \
   -F "file=@/path/to/image.png"
 ```
 
 ### 4.2 通用文件上传（需登录）
 ```bash
 curl -X POST http://localhost:3000/api/v1/files/upload \
-  -H "Authorization: Bearer <token>" \
+  -b "token=<token>" \
   -F "imageFile=@/path/to/file.png"
 ```
 
@@ -131,15 +127,15 @@ curl -X GET http://localhost:3000/api/file/
 ```bash
 curl -X POST http://localhost:3000/api/v1/generation/feedback/<id> \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <token>" \
-  -d '{"action": "like"}'  # action: like 或 dislike
+  -b "token=<token>" \
+  -d '{"action": "like"}'
 ```
 
 ### 5.2 AI提示词优化（需登录）
 ```bash
 curl -X POST http://localhost:3000/api/v1/generation/prompt/optimize \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <token>" \
+  -b "token=<token>" \
   -d '{"prompt": "a cute cat"}'
 ```
 
@@ -156,7 +152,7 @@ curl -X GET "http://localhost:3000/api/square/list?page=1&pageSize=10"
 ```bash
 curl -X POST http://localhost:3000/api/square/publish \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <token>" \
+  -b "token=<token>" \
   -d '{
     "title": "作品标题",
     "caption": "作品描述",
@@ -169,7 +165,7 @@ curl -X POST http://localhost:3000/api/square/publish \
 ### 6.3 点赞作品（需登录）
 ```bash
 curl -X POST http://localhost:3000/api/square/<id>/like \
-  -H "Authorization: Bearer <token>"
+  -b "token=<token>"
 ```
 
 ---
@@ -179,14 +175,14 @@ curl -X POST http://localhost:3000/api/square/<id>/like \
 ### 7.1 获取当前用户的任务列表（需登录）
 ```bash
 curl -X GET http://localhost:3000/api/task/list \
-  -H "Authorization: Bearer <token>"
+  -b "token=<token>"
 ```
 
 ### 7.2 完成指定任务（需登录）
 ```bash
 curl -X POST http://localhost:3000/api/task/complete \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <token>" \
+  -b "token=<token>" \
   -d '{"taskCode": "daily_sign_in"}'
 ```
 
@@ -197,14 +193,14 @@ curl -X POST http://localhost:3000/api/task/complete \
 ### 8.1 获取任务列表（需登录）
 ```bash
 curl -X GET http://localhost:3000/api/v1/tasks \
-  -H "Authorization: Bearer <token>"
+  -b "token=<token>"
 ```
 
 ### 8.2 领取任务奖励（需登录）
 ```bash
 curl -X POST http://localhost:3000/api/v1/tasks/claim \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <token>" \
+  -b "token=<token>" \
   -d '{"taskId": "任务ID"}'
 ```
 
@@ -221,7 +217,7 @@ curl -X GET http://localhost:3000/api/v1/membership/packages
 ```bash
 curl -X POST http://localhost:3000/api/v1/membership/order \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <token>" \
+  -b "token=<token>" \
   -d '{"packageId": "套餐ID", "paymentMethod": "wechat"}'
 ```
 
@@ -232,50 +228,72 @@ curl -X POST http://localhost:3000/api/v1/membership/order \
 ### 10.1 获取当前用户积分余额（需登录）
 ```bash
 curl -X GET http://localhost:3000/api/v1/points/balance \
-  -H "Authorization: Bearer <token>"
+  -b "token=<token>"
 ```
 
 ### 10.2 获取积分变动历史记录（需登录）
 ```bash
 curl -X GET "http://localhost:3000/api/v1/points/history?page=1&pageSize=10" \
-  -H "Authorization: Bearer <token>"
+  -b "token=<token>"
 ```
 
 ---
 
-## 常用操作示例
+## 完整使用示例
 
-### 完整登录流程
+### 1. 登录获取 token
 ```bash
-# 1. 发送验证码
-curl -X POST http://localhost:3000/api/user/send-code \
-  -H "Content-Type: application/json" \
-  -d '{"type": "phone", "target": "13632958426"}'
-
-# 2. 使用验证码登录（假设验证码是 666666）
+# 登录（服务器会通过 Set-Cookie 返回 token）
 curl -X POST http://localhost:3000/api/user/login \
   -H "Content-Type: application/json" \
-  -d '{"type": "phone", "target": "13632958426", "code": "666666"}'
-
-# 记录返回的 token，后续接口使用
+  -d '{"type": "phone", "target": "13632958426", "code": "666666"}' \
+  -c cookies.txt   # 保存 cookie 到文件
 ```
 
-### 文件上传并发布到广场
+### 2. 使用 cookie 调用其他接口
 ```bash
-# 1. 上传图片（获取文件URL）
+# 方式1：使用 -b 读取 cookie 文件
+curl -X GET http://localhost:3000/api/user/info -b cookies.txt
+
+# 方式2：手动设置 cookie
+curl -X GET http://localhost:3000/api/user/info \
+  -b "token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+### 3. 生图完整流程
+```bash
+# 1. 登录并保存 cookie
+curl -X POST http://localhost:3000/api/user/login \
+  -H "Content-Type: application/json" \
+  -d '{"type": "phone", "target": "13632958426", "code": "666666"}' \
+  -c cookies.txt
+
+# 2. 提交生图任务
+curl -X POST http://localhost:3000/api/image/generate \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{"prompt": "a cute cat", "width": 512, "height": 512, "count": 1}'
+
+# 3. 查询任务详情
+curl -X GET http://localhost:3000/api/image/detail/<taskId> -b cookies.txt
+```
+
+### 4. 文件上传并发布到广场
+```bash
+# 1. 登录
+curl -X POST http://localhost:3000/api/user/login \
+  -H "Content-Type: application/json" \
+  -d '{"type": "phone", "target": "13632958426", "code": "666666"}' \
+  -c cookies.txt
+
+# 2. 上传图片
 curl -X POST http://localhost:3000/api/file/upload \
-  -H "Authorization: Bearer <token>" \
+  -b cookies.txt \
   -F "file=@/path/to/image.png"
 
-# 2. 发布到广场
+# 3. 发布到广场（假设返回的 imageId 为 "abc123"）
 curl -X POST http://localhost:3000/api/square/publish \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <token>" \
-  -d '{
-    "title": "我的作品",
-    "caption": "测试描述",
-    "imageIds": ["图片ID"],
-    "styleTags": ["现代"],
-    "sceneTags": ["客厅"]
-  }'
+  -b cookies.txt \
+  -d '{"title": "我的作品", "caption": "测试", "imageIds": ["abc123"]}'
 ```

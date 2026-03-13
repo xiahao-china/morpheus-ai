@@ -67,7 +67,7 @@ class GenerationScheduler {
         // Check all nodes in parallel with 3s timeout
         const checkPromises = comfyUIPool.map(async (client) => {
             try {
-                const stats = await client.getSystemStats(3000);
+                const stats = await client.getQueue(3000);
                 // exec_info.queue_remaining indicates tasks in queue
                 if (stats?.exec_info?.queue_remaining === 0) {
                     return client;
@@ -90,6 +90,16 @@ class GenerationScheduler {
     if (!idleNode) {
         // If no ComfyUI node is available, only process Third Party tasks
         query.provider = TaskProviderEnum.THIRD_PARTY;
+        
+        // Log warning if there are pending ComfyUI tasks
+        try {
+            const pendingComfyUITasks = await GenerationQueue.countDocuments({ status: 'queued', provider: TaskProviderEnum.COMFYUI });
+            if (pendingComfyUITasks > 0) {
+                logger.warn(`There are ${pendingComfyUITasks} pending ComfyUI tasks but no idle ComfyUI node is available.`);
+            }
+        } catch (err) {
+            // Ignore error
+        }
     }
 
     // 3. Fetch Task

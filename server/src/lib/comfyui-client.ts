@@ -91,6 +91,22 @@ export class ComfyUIClient {
   }
 
   /**
+   * 获取队列状态
+   * 包含当前正在执行和等待的任务
+   */
+  async getQueue(timeout?: number) {
+    try {
+      const config: any = {};
+      if (timeout) config.timeout = timeout;
+      
+      const response = await this.client.get("/prompt", config);
+      return response.data;
+    } catch (error: any) {
+      throw error;
+    }
+  }
+
+  /**
    * 获取生成的图片数据
    * @param filename - 图片文件名
    * @param subfolder - 子文件夹名称（可选）

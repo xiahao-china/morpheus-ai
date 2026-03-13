@@ -10,8 +10,8 @@ export enum TaskStatusEnum {
 }
 
 export enum TaskProviderEnum {
-  COMFYUI = 'COMFYUI',
-  THIRD_PARTY = 'THIRD_PARTY'
+  COMFYUI = 'COMFYUI', // ComfyUI
+  THIRD_PARTY = 'THIRD_PARTY' // 第三方
 }
 
 export enum ImageActionModeEnum {
@@ -30,83 +30,83 @@ export enum ImageActionModeEnum {
   OBJECT_MIGRATION = 'OBJECT_MIGRATION' // 万物迁移
 }
 
-// Input Image Config
+// 输入图片配置
 const InputImageConfigSchema = new Schema({
-  id: { type: String },
-  url: { type: String },
-  name: { type: String },
-  extractionLevel: { type: Number },
-  extractionLevelOutward: { type: Number },
-  width: { type: Number },
-  height: { type: Number }
+  id: { type: String }, // 图片ID
+  url: { type: String }, // 图片URL
+  name: { type: String }, // 图片名称
+  extractionLevel: { type: Number }, // 提取等级
+  extractionLevelOutward: { type: Number }, // 外部提取等级
+  width: { type: Number }, // 宽度
+  height: { type: Number } // 高度
 }, { _id: false });
 
-// Generation Params
+// 生成参数
 const GenerationParamsSchema = new Schema({
-  // Basic
-  prompt: { type: String, required: true },
-  negativePrompt: { type: String },
-  width: { type: Number, required: true },
-  height: { type: Number, required: true },
-  ratio: { type: String },
-  count: { type: Number, default: 1 },
-  promptUsage: { type: String },
+  // 基础参数
+  prompt: { type: String, required: true }, // 提示词
+  negativePrompt: { type: String }, // 负面提示词
+  width: { type: Number, required: true }, // 宽度
+  height: { type: Number, required: true }, // 高度
+  ratio: { type: String }, // 比例
+  count: { type: Number, default: 1 }, // 生成数量
+  promptUsage: { type: String }, // 提示词用途
 
-  // Model
-  model: { type: String },
-  modelId: { type: String },
-  modelOutwardName: { type: String },
-  
-  styleModel: { type: String },
-  styleModelId: { type: String },
-  styleModelOutwardName: { type: String },
-  styleExtractionLevel: { type: Number },
-  styleExtractionLevelOutward: { type: Number },
+  // 模型参数
+  model: { type: String }, // 模型
+  modelId: { type: String }, // 模型ID
+  modelOutwardName: { type: String }, // 外部模型名称
 
-  // Images
-  promptImage: InputImageConfigSchema,
-  negativePromptImage: InputImageConfigSchema,
-  underImage: InputImageConfigSchema,
-  referImage: InputImageConfigSchema,
-  baseImages: [{ type: String }] // Array of base image IDs
+  styleModel: { type: String }, // 风格模型
+  styleModelId: { type: String }, // 风格模型ID
+  styleModelOutwardName: { type: String }, // 外部风格模型名称
+  styleExtractionLevel: { type: Number }, // 风格提取等级
+  styleExtractionLevelOutward: { type: Number }, // 外部风格提取等级
+
+  // 图片参数
+  promptImage: InputImageConfigSchema, // 提示词图片
+  negativePromptImage: InputImageConfigSchema, // 负面提示词图片
+  underImage: InputImageConfigSchema, // 底图
+  referImage: InputImageConfigSchema, // 参考图
+  baseImages: [{ type: String }] // 基础图片ID数组
 }, { _id: false });
 
-// ComfyUI Config
+// ComfyUI 配置
 const ComfyUIConfigSchema = new Schema({
-  workflowJson: { type: String },
-  workflowName: { type: String },
-  promptId: { type: String },
-  clientId: { type: String },
-  seed: { type: Number }
+  workflowJson: { type: String }, // 工作流JSON
+  workflowName: { type: String }, // 工作流名称
+  promptId: { type: String }, // 提示词ID
+  clientId: { type: String }, // 客户端ID
+  seed: { type: Number } // 随机种子
 }, { _id: false });
 
 export interface IImageGenTask extends Document {
-  userId: string;
-  status: TaskStatusEnum;
-  type?: ImageActionModeEnum;
-  provider?: TaskProviderEnum;
-  params: any; // GenerationParams
-  comfyui: any; // ComfyUIConfig
-  
-  createdTime: Date;
-  updatedTime: Date;
-  startedTime?: Date;
-  completedTime?: Date;
+  userId: string; // 用户ID
+  status: TaskStatusEnum; // 任务状态
+  type?: ImageActionModeEnum; // 图片操作模式
+  provider?: TaskProviderEnum; // 服务提供商
+  params: any; // 生成参数
+  comfyui: any; // ComfyUI配置
+
+  createdTime: Date; // 创建时间
+  updatedTime: Date; // 更新时间
+  startedTime?: Date; // 开始时间
+  completedTime?: Date; // 完成时间
 }
 
 const ImageGenTaskSchema: Schema = new Schema({
-  userId: { type: String, required: true, index: true },
-  status: { type: String, enum: Object.values(TaskStatusEnum), default: TaskStatusEnum.PENDING, index: true },
-  type: { type: String, enum: Object.values(ImageActionModeEnum) },
-  provider: { type: String, enum: Object.values(TaskProviderEnum), default: TaskProviderEnum.COMFYUI },
-  
-  params: GenerationParamsSchema,
-  comfyui: ComfyUIConfigSchema,
+  userId: { type: String, required: true, index: true }, // 用户ID
+  status: { type: String, enum: Object.values(TaskStatusEnum), default: TaskStatusEnum.PENDING, index: true }, // 任务状态
+  type: { type: String, enum: Object.values(ImageActionModeEnum) }, // 图片操作模式
+  provider: { type: String, enum: Object.values(TaskProviderEnum), default: TaskProviderEnum.COMFYUI }, // 服务提供商
 
-  createdTime: { type: Date, default: Date.now },
-  updatedTime: { type: Date, default: Date.now },
-  startedTime: { type: Date },
-  completedTime: { type: Date }
+  params: GenerationParamsSchema, // 生成参数
+  comfyui: ComfyUIConfigSchema, // ComfyUI配置
+
+  createdTime: { type: Date, default: Date.now }, // 创建时间
+  updatedTime: { type: Date, default: Date.now }, // 更新时间
+  startedTime: { type: Date }, // 开始时间
+  completedTime: { type: Date } // 完成时间
 }, {
   timestamps: { createdAt: 'createdTime', updatedAt: 'updatedTime' }
 });

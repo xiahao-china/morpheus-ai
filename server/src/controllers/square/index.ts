@@ -40,8 +40,11 @@ export const publishSquare = async (ctx: Context) => {
       return;
   }
 
+  console.log(`[DEBUG] publishSquare imageId: ${imageId}`);
+
   // Verify image exists
   const imageInfo = await ImageGenInfo.findById(imageId);
+  console.log(`[DEBUG] imageInfo found: ${!!imageInfo}`);
   if (!imageInfo) {
       ctx.body = { code: 404, msg: "Image not found" };
       return;
@@ -66,6 +69,26 @@ export const publishSquare = async (ctx: Context) => {
   
   await square.save();
   ctx.body = { code: 200, data: square };
+};
+
+export const deleteSquare = async (ctx: Context) => {
+  const user = ctx.state.user;
+  const { id } = ctx.params;
+
+  const square = await Square.findById(id);
+  if (!square) {
+    ctx.body = { code: 404, msg: 'Not found' };
+    return;
+  }
+
+  // 验证是否是自己的作品
+  if (square.userId !== user.uid) {
+    ctx.body = { code: 403, msg: 'Permission denied' };
+    return;
+  }
+
+  await Square.findByIdAndDelete(id);
+  ctx.body = { code: 200, msg: 'Deleted successfully' };
 };
 
 export const likeSquare = async (ctx: Context) => {

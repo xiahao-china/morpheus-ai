@@ -106,7 +106,6 @@ export const login = async (ctx: Context) => {
 
 export const getUserInfo = async (ctx: Context) => {
     const user = ctx.state.user;
-    console.log('user',user);
     // Refresh user data from DB
     const dbUser = await User.findById(user._id);
     ctx.body = { code: 200, data: dbUser };
