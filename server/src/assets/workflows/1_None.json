@@ -1,0 +1,15 @@
+{
+  "id": "1_None",
+  "raw": "raw/1_1_WL.json",
+  "placeholders": {
+    "seed": "/27/inputs/value",
+    "model": "/17/inputs/ckpt_name",
+    "prompt": "/31/inputs/text",
+    "negative_prompt": "/32/inputs/text",
+    "filename_prefix": "/28/inputs/filename_prefix",
+    "bucket_name": "/28/inputs/bucket_name",
+    "width": "/24/inputs/width",
+    "height": "/24/inputs/height",
+    "count": "/24/inputs/batch_size"
+  }
+}

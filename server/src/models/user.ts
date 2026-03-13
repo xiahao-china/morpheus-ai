@@ -37,7 +37,7 @@ const UserSchema: Schema = new Schema({
   email: { type: String },
   phone: { type: String },
   avatar: { type: String },
-  status: { type: Number, enum: [0, 1], default: 1 },
+  status: { type: Number, enum: [UserStatusEnum.INACTIVE, UserStatusEnum.ACTIVE], default: UserStatusEnum.ACTIVE },
   role: { type: String, enum: ['USER', 'ADMIN'], default: 'USER' },
   createdTime: { type: Date, default: Date.now },
   updatedTime: { type: Date, default: Date.now },

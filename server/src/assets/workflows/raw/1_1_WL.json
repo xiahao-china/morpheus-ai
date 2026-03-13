@@ -1,0 +1,310 @@
+{
+  "3": {
+    "inputs": {
+      "add_noise": "disable",
+      "noise_seed": [
+        "27",
+        0
+      ],
+      "steps": 20,
+      "cfg": 7.5,
+      "sampler_name": "ddim",
+      "scheduler": "ddim_uniform",
+      "start_at_step": 13,
+      "end_at_step": 20,
+      "return_with_leftover_noise": "disable",
+      "model": [
+        "22",
+        0
+      ],
+      "positive": [
+        "13",
+        0
+      ],
+      "negative": [
+        "12",
+        0
+      ],
+      "latent_image": [
+        "19",
+        0
+      ]
+    },
+    "class_type": "KSamplerAdvanced",
+    "_meta": {
+      "title": "Second Pass Latent"
+    }
+  },
+  "12": {
+    "inputs": {
+      "ascore": 1.0000000000000002,
+      "width": 4096,
+      "height": 4096,
+      "text": [
+        "32",
+        0
+      ],
+      "speak_and_recognation": {
+        "__value__": [
+          false,
+          true
+        ]
+      },
+      "clip": [
+        "22",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncodeSDXLRefiner",
+    "_meta": {
+      "title": "Negative Refiner"
+    }
+  },
+  "13": {
+    "inputs": {
+      "ascore": 6.000000000000001,
+      "width": 4096,
+      "height": 4096,
+      "text": [
+        "31",
+        0
+      ],
+      "speak_and_recognation": {
+        "__value__": [
+          false,
+          true
+        ]
+      },
+      "clip": [
+        "22",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncodeSDXLRefiner",
+    "_meta": {
+      "title": "Positive Refiner"
+    }
+  },
+  "15": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "16",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "16": {
+    "inputs": {
+      "samples": [
+        "3",
+        0
+      ],
+      "vae": [
+        "22",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "17": {
+    "inputs": {
+      "ckpt_name": "SDXL/3-室内设计大模型（老陈）_V2.0.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Base Model"
+    }
+  },
+  "19": {
+    "inputs": {
+      "add_noise": "enable",
+      "noise_seed": [
+        "27",
+        0
+      ],
+      "steps": 20,
+      "cfg": 7.5,
+      "sampler_name": "ddim",
+      "scheduler": "ddim_uniform",
+      "start_at_step": 0,
+      "end_at_step": 13,
+      "return_with_leftover_noise": "enable",
+      "model": [
+        "23",
+        0
+      ],
+      "positive": [
+        "21",
+        0
+      ],
+      "negative": [
+        "20",
+        0
+      ],
+      "latent_image": [
+        "24",
+        0
+      ]
+    },
+    "class_type": "KSamplerAdvanced",
+    "_meta": {
+      "title": "First Pass Latent"
+    }
+  },
+  "20": {
+    "inputs": {
+      "width": 4096,
+      "height": 4096,
+      "crop_w": 0,
+      "crop_h": 0,
+      "target_width": 4096,
+      "target_height": 4096,
+      "text_g": [
+        "32",
+        0
+      ],
+      "text_l": [
+        "32",
+        0
+      ],
+      "speak_and_recognation": {
+        "__value__": [
+          false,
+          true
+        ]
+      },
+      "clip": [
+        "17",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncodeSDXL",
+    "_meta": {
+      "title": "Negative Base"
+    }
+  },
+  "21": {
+    "inputs": {
+      "width": 4096,
+      "height": 4096,
+      "crop_w": 0,
+      "crop_h": 0,
+      "target_width": 4096,
+      "target_height": 4096,
+      "text_g": [
+        "31",
+        0
+      ],
+      "text_l": "Movie, high quality, minimalist style, color",
+      "speak_and_recognation": {
+        "__value__": [
+          false,
+          true
+        ]
+      },
+      "clip": [
+        "17",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncodeSDXL",
+    "_meta": {
+      "title": "Positive Base"
+    }
+  },
+  "22": {
+    "inputs": {
+      "ckpt_name": "SDXL/2-丰富风格室内设计_sdxl_V1.2.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Refiner Model"
+    }
+  },
+  "23": {
+    "inputs": {
+      "lora_name": "SDXL/8_室内的福音_ 室内设计通用模型XL_v1.0.safetensors",
+      "strength_model": 0.8000000000000002,
+      "model": [
+        "17",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "24": {
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "Image Resolution"
+    }
+  },
+  "27": {
+    "inputs": {
+      "value": 1056595423537925
+    },
+    "class_type": "INTConstant",
+    "_meta": {
+      "title": "种子"
+    }
+  },
+  "28": {
+    "inputs": {
+      "filename_prefix": "Image",
+      "bucket_name": "",
+      "images": [
+        "16",
+        0
+      ]
+    },
+    "class_type": "SaveImageS3",
+    "_meta": {
+      "title": "Save Image to S3"
+    }
+  },
+  "31": {
+    "inputs": {
+      "text": "Modern simple style, desk, Apple computer, sofa, french window",
+      "speak_and_recognation": {
+        "__value__": [
+          false,
+          true
+        ]
+      }
+    },
+    "class_type": "TextInput_",
+    "_meta": {
+      "title": "Text Input ♾️Mixlab"
+    }
+  },
+  "32": {
+    "inputs": {
+      "text": "people,Deformed, unrealistic, bad quality, grainy, noisy, plastic, hazy, low contrast",
+      "speak_and_recognation": {
+        "__value__": [
+          false,
+          true
+        ]
+      }
+    },
+    "class_type": "TextInput_",
+    "_meta": {
+      "title": "Text Input ♾️Mixlab"
+    }
+  }
+}

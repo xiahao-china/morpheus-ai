@@ -1,8 +1,8 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-export interface IGeneratedImage extends Document {
+export interface IImageGenInfo extends Document {
   userId?: string; // Associated user
-  imageGenerationId: string; // Associated generation task ID
+  imageGenTaskId: string; // Associated generation task ID
   fileResourceId: string; // Associated file resource ID
   imageUrl: string; // Image URL
   width: number;
@@ -15,9 +15,9 @@ export interface IGeneratedImage extends Document {
   updatedTime: Date;
 }
 
-const GeneratedImageSchema: Schema = new Schema({
+const ImageGenInfoSchema: Schema = new Schema({
   userId: { type: String },
-  imageGenerationId: { type: String, required: true },
+  imageGenTaskId: { type: String, required: true },
   fileResourceId: { type: String, required: true },
   imageUrl: { type: String, required: true },
   width: { type: Number },
@@ -31,4 +31,4 @@ const GeneratedImageSchema: Schema = new Schema({
   timestamps: { createdAt: 'createdTime', updatedAt: 'updatedTime' }
 });
 
-export default mongoose.model<IGeneratedImage>("GeneratedImage", GeneratedImageSchema);
+export default mongoose.model<IImageGenInfo>("ImageGenInfo", ImageGenInfoSchema);

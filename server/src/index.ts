@@ -7,6 +7,7 @@ import apiRouter from "@/routes/api/index";
 import { logger } from "@/lib/log4js";
 import "@/lib/redis"; // Ensure Redis connects
 import { serverConfig } from "@/utils/common";
+import { generationScheduler } from "@/services/generation-scheduler";
 
 const app = new Koa();
 const router = new RouterClass();
@@ -16,6 +17,9 @@ connectMongoDB();
 
 // Init MinIO
 initMinio();
+
+// Start Generation Scheduler
+generationScheduler.start();
 
 // Middlewares
 app.use(bodyParser({
