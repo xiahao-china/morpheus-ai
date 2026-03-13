@@ -10,7 +10,8 @@ export const SMS_CONFIG = {
   secret: "0IN2ey7XS0O4eBkB3Kqg7lXF0sFoClWm",
   sign: "【深圳市星元云创】",
   templateId: "323293",
-  mockSend: false // Set to true to mock SMS sending (e.g. fixed code 666666)
+  // 开发环境下默认开启 mock，生产环境关闭
+  mockSend: process.env.NODE_ENV !== 'production' 
 };
 
 // Redis Keys Constants
@@ -53,7 +54,7 @@ export const EMAIL_CONFIG = {
   service: serverConfig.email?.service || "qq",
   host: serverConfig.email?.host || "smtp.qq.com",
   port: serverConfig.email?.port || 465,
-  secure: serverConfig.email?.secure ?? true,
+  secure: serverConfig.email?.secure !== undefined ? serverConfig.email.secure : true,
   auth: {
     user: serverConfig.email?.user || "471087639@qq.com",
     pass: serverConfig.email?.pass || serverConfig.mailAuthPass || ""

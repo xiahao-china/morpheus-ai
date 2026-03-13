@@ -1,6 +1,6 @@
 import Router from "koa-router";
 // 导入图片生成控制器
-import { generateImage, getGenerationStatus } from "@/controllers/image";
+import { generateImage, getGenerationStatus, getTaskDetail } from "@/controllers/image";
 // 导入认证中间件
 import { authMiddleware } from "@/middleware/auth";
 
@@ -12,6 +12,9 @@ export default (router: Router) => {
   // AI图片生成接口（需要登录）
   router.post('/api/image/generate', authMiddleware, generateImage);
 
-  // 查询任务状态接口
+  // 查询任务状态接口 (SSE)
   router.get('/api/image/status/:taskId', getGenerationStatus);
+
+  // 查询任务详情接口 (JSON, 包含结果URL)
+  router.get('/api/image/detail/:taskId', getTaskDetail);
 }

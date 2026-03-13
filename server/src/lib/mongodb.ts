@@ -17,6 +17,7 @@ import { MONGO_CONFIG } from "@/config/index";
  */
 export const connectMongoDB = () => {
   // 建立数据库连接
+  logger.info(`Connecting to MongoDB at ${MONGO_CONFIG.URL}...`);
   mongoose.connect(MONGO_CONFIG.URL);
 
   // 获取mongoose连接对象

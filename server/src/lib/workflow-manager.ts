@@ -32,11 +32,13 @@ interface WorkflowTemplate {
  * });
  */
 export class WorkflowManager {
-  private templates: Map<string, WorkflowTemplate> = new Map();  // 模板缓存
-  private rawWorkflows: Map<string, any> = new Map();             // 原始工作流缓存
+  private templates: Map<string, WorkflowTemplate>;  // 模板缓存
+  private rawWorkflows: Map<string, any>;             // 原始工作流缓存
   private workflowsDir: string;                                    // 工作流文件目录
 
   constructor(workflowsDir: string) {
+    this.templates = new Map();
+    this.rawWorkflows = new Map();
     this.workflowsDir = workflowsDir;
     this.loadWorkflows();
   }

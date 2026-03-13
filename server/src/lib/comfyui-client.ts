@@ -4,7 +4,7 @@
  */
 import axios, { AxiosInstance } from "axios";
 import FormData from "form-data";
-import { COMFYUI_CONFIG } from "@/config/comfyui";
+import { COMFYUI_CONFIG, COMFYUI_NODES, ComfyUINode } from "@/config/comfyui";
 import { getLogger } from "@/lib/log4js";
 
 const logger = getLogger("ComfyUIClient");
@@ -15,11 +15,13 @@ const logger = getLogger("ComfyUIClient");
  */
 export class ComfyUIClient {
   private client: AxiosInstance;    // axios 实例
-  private baseUrl: string;          // ComfyUI 服务基础URL
+  public baseUrl: string;          // ComfyUI 服务基础URL
+  public nodeConfig: ComfyUINode;
 
-  constructor() {
+  constructor(node: ComfyUINode) {
+    this.nodeConfig = node;
     // 构建 ComfyUI 服务地址
-    this.baseUrl = `http://${COMFYUI_CONFIG.host}:${COMFYUI_CONFIG.port}`;
+    this.baseUrl = `http://${node.host}:${node.port}`;
     // 创建 axios 实例，配置60秒超时
     this.client = axios.create({
       baseURL: this.baseUrl,
@@ -48,7 +50,7 @@ export class ComfyUIClient {
       const response = await this.client.post("/prompt", payload);
       return response.data;
     } catch (error: any) {
-      logger.error("Failed to queue prompt:", error.message);
+      logger.error(`[${this.baseUrl}] Failed to queue prompt:`, error.message);
       throw error;
     }
   }
@@ -63,7 +65,7 @@ export class ComfyUIClient {
       const response = await this.client.get(`/history/${promptId}`);
       return response.data;
     } catch (error: any) {
-      logger.error(`Failed to get history for ${promptId}:`, error.message);
+      logger.error(`[${this.baseUrl}] Failed to get history for ${promptId}:`, error.message);
       throw error;
     }
   }
@@ -71,14 +73,19 @@ export class ComfyUIClient {
   /**
    * 获取系统状态统计信息
    * 包括队列大小、GPU信息等
+   * @param timeout - 超时时间（毫秒）
    * @returns 系统统计数据
    */
-  async getSystemStats() {
+  async getSystemStats(timeout?: number) {
     try {
-      const response = await this.client.get("/system_stats");
+      const config: any = {};
+      if (timeout) config.timeout = timeout;
+      
+      const response = await this.client.get("/system_stats", config);
       return response.data;
     } catch (error: any) {
-      logger.error("Failed to get system stats:", error.message);
+      // 降低日志级别或不记录，因为在检测循环中超时是正常的
+      // logger.error(`[${this.baseUrl}] Failed to get system stats:`, error.message);
       throw error;
     }
   }
@@ -101,17 +108,16 @@ export class ComfyUIClient {
       });
       return response.data;
     } catch (error: any) {
-      logger.error(`Failed to get image ${filename}:`, error.message);
+      logger.error(`[${this.baseUrl}] Failed to get image ${filename}:`, error.message);
       throw error;
     }
   }
 
   /**
-   * 上传图片到ComfyUI
-   * @param fileBuffer - 图片文件的Buffer数据
+   * 上传图片到 ComfyUI
+   * @param fileBuffer - 图片二进制数据
    * @param filename - 文件名
-   * @param type - 文件类型，默认为 "input"
-   * @returns 上传结果
+   * @param type - 类型 (input/output/temp)
    */
   async uploadImage(fileBuffer: Buffer, filename: string, type: string = "input") {
     try {
@@ -127,13 +133,14 @@ export class ComfyUIClient {
       });
       return response.data;
     } catch (error: any) {
-      logger.error(`Failed to upload image ${filename}:`, error.message);
+      logger.error(`[${this.baseUrl}] Failed to upload image:`, error.message);
       throw error;
     }
   }
 }
 
-/**
- * ComfyUIClient 单例实例
- */
-export const comfyUIClient = new ComfyUIClient();
+// 初始化节点池
+export const comfyUIPool = COMFYUI_NODES.map(node => new ComfyUIClient(node));
+
+// 默认客户端（指向第一个节点，用于向后兼容）
+export const comfyUIClient = comfyUIPool[0];

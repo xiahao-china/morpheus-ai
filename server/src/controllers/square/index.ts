@@ -1,27 +1,67 @@
 import { Context } from "koa";
 import Square from "@/models/square";
+import ImageGenInfo from "@/models/imageGenInfo";
 
 export const getSquareList = async (ctx: Context) => {
-  const { page = 1, pageSize = 20 } = ctx.query;
-  const list = await Square.find()
+  const { page = 1, pageSize = 20, styleTags, sceneTags } = ctx.query;
+  
+  const filter: any = {};
+  
+  // Style Tags Filter
+  if (styleTags) {
+      const tags = (styleTags as string).split(',').filter(t => t.trim());
+      if (tags.length > 0) {
+          filter.styleTags = { $in: tags };
+      }
+  }
+  
+  // Scene Tags Filter
+  if (sceneTags) {
+      const tags = (sceneTags as string).split(',').filter(t => t.trim());
+      if (tags.length > 0) {
+          filter.sceneTags = { $in: tags };
+      }
+  }
+
+  const list = await Square.find(filter)
     .sort({ publishedTime: -1 })
     .skip((Number(page) - 1) * Number(pageSize))
     .limit(Number(pageSize));
-  const total = await Square.countDocuments();
+  const total = await Square.countDocuments(filter);
   ctx.body = { code: 200, data: { list, total } };
 };
 
 export const publishSquare = async (ctx: Context) => {
   const user = ctx.state.user;
-  const { title, caption, imageUrl, styleTags, sceneTags } = ctx.request.body as any;
+  const { title, caption, imageId, styleTags, sceneTags } = ctx.request.body as any;
+  
+  if (!imageId) {
+      ctx.body = { code: 400, msg: "imageId is required" };
+      return;
+  }
+
+  // Verify image exists
+  const imageInfo = await ImageGenInfo.findById(imageId);
+  if (!imageInfo) {
+      ctx.body = { code: 404, msg: "Image not found" };
+      return;
+  }
+
+  // Verify ownership (optional but recommended)
+  if (imageInfo.userId && imageInfo.userId !== user.uid) {
+      ctx.body = { code: 403, msg: "You can only publish your own images" };
+      return;
+  }
   
   const square = new Square({
     userId: user.uid,
+    imageId: imageInfo._id,
+    imageUrl: imageInfo.imageUrl, // Denormalize for easier access
     title,
     caption,
-    imageUrl,
     styleTags,
-    sceneTags
+    sceneTags,
+    publishedTime: new Date()
   });
   
   await square.save();

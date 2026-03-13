@@ -1,6 +1,6 @@
 import { Context } from "koa";
 import GenerationQueue from "@/models/generationQueue";
-import ImageGenTask, { TaskStatusEnum, ImageActionModeEnum } from "@/models/imageGenTask";
+import ImageGenTask, { TaskStatusEnum, ImageActionModeEnum, TaskProviderEnum } from "@/models/imageGenTask";
 import ImageGenInfo from "@/models/imageGenInfo";
 import { getLogger } from "@/lib/log4js";
 import { BUCKET_NAME } from "@/lib/minio";
@@ -18,7 +18,8 @@ export const generateImage = async (ctx: Context) => {
       height = 1024, 
       count = 1,
       seed,
-      model 
+      model,
+      base_images 
     } = ctx.request.body as any;
 
     if (!prompt) {
@@ -27,6 +28,10 @@ export const generateImage = async (ctx: Context) => {
     }
 
     const user = ctx.state.user as any;
+
+    // Determine provider based on base_images presence
+    const hasBaseImages = base_images && Array.isArray(base_images) && base_images.length > 0;
+    const provider = hasBaseImages ? TaskProviderEnum.THIRD_PARTY : TaskProviderEnum.COMFYUI;
 
     // 1. 准备参数
     const params = {
@@ -38,14 +43,16 @@ export const generateImage = async (ctx: Context) => {
       seed: seed || Math.floor(Math.random() * 1000000000000000),
       model: model || "SDXL/3-室内设计大模型（老陈）_V2.0.safetensors", // 默认模型
       bucket_name: BUCKET_NAME, // 传递bucket名称以防 SaveImageS3 需要
-      filename_prefix: `Morpheus_${Date.now()}`
+      filename_prefix: `Morpheus_${Date.now()}`,
+      baseImages: base_images
     };
 
     // 2. 创建 ImageGenTask 记录 (主任务表)
     const imageGenTask = new ImageGenTask({
-      userId: user._id,
+      userId: user.uid,
       status: TaskStatusEnum.PENDING,
       type: ImageActionModeEnum.DRAWING, // 默认为绘图模式，可根据参数调整
+      provider: provider,
       params: params,
       comfyui: {
         seed: params.seed
@@ -59,8 +66,9 @@ export const generateImage = async (ctx: Context) => {
     // 3. 将任务加入 GenerationQueue (处理队列)
     const queueItem = new GenerationQueue({
       taskId: taskId, // 使用 ImageGenTask 的 ID 作为 taskId
-      userId: user._id,
+      userId: user.uid,
       status: 'queued',
+      provider: provider,
       priority: 0,
       progress: 0,
       payload: params,
@@ -69,7 +77,7 @@ export const generateImage = async (ctx: Context) => {
     
     await queueItem.save();
     
-    logger.info(`Task ${taskId} created and queued for user ${user._id}`);
+    logger.info(`Task ${taskId} created and queued for user ${user.uid} (Provider: ${provider})`);
 
     // 4. 返回任务ID
     ctx.body = { 
@@ -159,3 +167,59 @@ export const getGenerationStatus = async (ctx: Context) => {
     ctx.status = 500;
   }
 };
+
+/**
+ * 获取任务详情（非SSE）
+ * 返回任务状态和结果
+ */
+export const getTaskDetail = async (ctx: Context) => {
+  const { taskId } = ctx.params;
+
+  try {
+    const task = await ImageGenTask.findById(taskId);
+    if (!task) {
+      ctx.body = { code: 404, msg: "Task not found" };
+      return;
+    }
+
+    let result: any = {
+      taskId: task._id,
+      status: task.status,
+      createdTime: task.createdTime,
+      startedTime: task.startedTime,
+      completedTime: task.completedTime,
+      progress: 0
+    };
+
+    // 如果任务在队列中，尝试获取进度
+    if (task.status === TaskStatusEnum.PENDING || task.status === TaskStatusEnum.PROCESSING) {
+      const queueItem = await GenerationQueue.findOne({ taskId });
+      if (queueItem) {
+        result.progress = queueItem.progress || 0;
+      }
+    } else if (task.status === TaskStatusEnum.COMPLETED) {
+      result.progress = 100;
+      const imageInfo = await ImageGenInfo.findOne({ imageGenTaskId: taskId });
+      if (imageInfo) {
+        result.imageUrl = imageInfo.imageUrl;
+        result.imageId = imageInfo._id;
+        result.width = imageInfo.width;
+        result.height = imageInfo.height;
+      }
+    } else if (task.status === TaskStatusEnum.FAILED) {
+      // 尝试从队列记录或者其他地方获取错误信息
+      // 这里简化处理，假设任务对象本身没有存错误信息（虽然应该存）
+      // 我们可以从 GenerationQueue 的 failed 记录中找（如果没被删）
+      // 或者直接返回 failed
+    }
+
+    ctx.body = {
+      code: 200,
+      data: result
+    };
+  } catch (error: any) {
+    logger.error("Get task detail error:", error);
+    ctx.body = { code: 500, msg: "Internal server error", error: error.message };
+  }
+};
+

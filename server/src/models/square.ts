@@ -2,19 +2,21 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ISquare extends Document {
   userId: string;
+  imageId: string; // Associated ImageGenInfo ID
   title?: string;
   caption?: string;
   styleTags?: string[];
   sceneTags?: string[];
-  publishedTime?: Date;
-  viewCount?: number;
-  likeCount?: number;
-  collectCount?: number;
+  publishedTime: Date;
+  viewCount: number;
+  likeCount: number;
+  collectCount: number;
   imageUrl?: string; 
 }
 
 const SquareSchema: Schema = new Schema({
   userId: { type: String, required: true },
+  imageId: { type: String, required: true }, // Changed from optional to required (conceptually)
   title: { type: String },
   caption: { type: String },
   styleTags: [String],

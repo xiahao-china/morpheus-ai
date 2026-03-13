@@ -22,4 +22,4 @@ const UserTaskRecordSchema: Schema = new Schema({
   timestamps: { createdAt: 'createdTime', updatedAt: 'updatedTime' }
 });
 
-export default mongoose.model<IUserTaskRecord>("UserTaskRecord", UserTaskRecordSchema);
+export default mongoose.models.UserTaskRecord || mongoose.model<IUserTaskRecord>("UserTaskRecord", UserTaskRecordSchema);

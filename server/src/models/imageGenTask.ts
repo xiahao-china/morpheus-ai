@@ -9,6 +9,11 @@ export enum TaskStatusEnum {
   FAILED = 'FAILED' // 失败
 }
 
+export enum TaskProviderEnum {
+  COMFYUI = 'COMFYUI',
+  THIRD_PARTY = 'THIRD_PARTY'
+}
+
 export enum ImageActionModeEnum {
   DRAWING = 'DRAWING', // 绘图模式
   RENDER = 'RENDER', // 旧_渲染模式
@@ -62,7 +67,8 @@ const GenerationParamsSchema = new Schema({
   promptImage: InputImageConfigSchema,
   negativePromptImage: InputImageConfigSchema,
   underImage: InputImageConfigSchema,
-  referImage: InputImageConfigSchema
+  referImage: InputImageConfigSchema,
+  baseImages: [{ type: String }] // Array of base image IDs
 }, { _id: false });
 
 // ComfyUI Config
@@ -78,6 +84,7 @@ export interface IImageGenTask extends Document {
   userId: string;
   status: TaskStatusEnum;
   type?: ImageActionModeEnum;
+  provider?: TaskProviderEnum;
   params: any; // GenerationParams
   comfyui: any; // ComfyUIConfig
   
@@ -91,6 +98,7 @@ const ImageGenTaskSchema: Schema = new Schema({
   userId: { type: String, required: true, index: true },
   status: { type: String, enum: Object.values(TaskStatusEnum), default: TaskStatusEnum.PENDING, index: true },
   type: { type: String, enum: Object.values(ImageActionModeEnum) },
+  provider: { type: String, enum: Object.values(TaskProviderEnum), default: TaskProviderEnum.COMFYUI },
   
   params: GenerationParamsSchema,
   comfyui: ComfyUIConfigSchema,

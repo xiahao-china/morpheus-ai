@@ -9,7 +9,12 @@ interface SSEConnection {
 }
 
 class SSEService {
-  private connections: Map<string, SSEConnection> = new Map();
+  private connections: Map<string, SSEConnection>;
+
+  constructor() {
+    this.connections = new Map();
+  }
+
 
   /**
    * Add a new SSE connection

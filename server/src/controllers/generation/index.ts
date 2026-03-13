@@ -1,5 +1,5 @@
 import { Context } from "koa";
-import GeneratedImage from "@/models/generatedImage";
+import ImageGenInfo from "@/models/imageGenInfo";
 
 // 1. Feedback API
 export const submitFeedback = async (ctx: Context) => {
@@ -13,7 +13,7 @@ export const submitFeedback = async (ctx: Context) => {
   }
 
   try {
-    const image = await GeneratedImage.findById(id);
+    const image = await ImageGenInfo.findById(id);
     if (!image) {
       ctx.body = { code: 404, msg: "Image not found" };
       return;

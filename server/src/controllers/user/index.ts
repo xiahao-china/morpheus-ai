@@ -44,7 +44,18 @@ export const login = async (ctx: Context) => {
           return;
       }
       const token = signToken(user);
-      ctx.body = { code: 200, data: { token, user } };
+      
+      // 设置 Cookie
+      const maxAge = 30 * 24 * 60 * 60 * 1000; // 30天
+      ctx.cookies.set('token', token, {
+        maxAge,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        sameSite: 'lax'
+      });
+
+      ctx.body = { code: 200, data: { user } };
       return;
   }
 
@@ -79,11 +90,23 @@ export const login = async (ctx: Context) => {
   }
 
   const token = signToken(user);
-  ctx.body = { code: 200, data: { token, user } };
+
+  // 设置 Cookie
+  const maxAge = 30 * 24 * 60 * 60 * 1000; // 30天
+  ctx.cookies.set('token', token, {
+    maxAge,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    sameSite: 'lax'
+  });
+
+  ctx.body = { code: 200, data: { user } };
 };
 
 export const getUserInfo = async (ctx: Context) => {
     const user = ctx.state.user;
+    console.log('user',user);
     // Refresh user data from DB
     const dbUser = await User.findById(user._id);
     ctx.body = { code: 200, data: dbUser };

@@ -8,6 +8,8 @@ import { logger } from "@/lib/log4js";
 import "@/lib/redis"; // Ensure Redis connects
 import { serverConfig } from "@/utils/common";
 import { generationScheduler } from "@/services/generation-scheduler";
+import { ScheduledTasks } from "@/lib/scheduled-tasks";
+import { generationQueueCheckTask } from "@/tasks/index";
 
 const app = new Koa();
 const router = new RouterClass();
@@ -20,6 +22,11 @@ initMinio();
 
 // Start Generation Scheduler
 generationScheduler.start();
+
+// Initialize Scheduled Tasks
+const scheduledTasksInstance = new ScheduledTasks();
+scheduledTasksInstance
+  .addTask(generationQueueCheckTask);
 
 // Middlewares
 app.use(bodyParser({

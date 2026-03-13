@@ -15,12 +15,19 @@ export const SECRET_KEY = serverConfig.auth?.secret || "morpheus-ai-secret";
  * @returns Token字符串，如果没有则返回空字符串
  */
 export const getToken = (ctx: Context) => {
-  // 从 Authorization 请求头中获取 Bearer Token
+  // 1. 尝试从 Authorization 请求头中获取 Bearer Token
   const authHeader = ctx.request.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     // 去掉 "Bearer " 前缀返回纯Token
     return authHeader.substring(7);
   }
+  
+  // 2. 尝试从 Cookie 中获取 Token
+  const cookieToken = ctx.cookies.get('token');
+  if (cookieToken) {
+    return cookieToken;
+  }
+  
   return '';
 }
 
@@ -31,7 +38,8 @@ export const getToken = (ctx: Context) => {
  */
 export const signToken = (userInfo: IUser) => {
   const tokenPayload = {
-    uid: userInfo._id,        // 用户ID
+    uid: userInfo._id,        // 用户ID (兼容旧代码)
+    _id: userInfo._id,        // 用户ID (Mongoose标准)
     username: userInfo.username, // 用户名
     role: userInfo.role       // 用户角色
   };
