@@ -1,90 +1,67 @@
 import { Context } from "koa";
-import TaskConfig from "@/models/taskConfig";
-import UserTaskRecord from "@/models/userTaskRecord";
-import PointsRecord from "@/models/pointsRecord";
+import * as taskService from "@/services/task";
 
-// 1. Get Task List
+/**
+ * 获取用户任务列表
+ * 返回用户可执行的任务及完成状态
+ */
 export const getTasks = async (ctx: Context) => {
   const user = ctx.state.user as any;
   try {
-    const tasks = await TaskConfig.find({ status: 1 });
-    
-    // Check completion status for user
-    const userRecords = await UserTaskRecord.find({ userId: user._id });
-    
-    const result = tasks.map(task => {
-        const record = userRecords.find(r => r.taskCode === task.taskName); // Assuming taskName is taskCode for simplicity
-        return {
-            ...task.toObject(),
-            completed: record ? record.status === 2 : false,
-            progress: record ? record.completionCount : 0
-        };
-    });
-    
-    ctx.body = { code: 200, data: result };
+    const tasks = await taskService.getUserTasks(user._id);
+    ctx.body = { code: 200, data: tasks };
   } catch (error) {
     ctx.body = { code: 500, msg: "Internal server error", error };
   }
 };
 
-// 2. Claim Task Reward (e.g., Daily Sign In)
+/**
+ * 领取任务奖励
+ * taskId: 任务代码（对应配置中的 taskCode）
+ */
 export const claimReward = async (ctx: Context) => {
     const { taskId } = ctx.request.body as any;
     const user = ctx.state.user as any;
 
     if (!taskId) {
-        ctx.body = { code: 400, msg: "Task ID is required" };
+        ctx.body = { code: 400, msg: "Task Code is required" };
         return;
     }
 
     try {
-        const task = await TaskConfig.findById(taskId);
-        if (!task) {
-            ctx.body = { code: 404, msg: "Task not found" };
-            return;
-        }
-
-        // Check if already claimed/completed
-        let record = await UserTaskRecord.findOne({ userId: user._id, taskCode: task.taskName });
-        if (record && record.status === 2) {
-             ctx.body = { code: 400, msg: "Task already completed" };
-             return;
-        }
-
-        // Update User Task Record
-        if (!record) {
-            record = new UserTaskRecord({
-                userId: user._id,
-                taskCode: task.taskName,
-                status: 2, // Mark as completed
-                completionCount: 1,
-                lastCompletionTime: new Date()
-            });
-        } else {
-            record.status = 2;
-            record.completionCount += 1;
-            record.lastCompletionTime = new Date();
-        }
-        await record.save();
-
-        // Add Points to User
-        let pointsRecord = await PointsRecord.findOne({ userId: user._id });
-        if (!pointsRecord) {
-            pointsRecord = new PointsRecord({ userId: user._id, points: 0 });
-        }
-        pointsRecord.points += task.rewardAmount;
-        await pointsRecord.save();
-
-        ctx.body = { 
-            code: 200, 
-            msg: "Reward claimed", 
-            data: { 
-                rewardAmount: task.rewardAmount, 
-                currentPoints: pointsRecord.points 
-            } 
+        const result = await taskService.claimReward(user._id, taskId);
+        ctx.body = {
+            code: 200,
+            msg: "Reward claimed",
+            data: result
         };
 
     } catch (error) {
-        ctx.body = { code: 500, msg: "Internal server error", error };
+        ctx.body = { code: 500, msg: error.message || "Internal server error" };
+    }
+};
+
+/**
+ * 执行任务动作（如手动签到）
+ * 目前仅支持 daily_sign_in 手动触发
+ */
+export const performTask = async (ctx: Context) => {
+    const { taskCode } = ctx.request.body as any;
+    const user = ctx.state.user as any;
+
+    if (!taskCode) {
+        ctx.body = { code: 400, msg: "Task Code is required" };
+        return;
+    }
+
+    try {
+        if (taskCode === 'daily_sign_in') {
+            await taskService.incrementTaskProgress(user._id, taskCode, 1);
+            ctx.body = { code: 200, msg: "Task progress updated" };
+        } else {
+            ctx.body = { code: 403, msg: "This task cannot be triggered manually" };
+        }
+    } catch (error) {
+        ctx.body = { code: 500, msg: error.message || "Internal server error" };
     }
 };

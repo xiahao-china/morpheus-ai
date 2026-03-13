@@ -1,6 +1,6 @@
 import Router from "koa-router";
 // 导入任务奖励控制器函数
-import { getTasks, claimReward } from "@/controllers/task-reward";
+import { getTasks, claimReward, performTask } from "@/controllers/task-reward";
 // 导入认证中间件
 import { authMiddleware } from "@/middleware/auth";
 
@@ -14,4 +14,7 @@ export default (router: Router) => {
 
   // 领取任务奖励（需要登录）
   router.post('/api/v1/tasks/claim', authMiddleware, claimReward);
+
+  // 手动触发任务（例如：签到）
+  router.post('/api/v1/tasks/perform', authMiddleware, performTask);
 }

@@ -5,15 +5,16 @@ import { SMS_CONFIG } from "@/config/index";
 import { sendEmail as sendEmailUtil } from "@/utils/email";
 import verificationCodeTemplate from "@/static/verificationCodeTemplate";
 
-// Real SMS send via 1cloudsp
+// 发送短信验证码
 export const sendSMS = async (phone: string, code: string) => {
+  // 测试环境直接返回
   if (SMS_CONFIG.mockSend) {
     logger.info(`[MOCK] Sending SMS to ${phone}: ${code}`);
     return true;
   }
 
   logger.info(`Sending SMS to ${phone}: ${code}`);
-  
+
   try {
     const data = {
       accesskey: SMS_CONFIG.accesskey,
@@ -31,7 +32,7 @@ export const sendSMS = async (phone: string, code: string) => {
     });
 
     logger.info(`SMS Response: ${JSON.stringify(response.data)}`);
-    
+
     if (response.data && response.data.code === "0") {
       return true;
     } else {
@@ -44,7 +45,7 @@ export const sendSMS = async (phone: string, code: string) => {
   }
 };
 
-// Email send
+// 发送邮箱验证码
 export const sendEmail = async (email: string, code: string) => {
   logger.info(`Sending Email to ${email}: ${code}`);
   try {

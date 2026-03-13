@@ -9,17 +9,24 @@ import { generationScheduler } from "@/services/generation-scheduler";
 
 const logger = getLogger("ImageController");
 
+/**
+ * 创建图像生成任务
+ * 1. 接收生成参数（提示词、尺寸、模型等）
+ * 2. 创建 ImageGenTask 记录
+ * 3. 加入 GenerationQueue 队列
+ * 4. 触发调度器执行
+ */
 export const generateImage = async (ctx: Context) => {
   try {
-    const { 
-      prompt, 
-      negative_prompt, 
-      width = 1024, 
-      height = 1024, 
+    const {
+      prompt,
+      negative_prompt,
+      width = 1024,
+      height = 1024,
       count = 1,
       seed,
       model,
-      base_images 
+      base_images
     } = ctx.request.body as any;
 
     if (!prompt) {
@@ -29,11 +36,11 @@ export const generateImage = async (ctx: Context) => {
 
     const user = ctx.state.user as any;
 
-    // Determine provider based on base_images presence
+    // 根据是否有底图决定使用 ComfyUI 还是第三方服务
     const hasBaseImages = base_images && Array.isArray(base_images) && base_images.length > 0;
     const provider = hasBaseImages ? TaskProviderEnum.THIRD_PARTY : TaskProviderEnum.COMFYUI;
 
-    // 1. 准备参数
+    // 准备参数
     const params = {
       prompt,
       negative_prompt: negative_prompt || "people,Deformed, unrealistic, bad quality, grainy, noisy, plastic, hazy, low contrast",
@@ -41,17 +48,17 @@ export const generateImage = async (ctx: Context) => {
       height: Number(height),
       count: Number(count),
       seed: seed || Math.floor(Math.random() * 1000000000000000),
-      model: model || "SDXL/3-室内设计大模型（老陈）_V2.0.safetensors", // 默认模型
-      bucket_name: BUCKET_NAME, // 传递bucket名称以防 SaveImageS3 需要
+      model: model || "SDXL/3-室内设计大模型（老陈）_V2.0.safetensors",
+      bucket_name: BUCKET_NAME,
       filename_prefix: `Morpheus_${Date.now()}`,
       baseImages: base_images
     };
 
-    // 2. 创建 ImageGenTask 记录 (主任务表)
+    // 创建 ImageGenTask 记录
     const imageGenTask = new ImageGenTask({
       userId: user.uid,
       status: TaskStatusEnum.PENDING,
-      type: ImageActionModeEnum.DRAWING, // 默认为绘图模式，可根据参数调整
+      type: ImageActionModeEnum.DRAWING,
       provider: provider,
       params: params,
       comfyui: {
@@ -59,13 +66,13 @@ export const generateImage = async (ctx: Context) => {
       },
       createdTime: new Date()
     });
-    
+
     await imageGenTask.save();
     const taskId = imageGenTask._id.toString();
 
-    // 3. 将任务加入 GenerationQueue (处理队列)
+    // 加入队列
     const queueItem = new GenerationQueue({
-      taskId: taskId, // 使用 ImageGenTask 的 ID 作为 taskId
+      taskId: taskId,
       userId: user.uid,
       status: 'queued',
       provider: provider,
@@ -74,22 +81,21 @@ export const generateImage = async (ctx: Context) => {
       payload: params,
       createdAt: new Date()
     });
-    
+
     await queueItem.save();
-    
+
     logger.info(`Task ${taskId} created and queued for user ${user.uid} (Provider: ${provider})`);
 
-    // 4. 返回任务ID
-    ctx.body = { 
-      code: 200, 
-      data: { 
+    // 返回任务ID
+    ctx.body = {
+      code: 200,
+      data: {
         taskId,
         status: 'queued',
-        queueId: queueItem._id
-      } 
+        queueId: queueItem._id }
     };
 
-    // 5. 立即触发调度器检查队列
+    // 触发调度器
     generationScheduler.triggerCheck();
 
   } catch (error: any) {
@@ -99,14 +105,14 @@ export const generateImage = async (ctx: Context) => {
 };
 
 /**
- * 获取任务状态 (SSE)
+ * 获取任务状态（SSE 实时推送）
+ * 通过 SSE 实时推送任务进度和结果
  */
 export const getGenerationStatus = async (ctx: Context) => {
   const { taskId } = ctx.params;
   const sseId = `sse_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   try {
-    // 验证任务是否存在
     const task = await ImageGenTask.findById(taskId);
     if (!task) {
       ctx.body = { code: 404, msg: "Task not found" };
@@ -122,22 +128,17 @@ export const getGenerationStatus = async (ctx: Context) => {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
       "Connection": "keep-alive",
-      "Access-Control-Allow-Origin": "*", // 根据实际安全需求调整
+      "Access-Control-Allow-Origin": "*",
     });
 
     // 创建 SSE 流
     const stream = sseService.addConnection(sseId);
     ctx.body = stream;
 
-    // 更新队列中的 SSE ID，以便调度器推送更新
-    // 注意：如果任务已经完成（不在队列中），我们这里可能无法更新队列。
-    // 但如果任务已完成，我们应该直接通过SSE发送完成状态。
-    
+    // 更新队列中的 SSE ID
     if (task.status === TaskStatusEnum.PENDING || task.status === TaskStatusEnum.PROCESSING || task.status === TaskStatusEnum.INITIATED) {
-        // 更新 GenerationQueue 中的 sseId
         await GenerationQueue.findOneAndUpdate({ taskId }, { sseId });
-        
-        // 发送初始状态
+
         sseService.send(sseId, "status", {
             taskId,
             status: task.status,
@@ -152,8 +153,6 @@ export const getGenerationStatus = async (ctx: Context) => {
             imageUrl: result?.imageUrl,
             imageId: result?._id
         });
-        // 既然已完成，可以在发送后关闭流（或者由客户端关闭）
-        // stream.end(); 
     } else if (task.status === TaskStatusEnum.FAILED) {
         sseService.send(sseId, "error", {
             taskId,
@@ -169,7 +168,7 @@ export const getGenerationStatus = async (ctx: Context) => {
 };
 
 /**
- * 获取任务详情（非SSE）
+ * 获取任务详情（非 SSE）
  * 返回任务状态和结果
  */
 export const getTaskDetail = async (ctx: Context) => {
@@ -191,7 +190,7 @@ export const getTaskDetail = async (ctx: Context) => {
       progress: 0
     };
 
-    // 如果任务在队列中，尝试获取进度
+    // 获取队列进度
     if (task.status === TaskStatusEnum.PENDING || task.status === TaskStatusEnum.PROCESSING) {
       const queueItem = await GenerationQueue.findOne({ taskId });
       if (queueItem) {
@@ -206,11 +205,6 @@ export const getTaskDetail = async (ctx: Context) => {
         result.width = imageInfo.width;
         result.height = imageInfo.height;
       }
-    } else if (task.status === TaskStatusEnum.FAILED) {
-      // 尝试从队列记录或者其他地方获取错误信息
-      // 这里简化处理，假设任务对象本身没有存错误信息（虽然应该存）
-      // 我们可以从 GenerationQueue 的 failed 记录中找（如果没被删）
-      // 或者直接返回 failed
     }
 
     ctx.body = {
@@ -224,7 +218,7 @@ export const getTaskDetail = async (ctx: Context) => {
 };
 
 /**
- * 获取生图记录列表 (分页)
+ * 获取生图历史记录（分页）
  */
 export const getGenerationHistory = async (ctx: Context) => {
   try {
@@ -254,4 +248,3 @@ export const getGenerationHistory = async (ctx: Context) => {
     ctx.body = { code: 500, msg: "Internal server error", error: error.message };
   }
 };
-

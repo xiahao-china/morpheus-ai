@@ -8,6 +8,7 @@ import ImageGenTask, { TaskStatusEnum, TaskProviderEnum } from "@/models/imageGe
 import ImageGenInfo from "@/models/imageGenInfo";
 import { getLogger } from "@/lib/log4js";
 import { IMAGE_GENERATION_CONFIG } from "@/config/aiModels";
+import { incrementTaskProgress } from "@/services/task";
 
 const logger = getLogger("GenerationScheduler");
 
@@ -289,6 +290,9 @@ class GenerationScheduler {
               status: TaskStatusEnum.COMPLETED,
               completedTime: new Date()
           });
+
+          // Trigger Task Progress
+          await incrementTaskProgress(task.userId, 'first_generation', 1);
           
           // SSE Push
           if (task.sseId) {
@@ -393,6 +397,9 @@ class GenerationScheduler {
       status: TaskStatusEnum.COMPLETED,
       completedTime: new Date()
     });
+
+    // Trigger Task Progress
+    await incrementTaskProgress(task.userId, 'first_generation', 1);
     
     // SSE Push: Completed
     if (task.sseId) {

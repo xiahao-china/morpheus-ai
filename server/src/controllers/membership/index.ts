@@ -1,8 +1,11 @@
 import { Context } from "koa";
 import MembershipPackage from "@/models/membershipPackage";
-// import MembershipOrder from "@/models/membershipOrder"; // Need to create this model if order logic is required
+import * as paymentService from "@/services/payment";
 
-// 1. Get Membership Packages
+/**
+ * 获取会员套餐列表
+ * 返回所有已启用的套餐，按等级排序
+ */
 export const getPackages = async (ctx: Context) => {
   try {
     const packages = await MembershipPackage.find({ isEnabled: true }).sort({ levelSort: 1 });
@@ -12,9 +15,14 @@ export const getPackages = async (ctx: Context) => {
   }
 };
 
-// 2. Create Membership Order (Mock)
+/**
+ * 创建会员订单
+ * packageId: 套餐ID
+ * payType: 支付类型（wap/app等）
+ * paymentMethod: 支付方式（目前仅支持 ALIPAY）
+ */
 export const createOrder = async (ctx: Context) => {
-  const { packageId } = ctx.request.body as any;
+  const { packageId, payType = 'wap', paymentMethod = 'ALIPAY' } = ctx.request.body as any;
   const user = ctx.state.user as any;
 
   if (!packageId) {
@@ -29,21 +37,14 @@ export const createOrder = async (ctx: Context) => {
       return;
     }
 
-    // Mock Order Creation
-    const orderId = `ORDER_${Date.now()}_${user._id}`;
-    
-    // In real scenario: Save order to DB, call Payment Gateway (WeChat/Alipay)
-    
-    ctx.body = { 
-        code: 200, 
-        data: { 
-            orderId, 
-            amount: pkg.price,
-            payUrl: "https://mock-payment-gateway.com/pay/" + orderId 
-        } 
-    };
+    if (paymentMethod === 'ALIPAY') {
+      const result = await paymentService.createAlipayOrder(user._id, packageId, payType);
+      ctx.body = { code: 200, data: result };
+    } else {
+      ctx.body = { code: 400, msg: "Unsupported payment method. Currently only ALIPAY is supported." };
+    }
 
   } catch (error) {
-    ctx.body = { code: 500, msg: "Internal server error", error };
+    ctx.body = { code: 500, msg: error.message || "Internal server error" };
   }
 };

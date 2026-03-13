@@ -1,10 +1,13 @@
 import { Context } from "koa";
 import ImageGenInfo from "@/models/imageGenInfo";
 
-// 1. Feedback API
+/**
+ * 提交图片反馈（点赞/点踩）
+ * action: 'like' | 'dislike' | 'cancel'
+ */
 export const submitFeedback = async (ctx: Context) => {
   const { id } = ctx.params;
-  const { action } = ctx.request.body as any; // 'like' | 'dislike' | 'cancel'
+  const { action } = ctx.request.body as any;
   const user = ctx.state.user as any;
 
   if (!id) {
@@ -19,13 +22,7 @@ export const submitFeedback = async (ctx: Context) => {
       return;
     }
 
-    // Verify ownership if needed, or just allow any user to like (usually should match userId)
-    if (image.userId && image.userId !== user._id.toString()) {
-        // Optional: restrict feedback to owner
-        // ctx.body = { code: 403, msg: "Permission denied" };
-        // return;
-    }
-
+    // 更新点赞状态
     if (action === 'like') {
       image.isLiked = true;
     } else if (action === 'dislike') {
@@ -45,7 +42,10 @@ export const submitFeedback = async (ctx: Context) => {
   }
 };
 
-// 2. Prompt Optimization API (Mock)
+/**
+ * 优化提示词（Mock 实现）
+ * 实际项目中应调用 LLM API 进行优化
+ */
 export const optimizePrompt = async (ctx: Context) => {
   const { prompt } = ctx.request.body as any;
 
@@ -54,11 +54,10 @@ export const optimizePrompt = async (ctx: Context) => {
     return;
   }
 
-  // Mock AI optimization logic
-  // In real scenario, call LLM API (OpenAI/Claude/etc.)
+  // 简单的优化逻辑
   const optimizedPrompt = `(Masterpiece, Best Quality, 8k), ${prompt}, highly detailed, cinematic lighting, photorealistic`;
 
-  // Simulate delay
+  // 模拟延迟
   await new Promise(resolve => setTimeout(resolve, 500));
 
   ctx.body = {

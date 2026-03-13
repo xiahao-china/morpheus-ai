@@ -27,6 +27,9 @@ export interface IUser extends Document {
   appOpenid?: string;
   unionId?: string;
   inviteCode?: string;
+  points?: number; // 积分余额
+  membershipLevel?: string; // 会员等级
+  membershipExpiry?: Date; // 会员过期时间
 }
 
 const UserSchema: Schema = new Schema({
@@ -45,7 +48,10 @@ const UserSchema: Schema = new Schema({
   openid: { type: String }, // 微信openid
   appOpenid: { type: String }, // App openid
   unionId: { type: String }, // 微信unionid
-  inviteCode: { type: String } // 邀请码
+  inviteCode: { type: String }, // 邀请码
+  points: { type: Number, default: 0 }, // 积分余额
+  membershipLevel: { type: String }, // 会员等级
+  membershipExpiry: { type: Date } // 会员过期时间
 });
 
 export default mongoose.model<IUser>('User', UserSchema);
