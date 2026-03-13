@@ -17,6 +17,8 @@ export const SMS_CONFIG = {
 export const REDIS_KEYS = {
   SMS_LOGIN_CODE: "verify:phone:",
   EMAIL_LOGIN_CODE: "verify:email:",
+  WECHAT_LOGIN_STATE: "wechat:login:state:",    // 微信扫码登录状态 key
+  WECHAT_LOGIN_CODE: "wechat:login:code:",      // 微信扫码登录临时 code
 };
 
 // User Constants

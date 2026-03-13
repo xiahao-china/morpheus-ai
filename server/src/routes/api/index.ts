@@ -10,6 +10,7 @@ import generationRoutes from "./generation/index"; // 作品反馈与提示词�
 import membershipRoutes from "./membership/index"; // 会员套餐相关路由
 import pointsRoutes from "./points/index";       // 积分相关路由
 import taskRewardRoutes from "./task-reward/index"; // 任务奖励相关路由
+import weixinRoutes from "./weixin/index";       // 微信登录相关路由
 
 /**
  * API 路由聚合中心
@@ -25,4 +26,5 @@ export default (router: Router) => {
   membershipRoutes(router);     // 会员模块
   pointsRoutes(router);         // 积分模块
   taskRewardRoutes(router);     // 任务奖励模块
+  weixinRoutes(router);         // 微信登录模块
 }

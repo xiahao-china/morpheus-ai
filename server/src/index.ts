@@ -25,7 +25,8 @@ generationScheduler.start();
 app.use(bodyParser({
   enableTypes: ['json', 'form', 'text'],
   formLimit: '10mb',
-  jsonLimit: '10mb'
+  jsonLimit: '10mb',
+  encoding: undefined
 }));
 
 // Routes

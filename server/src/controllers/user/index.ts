@@ -8,13 +8,21 @@ import { sendSMS, sendEmail } from "./const";
 
 export const sendVerifyCode = async (ctx: Context) => {
   const { type, target } = ctx.request.body as any; // type: 'phone' | 'email'
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  
+  // 区分正式和测试环境
+  // 测试环境(SMS_CONFIG.mockSend = true)时，验证码固定为 666666
+  const isMock = SMS_CONFIG.mockSend;
+  const code = isMock ? '666666' : Math.floor(100000 + Math.random() * 900000).toString();
   
   if (type === 'phone') {
-    await sendSMS(target, code);
+    if (!isMock) {
+      await sendSMS(target, code);
+    }
     await redis.set(`${REDIS_KEYS.SMS_LOGIN_CODE}${target}`, code, 'EX', USER_CONSTANTS.VERIFY_CODE_EXPIRE_SECONDS);
   } else if (type === 'email') {
-    await sendEmail(target, code);
+    if (!isMock) {
+      await sendEmail(target, code);
+    }
     await redis.set(`${REDIS_KEYS.EMAIL_LOGIN_CODE}${target}`, code, 'EX', USER_CONSTANTS.VERIFY_CODE_EXPIRE_SECONDS);
   } else {
     ctx.body = { code: 400, msg: 'Invalid type' };
