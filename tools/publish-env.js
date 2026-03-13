@@ -12,7 +12,6 @@ const sftp = new SftpClient();
 const args = process.argv.slice(2);
 const configPathArg = args.find(arg => arg.startsWith('--config='));
 const configPath = configPathArg ? configPathArg.split('=')[1] : '../config.json';
-const onlyDeps = args.includes('--only-deps');
 
 // 加载配置
 const absoluteConfigPath = path.resolve(__dirname, configPath);
@@ -31,22 +30,18 @@ if (!serverConfig || !serverConfig.host || !serverConfig.username || !serverConf
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const REMOTE_DIR = config.server.rootPath || serverConfig.remoteRootPath || '/data/morpheus-ai';
-const TAR_FILE_NAME = 'release.tar.gz';
+const TAR_FILE_NAME = 'release-env.tar.gz';
 const LOCAL_TAR_PATH = path.join(PROJECT_ROOT, TAR_FILE_NAME);
 const REMOTE_TAR_PATH = `${REMOTE_DIR}/${TAR_FILE_NAME}`;
 
 const main = async () => {
   try {
-    // 1. 打包本地代码
-    console.log('正在打包服务端代码...');
+    // 1. 打包本地代码 (只打包 tools 目录和必要的配置文件，用于启动环境服务)
+    console.log('正在打包环境配置代码...');
     try {
-      // 在项目根目录执行打包命令，排除 node_modules, dist, .git 等
-      // 注意：Windows 下 tar 命令可能表现不同，但在 Git Bash 或较新 Windows 版本中可用
       const excludeArgs = '--exclude "node_modules" --exclude "dist" --exclude ".git"';
-      // 如果只部署依赖，不需要打包源代码，或者只打包 docker-compose.yml 即可
-      // 但为了保持一致性，还是打包，只是可以跳过 npm install 等步骤（在 Dockerfile 中）
-      // 这里保持原样打包，但在服务端部署时会用到 tar 包
-      execSync(`tar ${excludeArgs} -czf "${TAR_FILE_NAME}" server tools`, {
+      // 只打包 tools 目录，因为 docker-compose.yml 在 tools 目录下
+      execSync(`tar ${excludeArgs} -czf "${TAR_FILE_NAME}" tools`, {
         cwd: PROJECT_ROOT,
         stdio: 'inherit'
       });
@@ -95,30 +90,25 @@ const main = async () => {
     await sftp.put(LOCAL_TAR_PATH, REMOTE_TAR_PATH);
     console.log('上传完成。');
 
-    console.log('正在解压并重启 Docker 服务...');
+    console.log('正在解压并重启环境服务 (MongoDB, Redis, MinIO)...');
     
-    // 根据参数决定启动哪些服务
-    const servicesToStart = onlyDeps ? 'mongodb redis minio' : ''; // 空字符串表示启动所有服务
+    // 只启动基础服务
+    const servicesToStart = 'mongodb redis minio';
     
-    // 端口清理列表 (MinIO: 9000/9002, Redis: 6379, Mongo: 27017, Server: 3000)
-    // 移除 9001 (Portainer Agent)，改为检查 9002 (新 MinIO Console)
+    // 端口清理列表 (MinIO: 9000/9002, Redis: 6379, Mongo: 27017)
     const portsToCheck = ['9000', '9002', '6379', '27017'];
-    if (!onlyDeps) portsToCheck.push('3000');
     
     // 构建清理命令：按名称清理 + 按端口清理
     const cleanByPortCmd = portsToCheck.map(port => 
        `for id in $(docker ps -q --filter "publish=${port}"); do echo "Found container $id on port ${port}, removing..."; docker rm -f $id; done`
     ).join(' && ');
 
-    const cleanByNameCmd = onlyDeps 
-      ? 'docker rm -f mongodb redis minio || true' 
-      : 'docker rm -f mongodb redis minio server || true';
+    const cleanByNameCmd = 'docker rm -f mongodb redis minio || true';
 
     const deployCommand = `
       cd ${REMOTE_DIR} &&
       tar -xzf ${TAR_FILE_NAME} &&
       cd tools &&
-      docker-compose down || docker compose down || true &&
       ${cleanByNameCmd} &&
       ${cleanByPortCmd} &&
       (docker-compose up -d ${servicesToStart} || docker compose up -d ${servicesToStart})
@@ -131,13 +121,13 @@ const main = async () => {
     });
     
     if (result.code !== 0) {
-      console.error('\n部署命令执行失败。');
+      console.error('\n环境部署命令执行失败。');
     } else {
-      console.log('\n部署完成!');
+      console.log('\n环境部署完成!');
     }
 
   } catch (err) {
-    console.error('部署失败:', err);
+    console.error('环境部署失败:', err);
   } finally {
     sftp.end();
     ssh.dispose();

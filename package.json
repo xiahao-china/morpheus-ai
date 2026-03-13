@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "Deployment tools for Morpheus AI",
   "scripts": {
-    "publish": "node tools/publish.js",
+    "publish:env": "node tools/publish-env.js",
+    "publish:server": "node tools/publish-server.js",
     "build:mobile": "cd web-mobile && npm install --legacy-peer-deps && npm run build:h5",
     "publish:mobile": "npm run build:mobile && node tools/publish-mobile.js",
     "publish:nginx": "node tools/publish-nginx.js"

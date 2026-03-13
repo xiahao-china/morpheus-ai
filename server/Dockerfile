@@ -12,6 +12,11 @@ RUN npm config set registry https://registry.npmmirror.com/
 # Remove proxy if exists
 RUN npm config delete proxy
 RUN npm config delete https-proxy
+# Clear any environment proxy variables
+ENV http_proxy=""
+ENV https_proxy=""
+ENV HTTP_PROXY=""
+ENV HTTPS_PROXY=""
 # Install all dependencies including devDependencies
 RUN npm install
 
@@ -23,10 +28,11 @@ COPY config.docker.json /config.json
 
 # Build the application
 # Use npx to run build command using local node_modules binaries
-RUN npx cross-env NODE_ENV=production webpack --config config/webpack.config.prod.js
+RUN npm install -g cross-env
+RUN cross-env NODE_ENV=production ./node_modules/.bin/webpack --config config/webpack.config.prod.js
 
 # Remove dev dependencies to keep image small
-RUN npm prune --production
+# RUN npm prune --production
 
 # Expose port
 EXPOSE 3000
