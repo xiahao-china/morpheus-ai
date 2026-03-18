@@ -28,7 +28,7 @@
           :loading="loading"
           @click="handlePolish"
         >
-          推敲一下
+          立即生成
         </nut-button>
       </view>
     </view>

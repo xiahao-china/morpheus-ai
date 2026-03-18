@@ -50,6 +50,8 @@ export const MINIO_CONFIG = {
   secretKey: serverConfig?.minio?.secretKey || "minio_secret_key"
 };
 
+export const MINIO_BUCKET_NAME = serverConfig?.minio?.bucket || "morpheus-ai";
+
 // Email Configuration
 export const EMAIL_CONFIG = {
   service: serverConfig?.email?.service || "qq",

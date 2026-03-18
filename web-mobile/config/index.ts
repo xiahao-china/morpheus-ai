@@ -10,7 +10,7 @@ import {Input} from "postcss";
 // https://taro-docs.jd.com/docs/next/config#defineconfig-辅助函数
 export default defineConfig<'webpack5'>(async (merge, { command, mode }) => {
   const baseConfig: UserConfigExport<'webpack5'> = {
-    projectName: 'tuiqiao-wx',
+    projectName: 'nuanjie-wx',
     date: '2025-10-9',
     designWidth (input) {
       // 配置 NutUI 375 尺寸

@@ -8,7 +8,7 @@
               <view :class="pageStyle['card-header']">
                 <view :class="pageStyle['logo']">
                   <image :class="pageStyle['logo-icon']" :src="logoImg" />
-                  <text :class="pageStyle['logo-text']">推敲AI</text>
+                  <text :class="pageStyle['logo-text']">暖界AI</text>
                 </view>
                 <view :class="pageStyle['title']">
                   <text :class="pageStyle['main-title']">登录账号</text>
@@ -49,11 +49,11 @@
               <view :class="pageStyle['card-header']">
                 <view :class="pageStyle['logo']">
                   <image :class="pageStyle['logo-icon']" :src="logoImg" />
-                  <text :class="pageStyle['logo-text']">推敲AI</text>
+                  <text :class="pageStyle['logo-text']">暖界AI</text>
                 </view>
                 <view :class="pageStyle['title']">
                   <text :class="pageStyle['main-title']">绑定手机号</text>
-                  <text :class="pageStyle['sub-title']">未注册的微信号登录时，将自动创建推敲AI账号</text>
+                  <text :class="pageStyle['sub-title']">未注册的微信号登录时，将自动创建暖界AI账号</text>
                 </view>
               </view>
               <PhoneLogin :is-bind-phone="true" />
@@ -61,7 +61,7 @@
           </template>
 
           <view :class="pageStyle['footer-disclaimer']">
-            AI 生成内容具有随机性，请仔细甄别 • 推敲AI
+            AI 生成内容具有随机性，请仔细甄别 • 暖界AI
           </view>
         </view>
       </view>

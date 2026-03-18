@@ -23,12 +23,17 @@ export const navItems = [
   //   label: "AI改图",
   //   path: "/pages/CarefullyReviseTheImage/index",
   // },
-
+  {
+    key: "fengshui",
+    label: "风水",
+    path: "/pages/Fengshui/index",
+    icon: "sparkles",
+  },
   {
     key: "profile",
     label: "我的",
     path: "/pages/PersonalSpace/index",
-    icon: "user",
+    icon: "wode",
   },
 ];
 

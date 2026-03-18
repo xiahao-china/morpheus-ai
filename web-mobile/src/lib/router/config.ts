@@ -36,6 +36,13 @@ export const ROUTER_INFO = {
     needMobileNav: true,
     needBottomBar: true
   },
+  '/pages/Fengshui/index': {
+    pageName: 'AI风水',
+    needLogin: true,
+    needNavBar: false,
+    needMobileNav: false,
+    needBottomBar: true
+  },
   '/pages/PersonalSpace/index': {
     pageName: '个人空间',
     needLogin: true,

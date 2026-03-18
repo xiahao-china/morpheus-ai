@@ -6,13 +6,26 @@ const fs = require('fs')
 
 // Load config from root
 let serverConfig = {};
+const appEnv = process.env.APP_ENV || 'dev';
+let configFileName = 'config.json';
+
+if (appEnv === 'test') {
+  configFileName = 'config.test.json';
+}
+
 try {
-  const configPath = path.join(__dirname, '../../config.json');
+  const configPath = path.join(__dirname, `../../${configFileName}`);
   if (fs.existsSync(configPath)) {
     serverConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  } else {
+    // If specific config not found, try default config.json
+    const defaultConfigPath = path.join(__dirname, '../../config.json');
+    if (fs.existsSync(defaultConfigPath)) {
+        serverConfig = JSON.parse(fs.readFileSync(defaultConfigPath, 'utf8'));
+    }
   }
 } catch (e) {
-  console.error('Failed to load config.json', e);
+  console.error(`Failed to load config from ${configFileName}`, e);
 }
 
 const webpackConfig = {

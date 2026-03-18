@@ -92,26 +92,31 @@ const main = async () => {
 
     console.log('正在解压并重启服务端 (Node.js Server)...');
     
+    // 从配置文件中读取端口，默认3000
+    const serverPort = config.server?.port || 3000;
+    
     // 只启动 Server 服务 (依赖 MongoDB/Redis/MinIO 已经运行)
+    // 如果是测试环境，可以在 docker-compose 中定义不同服务名，或者我们依然叫 server
+    // 为了简单起见，如果指定了特定的部署路径或端口，我们动态调整环境变量传给 docker-compose
     const servicesToStart = 'server';
     
-    // 端口清理列表 (Server: 3000)
-    const portsToCheck = ['3000'];
-    
+    // 端口清理列表 (动态获取)
+    const portsToCheck = [serverPort.toString()];
+
     // 构建清理命令：按名称清理 + 按端口清理
     const cleanByPortCmd = portsToCheck.map(port => 
        `for id in $(docker ps -q --filter "publish=${port}"); do echo "Found container $id on port ${port}, removing..."; docker rm -f $id; done`
     ).join(' && ');
 
-    const cleanByNameCmd = 'docker rm -f server || true';
+    // 传递 SERVER_PORT 和 COMPOSE_PROJECT_NAME 环境变量给 docker-compose，避免多环境容器名冲突
+    const projectName = serverPort === 3001 ? 'morpheus_test' : 'morpheus_prod';
 
     const deployCommand = `
       cd ${REMOTE_DIR} &&
       tar -xzf ${TAR_FILE_NAME} &&
       cd tools &&
-      ${cleanByNameCmd} &&
       ${cleanByPortCmd} &&
-      (docker-compose up -d --build ${servicesToStart} || docker compose up -d --build ${servicesToStart})
+      SERVER_PORT=${serverPort} COMPOSE_PROJECT_NAME=${projectName} docker-compose build --no-cache ${servicesToStart} && docker-compose up -d ${servicesToStart} || SERVER_PORT=${serverPort} COMPOSE_PROJECT_NAME=${projectName} docker compose build --no-cache ${servicesToStart} && docker compose up -d ${servicesToStart}
     `;
     
     // 使用 execCommand 并监听输出，实现实时日志

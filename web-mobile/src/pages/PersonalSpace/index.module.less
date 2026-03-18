@@ -1,0 +1,173 @@
+.personalSpace {
+  min-height: 100vh;
+  background-color: #F7F8FA;
+  padding: 24rpx;
+  box-sizing: border-box;
+  padding-bottom: 40rpx;
+
+  .userInfoCard {
+    background: #fff;
+    border-radius: 32rpx;
+    padding: 40rpx;
+    display: flex;
+    align-items: center;
+    margin-bottom: 24rpx;
+    box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.05);
+
+    .avatarWrapper {
+      width: 120rpx;
+      height: 120rpx;
+      border-radius: 24rpx;
+      overflow: hidden;
+      margin-right: 32rpx;
+      flex-shrink: 0;
+      border: 2rpx solid #F2F3F5;
+
+      .avatar {
+        width: 100%;
+        height: 100%;
+        background: #F7F8FA;
+      }
+    }
+
+    .infoContent {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+
+      .nickname {
+        font-size: 40rpx;
+        font-weight: 600;
+        color: #1D2129;
+        margin-bottom: 12rpx;
+        line-height: 1.2;
+      }
+
+      .signature {
+        font-size: 24rpx;
+        color: #86909C;
+        margin-bottom: 24rpx;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 1;
+        overflow: hidden;
+      }
+
+      .tagsRow {
+        display: flex;
+        align-items: center;
+        gap: 16rpx;
+
+        .memberTag {
+          background: #000;
+          color: #FFD700;
+          font-size: 20rpx;
+          font-weight: 600;
+          padding: 4rpx 12rpx;
+          border-radius: 8rpx;
+          display: flex;
+          align-items: center;
+        }
+
+        .pointsTag {
+          background: #F2F3F5;
+          color: #86909C; // Brownish color for points? Screenshot looks beige/brown.
+          // Let's use screenshot style: beige bg, brown text
+          background: #F9F0E7;
+          color: #8D5C2E;
+          font-size: 20rpx;
+          padding: 4rpx 12rpx;
+          border-radius: 8rpx;
+        }
+      }
+    }
+  }
+
+  .menuCard {
+    background: #fff;
+    border-radius: 32rpx;
+    padding: 16rpx 0; // Padding vertical only, items have padding
+    margin-bottom: 24rpx;
+    box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.05);
+
+    .cardTitle {
+      font-size: 30rpx;
+      font-weight: 600;
+      color: #1D2129;
+      padding: 24rpx 32rpx;
+      border-bottom: 2rpx solid #F7F8FA;
+    }
+
+    .menuItem {
+      display: flex;
+      align-items: center;
+      padding: 32rpx;
+      position: relative;
+      transition: background 0.2s;
+
+      &:active {
+        background: #F7F8FA;
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 32rpx;
+        right: 32rpx;
+        height: 2rpx;
+        background: #F7F8FA;
+      }
+
+      &:last-child::after {
+        display: none;
+      }
+
+      .menuIcon {
+        margin-right: 24rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #4E5969;
+      }
+
+      .menuLabel {
+        flex: 1;
+        font-size: 28rpx;
+        color: #1D2129;
+      }
+
+      .menuArrow {
+        color: #C9CDD4;
+      }
+    }
+  }
+
+  .versionInfo {
+    text-align: center;
+    font-size: 24rpx;
+    color: #C9CDD4;
+    padding: 40rpx 0;
+  }
+}
+
+.contact-modal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 20rpx;
+
+  .qr-code-img {
+    width: 560rpx;
+    height: 560rpx;
+    margin-bottom: 24rpx;
+  }
+
+  .contact-tip {
+    font-size: 28rpx;
+    color: #666;
+  }
+}

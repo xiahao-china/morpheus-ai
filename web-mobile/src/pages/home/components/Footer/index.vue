@@ -8,7 +8,7 @@
         <view :class="styles.companyInfo">
           <view :class="styles.logo">
             <image :class="styles.logoIcon" :src="logoImg" mode="aspectFit" />
-            <text :class="styles.logoText">推敲AI</text>
+            <text :class="styles.logoText">暖界AI</text>
           </view>
           <text :class="styles.companyDescription">
             专业的建筑室内技术解决方案提供商，致力于为企业数字化转型提供全方位的技术支持和创新AI服务。

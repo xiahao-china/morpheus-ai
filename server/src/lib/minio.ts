@@ -4,7 +4,7 @@
  */
 import * as Minio from 'minio';
 import { logger } from "./log4js";
-import { MINIO_CONFIG } from "@/config/index";
+import { MINIO_CONFIG, MINIO_BUCKET_NAME } from "@/config/index";
 
 /**
  * MinIO 客户端实例
@@ -16,7 +16,7 @@ export const minioClient = new Minio.Client(MINIO_CONFIG);
  * 存储桶名称
  * 所有文件都将存储在此 bucket 中
  */
-export const BUCKET_NAME = 'morpheus-ai';
+export const BUCKET_NAME = MINIO_BUCKET_NAME;
 
 /**
  * 初始化 MinIO 存储桶

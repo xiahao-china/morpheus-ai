@@ -72,10 +72,13 @@ pnpm run build
 
 ### 配置文件
 
-在根目录创建以下配置文件（参考 blog 项目）:
+在根目录创建以下配置文件:
 
-1. `config.sh` - 服务器部署配置
-2. `serverConfig.js` - 服务端配置
+1. `config.json` - 默认开发环境配置
+2. `config.prod.json` - 生产环境配置 (用于 `npm run build:prod`)
+3. `config.test.json` - 测试环境配置 (用于 `npm run build:test`)
+
+参考 `server/config.docker.json` 格式。
 
 ### 环境变量
 

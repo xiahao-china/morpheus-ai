@@ -73,14 +73,14 @@ Taro.useShareAppMessage((res) => {
     console.log(res.target)
   }
   return {
-    title: '推敲-让设计更合心意',
+    title: '暖界-让设计更合心意',
     path: '/page/Square/index',
   }
 })
 
 Taro.useShareTimeline(() => {
   return {
-    title: '推敲-让设计更合心意',
+    title: '暖界-让设计更合心意',
     imageUrl: `${STATIC_ASSETS_URL}/banner/draw.png`
   }
 })

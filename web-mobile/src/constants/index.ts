@@ -1,6 +1,6 @@
 import Taro from "@tarojs/taro";
 
-export const APP_NAME = '推敲AI';
+export const APP_NAME = '暖界AI';
 
 // export const API_URL = process.env.NODE_ENV === 'development' ? 'http://113.108.105.54:8187/v1/api' : 'http://113.108.105.54:8187/v1/api';
 // export const API_URL = process.env.NODE_ENV === 'development' ? `https://dev8186.tuiqiao.art/api/v1`

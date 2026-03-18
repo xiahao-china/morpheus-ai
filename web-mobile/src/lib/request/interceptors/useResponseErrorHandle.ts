@@ -22,7 +22,7 @@ export const useResponseErrorHandle: useResponseInterceptorsCallback = (axios) =
       if (path !== '/metrics/events' && res.code !== 200) {
         // TODO: 处理错误
         console.error('err', response);
-        Taro.showToast({ title: res.message || '请求错误', icon: 'none', duration: 2000 });
+        Taro.showToast({ title: res.msg || res.message || '请求错误', icon: 'none', duration: 2000 });
         reportApiStatus({
           tags: {
             event_type: 'res_code',
@@ -30,7 +30,7 @@ export const useResponseErrorHandle: useResponseInterceptorsCallback = (axios) =
           fields: {
             data_code: res.code,
             status_code: (response as IObject).statusCode,
-            error_message: res.message,
+            error_message: res.msg || res.message,
             // 只传递基础路径，不带有参数
             request_url: response.config.url || '',
             request_method: response.config.method || '',

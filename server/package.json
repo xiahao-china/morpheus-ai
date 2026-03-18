@@ -8,6 +8,8 @@
     "debug": "nodemon --inspect dist/server.bundle.js",
     "serve": "npm-run-all -p watch debug",
     "build": "cross-env NODE_ENV=production webpack --config config/webpack.config.prod.js",
+    "build:test": "cross-env NODE_ENV=production APP_ENV=test webpack --config config/webpack.config.prod.js",
+    "build:prod": "cross-env NODE_ENV=production webpack --config config/webpack.config.prod.js",
     "start": "node dist/server.bundle.js"
   },
   "engines": {

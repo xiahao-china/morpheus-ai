@@ -34,7 +34,7 @@
       <view :class="styles.heroContent">
         <view :class="[styles.heroText, 'fade-in-left']">
           <text :class="styles.heroTitle">
-            推敲一下，
+            暖界一下，
             <text :class="styles.highlight">让设计更合心意</text>
           </text>
           <text :class="styles.heroDescription">
@@ -42,7 +42,7 @@
           </text>
           <view :class="styles.heroButtons">
             <button :class="[styles.startBtn, styles.btn, styles.btnPrimary]" @click="toDraw">
-              开始推敲
+              立即生成
               <view :class="styles.btnIcon">
                 <text>→</text>
               </view>

@@ -44,7 +44,7 @@ useRequestAuth(http);
 export type ApiResponse<T> = {
   code: number;
   msg: string;
-  message: string;
+  message?: string;
   data: T;
 };
 
@@ -64,7 +64,7 @@ export async function httpGet<T = Record<string, unknown>, R = object>(
     })
     .then(
       (res) => {
-        if ((res.data as IObject)?.status === 401){
+        if ((res.data as any)?.code === 401 || (res.data as IObject)?.status === 401){
           handle401ToLogin();
         }
         return res.data;
@@ -84,7 +84,7 @@ export async function httpPost<T = Record<string, unknown>, R = object>(
     })
     .then(
       (res) => {
-        if ((res.data as IObject)?.status === 401){
+        if ((res.data as any)?.code === 401 || (res.data as IObject)?.status === 401){
           handle401ToLogin();
         }
         return res.data;

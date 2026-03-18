@@ -31,8 +31,10 @@ if (!serverConfig || !serverConfig.host || !serverConfig.username || !serverConf
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const WEB_MOBILE_DIR = path.join(PROJECT_ROOT, 'web-mobile');
 const REMOTE_DIR = serverConfig.remoteRootPath || '/data/morpheus-ai/front';
-const APP_DIR_NAME = 'morpheus-ai-web-mobile';
-const TAR_FILE_NAME = 'web-mobile.tar.gz';
+// 根据配置文件判断是否是测试环境，以此决定前端资源目录名
+const isTestEnv = configPath.includes('test');
+const APP_DIR_NAME = isTestEnv ? 'morpheus-ai-web-mobile-test' : 'morpheus-ai-web-mobile';
+const TAR_FILE_NAME = isTestEnv ? 'web-mobile-test.tar.gz' : 'web-mobile.tar.gz';
 const LOCAL_TAR_PATH = path.join(PROJECT_ROOT, TAR_FILE_NAME);
 const REMOTE_TAR_PATH = `${REMOTE_DIR}/${TAR_FILE_NAME}`;
 

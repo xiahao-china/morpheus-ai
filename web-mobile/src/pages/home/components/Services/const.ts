@@ -23,7 +23,7 @@ export const SERVICES_INTRODUCTION_DATA = [
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>',
     title: '商务定制',
     brief: '现场设计高效获客',
-    description: '在跟客户沟通中，利用推敲，设计师能将自己的设计想法转换成直观的效果图，与客户形成零误差的信息传递，同时，设计师能够在与客户交流中，快速对客户的意见进行回应，现场展示修改效果，促成高效的商务合作。',
+    description: '在跟客户沟通中，利用暖界，设计师能将自己的设计想法转换成直观的效果图，与客户形成零误差的信息传递，同时，设计师能够在与客户交流中，快速对客户的意见进行回应，现场展示修改效果，促成高效的商务合作。',
     features: ['细节精准把控', '风格个性化', '面对面沟通', '快速反馈',  ],
     image: `${STATIC_ASSETS_URL}/home/Bedroom1.png`,
     gradient: 'linear-gradient(135deg, #4ECDC4 0%, #059669 100%)'

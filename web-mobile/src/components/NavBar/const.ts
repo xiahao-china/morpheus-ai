@@ -32,7 +32,7 @@ export const getCurrentPageConfig = () => {
 // 获取当前页面名称的静态方法
 export const getCurrentPageName = () => {
   const pageConfig = getCurrentPageConfig()
-  return pageConfig?.config?.pageName || '推敲AI'
+  return pageConfig?.config?.pageName || '暖界AI'
 }
 
 // 计算自定义背景样式的静态方法

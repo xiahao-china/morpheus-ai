@@ -5,6 +5,9 @@ export const appConfig = {
     "pages/LoginPage/index", // 登录页
     "pages/home/index", // 首页
     "pages/Drawing/index",
+    "pages/Fengshui/index", // 风水页
+    "pages/Fengshui/Progress/index", // 风水进度页
+    "pages/Fengshui/Report/index", // 风水报告页
   ],
   subPackages: [
     {
