@@ -150,9 +150,10 @@ const handleSearch = async (noRefresh?: boolean) => {
   pageNum.value++;
   loading.value = true;
   const response = await getSquareList({
-    keyword: [keyword.value, activeSpace.value?.label].filter(Boolean).join(','),
+    keyword: keyword.value,
+    sceneTags: activeSpace.value?.label,
     sortBy: activeSort.value.value,
-    pageNo: pageNum.value,
+    page: pageNum.value,
     pageSize: PAGE_SIZE
   })
   if (response instanceof Error || response.code !== 200) {
@@ -161,8 +162,8 @@ const handleSearch = async (noRefresh?: boolean) => {
     return
   }
   loading.value = false
-  if (!response.data.records.length) loadEnd.value = true
-  const list = mergeWorks(currentWorksList.value, response.data.records);
+  if (!response.data.list.length) loadEnd.value = true
+  const list = mergeWorks(currentWorksList.value, response.data.list);
   currentWorksList.value = list;
   emit('filterResult', list);
 };

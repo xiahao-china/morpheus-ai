@@ -17,7 +17,7 @@ export const uploadImageByTaroUrl = (
   handleUploadProgress?: (uploadInfo: IUploadProgress) => void,
 ): Taro.UploadTask => {
   const task = Taro.uploadFile({
-    url: `${API_URL}/files/upload`,
+    url: `${API_URL}/file/upload/general`,
     filePath: params.filePath,
     header: {
       Cookie : getCookie()?.replace(/,/g, ";") || ""

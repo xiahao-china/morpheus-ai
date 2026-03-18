@@ -1,23 +1,25 @@
-import { httpGet, httpPost } from '@/lib/request/http'
+import { httpGet } from '@/lib/request/http'
 
 
 export interface getUserInfoResponse {
-  username: string;
-  email: string;
-  phone: string;
-  avatar: null | string;
+  _id: string;
+  username: string; // Login ID
+  nickname?: string; // Display name
+  email?: string;
+  phone?: string;
+  avatar?: string;
   role: string;
-  personalSignature: null | string;
-  designerIntroduction: null | string;
-  isPhone?: boolean;
-
-  nickname: null | string; // 微信用户名
-  outwardId: null | string; // 用户id
-  isPassword: boolean; // 是否有密码
-  createdTime: string;
+  status: number;
+  personalSignature?: string;
+  points?: number;
+  membershipLevel?: string;
+  membershipExpiry?: string;
+  
+  // Fields for compatibility or derived
+  isPhone?: boolean; // Derived in store
 }
 
 
 export const getUserInfo = async () => {
-  return httpGet<object,getUserInfoResponse>('/users/me', {});
+  return httpGet<object,getUserInfoResponse>('/user/info', {});
 }

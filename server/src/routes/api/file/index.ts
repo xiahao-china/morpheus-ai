@@ -16,7 +16,7 @@ export default (router: Router) => {
   // 上传图片文件（需要登录，单文件，字段名为 'file'）
   router.post('/api/file/upload', authMiddleware, upload.single('file'), uploadFile);
   // 通用文件上传（需要登录，单文件，字段名为 'imageFile'）
-  router.post('/api/v1/files/upload', authMiddleware, upload.single('imageFile'), uploadGeneralFile);
+  router.post('/api/file/upload/general', authMiddleware, upload.single('imageFile'), uploadGeneralFile);
   // 获取文件访问URL（公开接口）
   router.get('/api/file/:filename', getFileUrl);
 }

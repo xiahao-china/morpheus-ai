@@ -10,39 +10,35 @@ import { httpGet } from "@/lib/request/http";
  * @property {number} pageSize - 每页大小
  */
 export interface ISquareListParams {
-  keyword: string;
-  sortBy: string;
-  sortOrder?: string;
-  pageNo: number;
+  page: number;
   pageSize: number;
+  styleTags?: string;
+  sceneTags?: string;
+  keyword?: string;
+  sortBy?: string;
+  sortOrder?: string;
 }
 
 export interface ISquareItem {
-  id: string;
-  squareImage:{
-    fileResourceId: number;
-    id: number;
-    imageUrl: string;
-    scaleThumbnailUrl: string;
-    type: string;
-    thumbnailUrl: string;
-    recordThumbnailUrl: string;
-  },
-  collectCount: number;
-  isCollected: boolean;
+  _id: string;
   userId: string;
-  username: string;
-  avatar: string;
+  imageId: string;
   title: string;
+  caption?: string;
+  styleTags?: string[];
+  sceneTags?: string[];
+  publishedTime: string;
+  viewCount: number;
+  likeCount: number;
+  collectCount: number;
+  imageUrl?: string;
+  username?: string;
+  avatar?: string;
 }
 
-
 export interface ISquareListResponse {
-  records: ISquareItem[];
+  list: ISquareItem[];
   total: number;
-  pageNo: number;
-  size: number;
-  pages: number;
 }
 
 export const getSquareList = async (params: ISquareListParams) => {

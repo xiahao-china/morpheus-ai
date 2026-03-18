@@ -16,27 +16,19 @@ export const PAGE_SIZE = 10;
 export const mapToCards = (
   records: IGetGenerationHistoryItem[]
 ): IHistoryCardInfo[] => {
-  return records.flatMap((item) => {
-    const images = item.generatedImages.length
-      ? item.generatedImages
-      : item.editedGeneratedImages;
-    if (!images || !images.length) return [];
-    const first = images[0];
-    return [
-      {
-        taskId: item.id.toString(),
-        type: item.type as unknown as IHistoryCardInfo["type"],
-        defaultImgId: first.id,
-        imageUrl:
-          first.recordThumbnailUrl || first.thumbnailUrl || first.imageUrl,
-        ratioText: calcTaskRatio(first.width || 1024, first.height || 1024),
-        title: MODE_LABEL_MAP[item.type] || "未知模式",
-        statusText: STATUS_TEXT_MAP[item.status] || item.status,
-        desc: item.prompt || "",
-        timeText: dayjs(item.createdTime || item.startedTime || "").format(
-          "YYYY-MM-DD HH:mm"
-        ),
-      },
-    ];
+  return records.map((item) => {
+    return {
+      taskId: item.imageGenTaskId,
+      type: 'DRAWING' as unknown as IHistoryCardInfo["type"],
+      defaultImgId: 0,
+      imageUrl: item.imageUrl,
+      ratioText: calcTaskRatio(item.width || 1024, item.height || 1024),
+      title: "文生图", // 暂时硬编码，后端模型中没有 type 字段
+      statusText: "已完成", // 历史记录通常是已完成的
+      desc: "", // 列表接口没有返回 prompt
+      timeText: dayjs(item.createdTime).format(
+        "YYYY-MM-DD HH:mm"
+      ),
+    };
   });
 };

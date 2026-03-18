@@ -18,50 +18,30 @@ export enum EDrawingType {
 
 interface IGetQwenImagesTaskParams {
   prompt: string;
-  negativePrompt?: string;
+  negative_prompt?: string;
   ratio?: string;
   width?: number;
   height?: number;
   count?: number;
-  promptImageId?: number;
-  negativePromptImageId?: number;
-  type: EDrawingType,
-  underImageId?: string | number;
+  base_images?: string[]; // 底图列表
+  type?: EDrawingType, // 前端类型，仅用于兼容，不传给后端
 }
 
 interface IGetQwenImagesTaskResponse {
-  id: number;
-  userId: number;
-  prompt: string;
-  promptImageUrl: null;
-  underImageUrl: null;
-  styleModelOutwardName: null;
-  styleExtractionLevelOutward: null;
-  ratio: string;
-  width: number;
-  height: number;
-  count: number;
+  taskId: string;
   status: string;
-  type: null;
-  startedTime: string;
-  completedTime: null;
-  negativePrompt: string;
-  modelOutwardName: string;
-  negativePromptImageUrl: null;
-  underImageExtractionLevelOutward: null;
-  referImageUrl: null;
-  referImageExtractionLevelOutward: null;
-  images: null;
-  modelId: number;
-  styleModelId: number | null;
-  referImageId: number | null;
-  underImageId: number | null;
+  queueId?: string;
 }
 
 export const getImagesTask = (params: IGetQwenImagesTaskParams) => {
   return httpPost<IGetQwenImagesTaskParams, IGetQwenImagesTaskResponse>(
-    '/images/generate/new',
-    params,
+    '/image/generate',
+    {
+      ...params,
+      width: params.width || 1024,
+      height: params.height || 1024,
+      count: params.count || 1,
+    }
   );
 };
 

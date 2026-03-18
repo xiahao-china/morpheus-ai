@@ -9,7 +9,7 @@
 
     <!-- 用户名 -->
     <view :class="styles.nickname">
-      {{ userInfo.username }}
+      {{ userInfo.nickname || userInfo.username }}
     </view>
 
     <!-- 个人签名 -->
@@ -29,14 +29,6 @@
         <Service :class="styles.icon" />
         <text>联系客服</text>
       </view>
-    </view>
-
-    <!-- 设计师介绍 -->
-    <view :class="styles.designerIntroduction">
-      {{
-        userInfo.designerIntroduction ||
-        "Ta有着自己独特的生活轨迹和成长故事，只是还没来得及把这些经历整理成介绍展示给大家。平凡日子里的点点滴滴，都在书写着属于Ta的精彩人生，不妨期待一下后续的故事。"
-      }}
     </view>
   </view>
 </template>

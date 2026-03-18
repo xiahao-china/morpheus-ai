@@ -119,10 +119,10 @@ const startUpload = async (url: string) => {
         fileType: 'UNDER_IMAGE',
         onSuccess: (resp) => {
           const data = resp.data;
-          uploadedUrl.value = data.url;
+          uploadedUrl.value = data.fileUrl || data.url;
           uploading.value = false;
           progress.value = 0;
-          emit('loaded', data.url, String(data.id), scaledWidth.value, scaledHeight.value);
+          emit('loaded', data.fileUrl || data.url, String(data.fileId || data.id), scaledWidth.value, scaledHeight.value);
           Taro.showToast({ title: '上传成功', icon: 'success' });
         },
         onFail: () => {

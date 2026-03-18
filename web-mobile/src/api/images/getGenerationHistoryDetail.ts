@@ -21,59 +21,24 @@ export interface ImageInfo {
 }
 
 export interface IGetGenerationHistoryItem {
-  id: number
-  userId: number
-  prompt: string
-  negativePrompt: string
-  styleModel: null
-  model: string
-  seed: number
-  width: number
-  modelId: number;
-  styleModelId?: number;
-  height: number
-  comfyuiClientId: string
-  styleExtractionLevel: number
-  styleExtractionLevelOutward: number
+  taskId: string;
+  status: string;
+  createdTime: string;
+  startedTime?: string;
+  completedTime?: string;
+  progress: number;
+  imageUrl?: string;
+  imageId?: string;
+  width?: number;
+  height?: number;
 
-  promptImageUrl: null
-  negativePromptImageUrl: null
-  underImageUrl: string
-  underImageName: null
-  underImageExtractionLevel: number
-  underImageExtractionLevelOutward: number
-  underImageId?: number;
-
-  enlargeTyped?: EScaleType;
-  scene?: string;
-
-  underImageWidth: null
-  underImageHeight: null
-  promptImageName: null
-  negativePromptImageName: null
-  referImageUrl: string
-  referImageName: null
-  referImageExtractionLevel: number
-  referImageExtractionLevelOutward: number
-  referImageId?: number;
-
-  magnificationOutward?: number;
-
-  ratio: string
-  count: number
-  type: EFunctionGroupMode
-  comfyuiPromptId: string
-  startedTime: string
-  completedTime: string
-  images: ImageInfo[]
-  status: string
-  modelOutwardName: string
-  styleModelOutwardName: string
+  // 兼容旧字段
+  images?: { imageUrl: string, id: number }[];
 }
 
 export const getGenerationsDetail = async (taskId: string) => {
   return httpGet<object, IGetGenerationHistoryItem>(
-    `/images/generates/${taskId}`,
+    `/image/detail/${taskId}`,
     {},
   )
 }

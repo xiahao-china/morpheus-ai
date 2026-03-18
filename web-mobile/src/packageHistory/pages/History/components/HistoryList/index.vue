@@ -63,7 +63,7 @@ const fetchAllList = async () => {
     Taro.showToast({ title: '加载失败', icon: 'error' })
     return
   }
-  cards.value = mapToCards(res.data.records);
+  cards.value = mapToCards(res.data.list);
   loadEnd.value = true
 }
 

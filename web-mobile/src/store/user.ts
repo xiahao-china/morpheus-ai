@@ -54,13 +54,13 @@ export const useUserStore = defineStore('user', () => {
       return false;
     }
 
-    const {username, avatar, isPhone } = response.data;
+    const { _id, username, avatar, phone } = response.data;
     setUserInfo({
-      id: '',
+      id: _id,
       name: username,
       avatar: avatar || '',
       isLogin: Boolean(username),
-      isPhone: isPhone,
+      isPhone: Boolean(phone),
     })
     hasInitLoginInfo.value = true;
     return true;

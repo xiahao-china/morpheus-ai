@@ -21,7 +21,7 @@
             <text :class="styles.label">昵称</text>
             <input
               :class="styles.input"
-              v-model="form.username"
+              v-model="form.nickname"
               placeholder="请输入昵称"
               placeholder-class="input-placeholder"
               maxlength="12"
@@ -38,20 +38,6 @@
               placeholder="这位设计师还没给签名填充有趣的内容呢~"
               placeholder-class="input-placeholder"
               maxlength="30"
-            />
-          </view>
-
-          <view :class="styles.divider"></view>
-
-          <view :class="styles.formItem">
-            <text :class="styles.label">个人简介</text>
-            <textarea
-              :class="styles.textarea"
-              v-model="form.designerIntroduction"
-              placeholder="请输入个人简介"
-              placeholder-class="input-placeholder"
-              maxlength="200"
-              auto-height
             />
           </view>
         </view>
@@ -103,8 +89,8 @@ const handleAvatarClick = async () => {
         fileType: "AVATAR_IMAGE",
         onSuccess: (uploadRes) => {
           Taro.hideLoading();
-          if (uploadRes.data && uploadRes.data.url) {
-            form.value.avatar = uploadRes.data.url;
+          if (uploadRes.data && (uploadRes.data.fileUrl || uploadRes.data.url)) {
+            form.value.avatar = uploadRes.data.fileUrl || uploadRes.data.url;
           }
         },
         onFail: (err) => {

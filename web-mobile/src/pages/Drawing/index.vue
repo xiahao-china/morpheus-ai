@@ -131,7 +131,7 @@ const handlePolish = async () => {
       count: 1,
       ratio,
       type: drawingType,
-      underImageId,
+      base_images: underImageId ? [String(underImageId)] : undefined,
       height,
       width,
     });
@@ -142,7 +142,7 @@ const handlePolish = async () => {
       return;
     }
     Taro.showToast({ title: '任务创建成功', icon: 'success' });
-    const tid = (response.data?.id ?? '').toString();
+    const tid = response.data?.taskId ?? '';
     // 清理内容
     promptWriterRef.value?.clear();
     imageUploadRef.value?.reset();

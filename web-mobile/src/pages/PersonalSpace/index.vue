@@ -4,20 +4,20 @@
       <!-- User Info Card -->
       <view :class="styles.userInfoCard" @tap="handleEditProfile">
         <view :class="styles.avatarWrapper">
-          <image 
-            :src="userInfo.avatar || defaultAvatar" 
-            mode="aspectFill" 
-            :class="styles.avatar" 
+          <image
+            :src="userInfo.avatar || defaultAvatar"
+            mode="aspectFill"
+            :class="styles.avatar"
           />
         </view>
         <view :class="styles.infoContent">
-          <view :class="styles.nickname">{{ userInfo.username || userInfo.nickname || '未登录用户' }}</view>
+          <view :class="styles.nickname">{{ userInfo.nickname || userInfo.username || '未登录用户' }}</view>
           <view :class="styles.signature">
             {{ userInfo.personalSignature || '追求极致美学的家装爱好者' }}
           </view>
           <view :class="styles.tagsRow">
             <view :class="styles.memberTag">PRO 会员</view>
-            <view :class="styles.pointsTag">积分: {{ userInfo.points || 1280 }}</view>
+            <view :class="styles.pointsTag">积分: {{ userInfo.points || 0 }}</view>
           </view>
         </view>
       </view>
@@ -25,7 +25,7 @@
       <!-- Content Management Menu -->
       <view :class="styles.menuCard">
         <view :class="styles.cardTitle">内容管理</view>
-        
+
         <view :class="styles.menuItem" @tap="navigateTo('/packageHistory/pages/History/index')">
           <view :class="styles.menuIcon">
             <App size="20" />
@@ -115,32 +115,32 @@ import Taro, { useDidShow } from "@tarojs/taro";
 import Layouts from "@/components/Layouts/index.vue";
 import { getUserInfo, type getUserInfoResponse } from "@/api/users/getUserInfo";
 import { STATIC_ASSETS_URL } from "@/constants";
-import { 
-  App, 
-  Compass, 
-  Heart, 
-  Order, 
-  Service, 
-  Ask, 
-  Setting, 
-  RectRight 
+import {
+  App,
+  Compass,
+  Heart,
+  Order,
+  Service,
+  Ask,
+  Setting,
+  RectRight
 } from '@nutui/icons-vue-taro';
 import styles from "./index.module.less";
 
 const defaultAvatar = 'https://img12.360buyimg.com/imagetools/jfs/t1/196430/38/8105/14329/60c806a4Ed506298a/e6de9fb7b8490f38.png';
-const userInfo = ref<getUserInfoResponse & { points?: number }>({
+const userInfo = ref<getUserInfoResponse>({
+  _id: "",
   username: "",
   email: "",
   phone: "",
-  avatar: null,
+  avatar: undefined,
   role: "",
-  personalSignature: null,
-  designerIntroduction: null,
-  nickname: null,
-  outwardId: null,
-  isPassword: false,
-  createdTime: "",
-  points: 1280 // Mock data
+  personalSignature: undefined,
+  nickname: undefined,
+  outwardId: undefined,
+  isPhone: false,
+  status: 1,
+  points: 0
 });
 
 const showContactModal = ref(false);
@@ -149,10 +149,7 @@ const fetchUserInfo = async () => {
   try {
     const res = await getUserInfo();
     if (res && res.code === 200 && res.data) {
-      userInfo.value = {
-        ...res.data,
-        points: 1280 // Mock points
-      };
+      userInfo.value = res.data;
     }
   } catch (error) {
     console.error("获取用户信息失败:", error);

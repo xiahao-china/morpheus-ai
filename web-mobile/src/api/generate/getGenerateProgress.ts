@@ -4,18 +4,13 @@ import type { GeneratedImageResponse } from '@/api/images/createGenerateTaskStre
 export type GenerateStatus = 'INITIATED' | 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED'
 
 export interface IGenerateProgressResponse {
-  value: number
-  max: number
-  node: string | null
-  percent: number
-  type: 'TASK_INFO' | 'PROGRESS_INFO'
-  status: GenerateStatus
-  data: GeneratedImageResponse | null
-  generationId: number
-  userId: number
-  message: string
+  taskId: string;
+  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  progress: number;
+  imageUrl?: string;
+  imageId?: string;
 }
 
 export const getGenerateProgress = async (id: string | number) => {
-  return httpGet<object, IGenerateProgressResponse>(`/images/generate/${id}/progress`, {})
+  return httpGet<object, IGenerateProgressResponse>(`/image/detail/${id}`, {})
 }

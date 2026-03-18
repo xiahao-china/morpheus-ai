@@ -8,9 +8,13 @@ interface IVerifyCodeLoginParams {
 export const verifyCodeLogin = async (params: IVerifyCodeLoginParams) => {
   try {
     // 使用支持获取响应头的请求函数
-    const response = await httpPostWithHeaders<IVerifyCodeLoginParams, object>(
-      "/users/sms/login",
-      params
+    const response = await httpPostWithHeaders<object, object>(
+      "/user/login",
+      {
+        type: 'phone',
+        target: params.phone,
+        code: params.code
+      }
     );
     // 检查是否是错误响应
     if (response instanceof Error) {

@@ -24,48 +24,26 @@ export interface ImageInfo {
 }
 
 export interface IGetGenerationHistoryItem {
-  id: number
-  userId: number
-  prompt: string
-  negativePrompt: string
-  styleModel: null
-  model: string
-  seed: number
-  width: number
-  height: number
-  comfyuiClientId: string
-  styleExtractionLevel: number
-  promptImageUrl: null
-  negativePromptImageUrl: null
-  underImageUrl: string
-  underImageName: null
-  underImageExtractionLevel: number
-  underImageWidth: null
-  underImageHeight: null
-  promptImageName: null
-  negativePromptImageName: null
-  referImageUrl: string
-  referImageName: null
-  referImageExtractionLevel: number
-  ratio: string
-  count: number
-  type: string
-  comfyuiPromptId: string
-  startedTime: string
-  completedTime: string
-  generatedImages: ImageInfo[]
-  editedGeneratedImages: ImageInfo[]
-  status: string
+  _id: string;
+  userId: string;
+  imageGenTaskId: string;
+  imageUrl: string;
+  width: number;
+  height: number;
   createdTime: string;
+  
+  // 兼容旧字段
+  generatedImages?: { imageUrl: string }[];
 }
 
 export interface IGetGenerationHistoryResponse {
-  records: IGetGenerationHistoryItem[]
+  list: IGetGenerationHistoryItem[];
+  total: number;
 }
 
-export const getRecentGenerationsV2 = async () => {
-  return httpGet<{}, IGetGenerationHistoryResponse>(
-    '/images/records/lately',
-    {},
+export const getRecentGenerationsV2 = async (params?: { page?: number, pageSize?: number }) => {
+  return httpGet<object, IGetGenerationHistoryResponse>(
+    '/image/history',
+    params || { page: 1, pageSize: 20 },
   )
 }

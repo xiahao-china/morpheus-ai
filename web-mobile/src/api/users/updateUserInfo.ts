@@ -1,14 +1,12 @@
 import { httpPut } from "@/lib/request/http";
+import type { getUserInfoResponse } from "./getUserInfo";
 
-interface IGetUserInfoResponse {
-  username: string;
-  email?: string;
-  phone?: string;
-  avatar: null | string;
-  personalSignature: null | string;
-  designerIntroduction: null | string;
+export interface IUpdateUserInfoParams {
+  nickname?: string;
+  avatar?: string;
+  personalSignature?: string;
 }
 
-export const updateUserInfo = async (params: IGetUserInfoResponse) => {
-  return httpPut<object, IGetUserInfoResponse>("/users/me", params);
+export const updateUserInfo = async (params: IUpdateUserInfoParams) => {
+  return httpPut<object, getUserInfoResponse>("/user/info", params);
 };

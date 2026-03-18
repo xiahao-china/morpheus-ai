@@ -28,52 +28,23 @@ interface GeneratedImageResponse {
   };
 }
 
-interface ImageGenerationResponse {
-  id: number;
-  userId: number;
-  prompt: string;
-  negativePrompt?: string;
-  styleModel?: string;
-  model: string;
-  seed: number;
-  width: number;
-  height: number;
-  modelId: number;
-  styleModelId?: number;
-  comfyuiClientId?: string;
-  styleExtractionLevel?: number;
-  styleExtractionLevelOutward?: number;
-
-  promptImageUrl?: string;
-  negativePromptImageUrl?: string;
-  underImageUrl?: string;
-  underImageName?: string;
-  underImageExtractionLevel?: number;
-  underImageExtractionLevelOutward?: number;
-  underImageId?: number;
-
-  underImageWidth?: number;
-  underImageHeight?: number;
-  promptImageName?: string;
-  negativePromptImageName?: string;
-  referImageUrl?: string;
-  referImageName?: string;
-  referImageExtractionLevel?: number;
-  referImageExtractionLevelOutward?: number;
-  referImageId?: number;
-
-  ratio: string;
-  count: number;
-  comfyuiPromptId?: string;
+export interface ImageGenerationResponse {
+  taskId: string;
+  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  progress: number;
+  imageUrl?: string;
+  imageId?: string;
+  createdTime?: string;
   startedTime?: string;
   completedTime?: string;
-  images: GeneratedImageResponse[];
-  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  
+  // 兼容旧字段
+  images?: { imageUrl: string, id: number }[];
 }
 
 
-export const getGenerateTaskStatus = async (taskId: number) => {
-  return httpGet<object, ImageGenerationResponse>(`/images/generates/${taskId}`, {});
+export const getGenerateTaskStatus = async (taskId: string) => {
+  return httpGet<object, ImageGenerationResponse>(`/image/detail/${taskId}`, {});
 };
 
 export type GetTaskStatusResponse = ImageGenerationResponse;

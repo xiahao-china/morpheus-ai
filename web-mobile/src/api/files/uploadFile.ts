@@ -16,26 +16,16 @@ export interface UploadImageParams {
 
 // 文件上传的响应结构（假设响应包含文件的 ID 和 URL）
 export interface UploadImageResponse {
-  id: number;
-  userId: number;
-  imageGenerationId: number | null;
-  originalName: string;
-  uploadFileType: string;
-  fileType:
-    | 'UNDER_IMAGE'
-    | 'REFER_IMAGE'
-    | 'PROMPT_IMAGE'
-    | 'NEGATIVE_PROMPT_IMAGE'
-    | 'OUTPUT_IMAGE'
-    | 'MATERIAL_IMAGE'
-    | 'MASK_IMAGE';
-  fileSize: number;
-  url: string;
-  status: number;
-  uploadTime: string;
-  downloadCount: number;
-  createdTime: string;
-  updatedTime: string;
+  fileId: string;
+  fileName: string;
+  fileUrl: string;
+  fileType: string;
+  downloadName: string;
+  minioPath: string;
+  
+  // 兼容旧字段
+  url?: string;
+  id?: number;
 }
 
 export interface IUploadProgress {
@@ -51,7 +41,7 @@ export const uploadImage = async (
   formData.append('imageFile', params.imageFile);
   formData.append('fileType', params.fileType);
 
-  return httpPost<FormData, UploadImageResponse>('/files/upload', formData, {
+  return httpPost<FormData, UploadImageResponse>('/file/upload/general', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },

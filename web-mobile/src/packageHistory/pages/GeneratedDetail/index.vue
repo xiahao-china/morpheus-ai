@@ -63,12 +63,14 @@ const startStream = () => {
       console.error(response)
       return
     }
-    progress.value = Math.round(response.data.percent)
+    progress.value = Math.round(response.data.progress)
     if (progress.value === 100 && response.data.status === 'COMPLETED') {
-      clearTimeout(timeout);
+      clearInterval(timeout);
       timeout = undefined;
       progress.value = 100;
-      prefetchDetail();
+      currentImageUrl.value = response.data.imageUrl || '';
+      generating.value = false;
+      // prefetchDetail();
     }
   }, 1000 * 3);
 }
@@ -91,12 +93,12 @@ const prefetchDetail = async () => {
   details.value.height = d.height || details.value.height
   details.value.mode = (d.type as any) || details.value.mode
 
-  if (d.status === 'COMPLETED' && d.images && d.images.length > 0) {
-    currentImageUrl.value = d.images[0].imageUrl || ''
+  if (d.status === 'COMPLETED') {
+    currentImageUrl.value = d.imageUrl || (d.images && d.images.length > 0 ? d.images[0].imageUrl : '')
     generating.value = false
     progress.value = 100
   } else {
-    await startStream()
+    startStream()
   }
 }
 

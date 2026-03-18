@@ -262,16 +262,16 @@ const handleSubmit = async () => {
   const response = await publishToSquare({
     title: formData.title,
     caption: formData.description,
-    styleTags: formData.styleTags.join(",") || undefined,
-    sceneTags: formData.sceneTags.join(",") || undefined,
-    imageId: props.taskInfo.images[props.currentIndex].id,
+    styleTags: formData.styleTags.length ? formData.styleTags : undefined,
+    sceneTags: formData.sceneTags.length ? formData.sceneTags : undefined,
+    imageId: String(props.taskInfo.images[props.currentIndex].id),
     drawTaskId:
       props.taskInfo.type === EFunctionGroupMode.DRAWING
-        ? props.taskInfo.id
+        ? String(props.taskInfo.id)
         : undefined,
     editedTaskId:
       props.taskInfo.type !== EFunctionGroupMode.DRAWING
-        ? props.taskInfo.id
+        ? String(props.taskInfo.id)
         : undefined,
   });
   if (response instanceof Error || response.code !== 200) {

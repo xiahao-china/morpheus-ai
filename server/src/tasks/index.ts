@@ -7,7 +7,7 @@ import { generationScheduler } from "@/services/generation-scheduler";
  */
 export const generationQueueCheckTask: ScheduledTask = {
   name: "generationQueueCheck",
-  interval: 10000, // 10秒
+  interval: 5000, // 5秒
   handler: async () => {
     // logger.info("Executing scheduled generation queue check...");
     generationScheduler.triggerCheck();
