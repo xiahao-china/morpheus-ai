@@ -55,6 +55,9 @@ const GenerationParamsSchema = new Schema({
   height: { type: Number, required: true }, // 高度
   ratio: { type: String }, // 比例
   count: { type: Number, default: 1 }, // 生成数量
+  seed: { type: Number }, // 随机种子
+  bucket_name: { type: String }, // 存储桶名称
+  filename_prefix: { type: String }, // 文件名前缀
   promptUsage: { type: String }, // 提示词用途
 
   // 模型参数

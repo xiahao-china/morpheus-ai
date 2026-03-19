@@ -266,6 +266,7 @@ class GenerationScheduler {
     const workflow = workflowManager.generateWorkflow("1_None", params);
 
     // 2. 将prompt提交到ComfyUI队列
+    console.log('workflow',workflow);
     logger.info(`[Task ${task.taskId}] Queueing prompt to ComfyUI...`);
     const queueRes = await client.queuePrompt(workflow, clientId);
     const promptId = queueRes.prompt_id;

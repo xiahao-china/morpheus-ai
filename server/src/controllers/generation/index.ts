@@ -1,7 +1,8 @@
 import GenerationQueue from "@/models/generationQueue";
 import GenerationTask, { TaskPurposeEnum, TaskStatusEnum } from "@/models/generationTask";
 import ImageGenInfo from "@/models/imageGenInfo";
-import { BUCKET_NAME } from "@/lib/minio";
+import FileResource from "@/models/fileResource";
+import { BUCKET_NAME, minioClient } from "@/lib/minio";
 import { sseService } from "@/services/sse-service";
 import { generationScheduler } from "@/services/generation-scheduler";
 import { callLLMAPI } from "@/services/generation-scheduler/llmTool";
@@ -28,7 +29,7 @@ import {
 } from "./const";
 
 interface IFengShuiRequestBody {
-  imageUrl?: string;
+  imageId?: string;
   houseInfo?: string;
   residentProfile?: string;
   residentNeeds?: string;
@@ -178,18 +179,36 @@ export const generateImage = async (ctx: Context) => {
 export const generateFengShui = async (ctx: Context) => {
   try {
     const {
-      imageUrl,
+      imageId,
       houseInfo,
       residentProfile,
       residentNeeds
     } = ctx.request.body as IFengShuiRequestBody;
 
-    if (!imageUrl) {
-      ctx.body = { code: 400, msg: "Image URL is required" };
+    if (!imageId) {
+      ctx.body = { code: 400, msg: "Image ID is required" };
       return;
     }
 
     const user = ctx.state.user as any;
+    const imageResource = await FileResource.findById(imageId);
+    if (!imageResource) {
+      ctx.body = { code: 404, msg: "Image not found" };
+      return;
+    }
+
+    const ownerIds = [user?.uid, user?._id].filter(Boolean).map((id: any) => String(id));
+    if (imageResource.userId && ownerIds.length && !ownerIds.includes(String(imageResource.userId))) {
+      ctx.body = { code: 403, msg: "Image access denied" };
+      return;
+    }
+
+    const imageUrl = await minioClient.presignedGetObject(
+      imageResource.bucket || BUCKET_NAME,
+      imageResource.path,
+      24 * 60 * 60
+    );
+
     const llmPrompt = buildFengShuiPromptInput({
       houseInfo,
       residentProfile,

@@ -24,18 +24,18 @@ export const getCurrentPageConfig = () => {
 
 // 判断是否需要显示NavigationBar的静态方法
 export const shouldShowNavigationBar = (pageConfig: any) => {
-  return pageConfig.needNavBar !== false
+  return pageConfig?.needNavBar !== false
 }
 
 // 判断是否需要显示BottomNavigation的静态方法
 export const shouldShowBottomNavigation = (pageConfig: any) => {
-  return pageConfig.needBottomBar === true
+  return pageConfig?.needBottomBar === true
 }
 
 // 获取NavigationBar logo显示状态的静态方法
 export const getLogoVisibility = (pageConfig: any, propsShowLogo: boolean) => {
   // 如果配置中明确需要显示导航栏，则根据props控制logo显示
-  if (pageConfig.needNavBar === true) {
+  if (pageConfig?.needNavBar === true) {
     return propsShowLogo
   }
   // 默认显示logo
@@ -45,7 +45,7 @@ export const getLogoVisibility = (pageConfig: any, propsShowLogo: boolean) => {
 // 获取NavigationBar标题显示状态的静态方法
 export const getTitleVisibility = (pageConfig: any, propsShowTitle: boolean) => {
   // 如果配置中明确需要显示导航栏，则根据props控制标题显示
-  if (pageConfig.needNavBar === true) {
+  if (pageConfig?.needNavBar === true) {
     return propsShowTitle
   }
   // 默认显示标题

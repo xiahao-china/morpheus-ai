@@ -27,20 +27,23 @@
         </view>
       </view>
 
-      <view :class="pageStyle['section']" v-if="historyList.length">
+      <view :class="pageStyle['section']">
         <view :class="pageStyle['sectionTitleRow']">
           <view :class="pageStyle['sectionTitle']" style="margin-bottom: 0;">历史搜索</view>
-          <view :class="pageStyle['clearHistory']" @click="clearHistory">
+          <view v-if="historyList.length" :class="pageStyle['clearHistory']" @click="clearHistory">
             <Del size="14" />
           </view>
         </view>
-        <view :class="pageStyle['tagList']">
+        <view v-if="historyList.length" :class="pageStyle['tagList']">
           <view v-for="item in historyList" :key="item" :class="pageStyle['tag']" @click="applyHistory(item)">
             <text :class="pageStyle['tagText']" style="color: #0f172a; font-weight: 500;">{{ item }}</text>
             <view :class="pageStyle['tagClose']" @click.stop="removeHistory(item)">
               <Close size="10" />
             </view>
           </view>
+        </view>
+        <view v-else :class="pageStyle['emptyHistory']">
+          暂无搜索历史
         </view>
       </view>
 

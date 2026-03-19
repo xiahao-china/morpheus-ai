@@ -34,8 +34,8 @@
       <!-- Bottom Actions -->
       <view :class="styles.actionGroup">
         <view :class="styles.historyBtn">查看记录</view>
-        <view :class="[styles.startBtn, imageUrl ? styles.active : '']" @tap="handleStart">
-          {{ loading ? '创建中...' : '立即开始 (4积分)' }}
+        <view :class="[styles.startBtn, imageId ? styles.active : '']" @tap="handleStart">
+          {{ loading ? '处理中...' : '立即开始 (4积分)' }}
         </view>
       </view>
     </view>
@@ -53,21 +53,26 @@ import type { UploadImageResponse } from '@/api/files/uploadFile';
 import styles from './index.module.less';
 
 const imageUrl = ref('');
+const imageId = ref('');
 const loading = ref(false);
 
 const uploadFengshuiImage = (filePath: string) => {
-  return new Promise<string>((resolve, reject) => {
+  return new Promise<{ imageId: string; imageUrl: string }>((resolve, reject) => {
     uploadImageByTaroUrl({
       filePath,
       fileType: 'UNDER_IMAGE',
       onSuccess: (resp) => {
         const data = resp.data as UploadImageResponse | undefined;
-        const url = data?.fileUrl || data?.url;
-        if (!url) {
-          reject(new Error('上传结果缺少图片地址'));
+        const uploadedImageId = data?.fileId || (typeof data?.id !== 'undefined' ? String(data.id) : '');
+        const uploadedImageUrl = data?.fileUrl || data?.url;
+        if (!uploadedImageId || !uploadedImageUrl) {
+          reject(new Error('上传结果缺少图片信息'));
           return;
         }
-        resolve(url);
+        resolve({
+          imageId: uploadedImageId,
+          imageUrl: uploadedImageUrl
+        });
       },
       onFail: (err) => {
         reject(err);
@@ -85,20 +90,28 @@ const handleUpload = async () => {
     });
 
     if (res.tempFiles && res.tempFiles.length > 0) {
-      imageUrl.value = res.tempFiles[0].tempFilePath;
+      loading.value = true;
+      const uploadedImage = await uploadFengshuiImage(res.tempFiles[0].tempFilePath);
+      imageId.value = uploadedImage.imageId;
+      imageUrl.value = uploadedImage.imageUrl;
+      Taro.showToast({ title: '上传成功', icon: 'success' });
     }
   } catch (err) {
     console.log('Upload cancelled or failed:', err);
+    Taro.showToast({ title: '上传失败', icon: 'none' });
+    imageId.value = '';
+    imageUrl.value = '';
+  } finally {
+    loading.value = false;
   }
 };
 
 const handleStart = async () => {
-  if (!imageUrl.value) return;
+  if (!imageId.value) return;
 
   loading.value = true;
   try {
-    const uploadedImageUrl = await uploadFengshuiImage(imageUrl.value);
-    const { taskId } = await createFengshuiTask({ imageUrl: uploadedImageUrl });
+    const { taskId } = await createFengshuiTask({ imageId: imageId.value });
 
     Taro.navigateTo({
       url: `/pages/Fengshui/Progress/index?taskId=${taskId}`

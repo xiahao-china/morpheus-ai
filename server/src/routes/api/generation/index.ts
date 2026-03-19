@@ -18,7 +18,7 @@ export default (router: Router) => {
   router.post('/api/image/generate', authMiddleware, generateImage);
 
   // AI风水分析任务接口（需要登录）
-  router.post('/api/v1/generation/fengshui', authMiddleware, generateFengShui);
+  router.post('/api/generation/fengshui', authMiddleware, generateFengShui);
 
   // 查询任务状态接口 (SSE) - 兼容旧路径
   router.get('/api/image/status/:taskId', getGenerationStatus);

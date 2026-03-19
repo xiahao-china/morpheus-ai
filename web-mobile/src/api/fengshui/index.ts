@@ -27,7 +27,7 @@ export interface IFengshuiReport {
 }
 
 interface ICreateFengshuiTaskParams {
-  imageUrl: string;
+  imageId: string;
   houseInfo?: string;
   residentProfile?: string;
   residentNeeds?: string;

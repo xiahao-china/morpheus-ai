@@ -14,7 +14,7 @@ export interface AIModelConfig {
 // 生图 AI 配置（使用 Gemini）
 export const IMAGE_GENERATION_CONFIG: AIModelConfig = {
   apiKey: "sk-TZHc0Ru54BclqUEKcyan0ujxXH9LYrU4tofXjSFVPEPJiAc5",
-  baseUrl: "https://aigc.x-see.cn",
+  baseUrl: "https://aigc.x-see.cn/v1",
   model: "gemini-3.1-flash-image-preview",
   apiKeyHeaderKey: "Authorization",
 };

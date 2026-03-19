@@ -43,31 +43,68 @@ export const callLLMAPI = async (params: any, taskChannel: TaskChannelEnum): Pro
         {
             role: "user",
             content: [
-                { type: "text", text: params.prompt }
+                { type: "text", text: params.prompt || "请分析这张图片的风水" }
             ]
         }
     ];
 
-    // 添加基础图片（如果有）
-    if (params.baseImages && Array.isArray(params.baseImages)) {
-        params.baseImages.forEach((imgUrl: string) => {
-            messages[0].content.push({
-                type: "image_url",
-                image_url: { url: imgUrl }
-            });
-        });
-    }
+    const baseImages = Array.isArray(params.baseImages) ? params.baseImages.filter(Boolean) : [];
+    const normalizedBaseImages = await Promise.all(baseImages.map(async (imgUrl: string) => {
+        if (taskChannel !== TaskChannelEnum.VLLM) {
+            return imgUrl;
+        }
+        try {
+            const imgRes = await axios.get(imgUrl, { responseType: 'arraybuffer', timeout: 30000 });
+            const mimeType = (imgRes.headers?.['content-type'] || 'image/jpeg').split(';')[0];
+            const base64 = Buffer.from(imgRes.data).toString('base64');
+            return `data:${mimeType};base64,${base64}`;
+        } catch (error: any) {
+            logger.warn(`[callLLMAPI] Failed to transform image url to data url: ${error?.message || error}`);
+            return imgUrl;
+        }
+    }));
 
-    const response = await axios.post(`${config.baseUrl}/v1/chat/completions`, {
-        model: config.model,
-        messages: messages
-    }, {
+    normalizedBaseImages.forEach((imgUrl: string) => {
+        messages[0].content.push({
+            type: "image_url",
+            image_url: { url: imgUrl }
+        });
+    });
+
+    logger.info(`[callLLMAPI] Calling ${config.baseUrl}/chat/completions with model ${config.model}`);
+
+    const requestConfig = {
         headers: {
             [config.apiKeyHeaderKey || 'Authorization']: `Bearer ${config.apiKey}`,
             'Content-Type': 'application/json'
         },
-        timeout: 120000 // 生成超时2分钟
-    });
+        timeout: 120000
+    };
+    let response: any;
+    try {
+        response = await axios.post(`${config.baseUrl}/chat/completions`, {
+            model: config.model,
+            messages: messages
+        }, requestConfig);
+    } catch (error: any) {
+        if (taskChannel !== TaskChannelEnum.VLLM) {
+            throw error;
+        }
+        const fallbackMessages = JSON.parse(JSON.stringify(messages));
+        fallbackMessages[0].content = fallbackMessages[0].content.map((item: any) => {
+            if (item?.type === "image_url" && item?.image_url?.url) {
+                return {
+                    type: "image_url",
+                    image_url: item.image_url.url
+                };
+            }
+            return item;
+        });
+        response = await axios.post(`${config.baseUrl}/chat/completions`, {
+            model: config.model,
+            messages: fallbackMessages
+        }, requestConfig);
+    }
 
     const content = response.data.choices[0]?.message?.content;
     if (!content) throw new Error("No content in response");
@@ -148,7 +185,7 @@ const startSSEProgressTimer = (sseId: string, taskId: string, taskChannel: TaskC
     const updateIntervalMs = 1000;
     // 每次更新增加的进度百分比，基于预估耗时计算，确保在预估时间内达到约90%
     const progressStep = Math.max(1, Math.floor((90 / (estimatedDuration / updateIntervalMs))));
-    
+
     return setInterval(() => {
         if (progress < 95) {
             // 如果快到95%了，减慢速度
@@ -159,7 +196,7 @@ const startSSEProgressTimer = (sseId: string, taskId: string, taskChannel: TaskC
             }
             // 确保不超过95%
             progress = Math.min(progress, 95);
-            
+
             sseService.send(sseId, "status", {
                 taskId: taskId,
                 status: TaskStatusEnum.PROCESSING,
@@ -176,7 +213,19 @@ const startSSEProgressTimer = (sseId: string, taskId: string, taskChannel: TaskC
 export const executeThirdPartyTask = async (task: IGenerationQueue, generationTask: IGenerationTask) => {
     logger.info(`[Task ${task.taskId}] Executing via Third Party API...`);
 
-    const params = { ...generationTask.params, taskId: task.taskId, userId: task.userId };
+    // 正确获取 params：Mongoose 文档需要通过 toJSON() 或直接访问 _doc 获取原始数据
+    const taskParams = generationTask.params?.toJSON ? generationTask.params.toJSON() :
+                       generationTask.params?._doc ? generationTask.params._doc :
+                       generationTask.params;
+
+    const params = {
+        ...taskParams,
+        taskId: task.taskId,
+        userId: task.userId
+    };
+
+    logger.info(`[executeThirdPartyTask] params.prompt length: ${params.prompt?.length || 0}`);
+
     const taskChannel = (generationTask.purpose && TaskPurposeChannelMapping[generationTask.purpose]) || TaskChannelEnum.THIRD_PARTY_GENERATION_IMAGE;
 
     // 启动SSE进度推送定时器
@@ -201,7 +250,7 @@ export const executeThirdPartyTask = async (task: IGenerationQueue, generationTa
             status: TaskStatusEnum.COMPLETED,
             completedTime: new Date()
         };
-        
+
         if (taskChannel === TaskChannelEnum.THIRD_PARTY_GENERATION_IMAGE && savedImageGenId) {
             updateData.$push = { ImageGenIds: savedImageGenId };
         } else {
