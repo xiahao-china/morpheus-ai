@@ -19,7 +19,7 @@ type ChannelConfigType = {
 export const ChannelConfigMapping: Record<TaskChannelEnum, ChannelConfigType> = {
     [TaskChannelEnum.THIRD_PARTY_GENERATION_IMAGE]: { config: IMAGE_GENERATION_CONFIG, lastCallDuration: 15000 }, // 默认预估15秒
     [TaskChannelEnum.LLM]: { config: LLM_CONFIG, lastCallDuration: 5000 }, // 默认预估5秒
-    [TaskChannelEnum.VLLM]: { config: VISION_LLM_CONFIG, lastCallDuration: 10000 }, // 默认预估10秒
+    [TaskChannelEnum.VLLM]: { config: VISION_LLM_CONFIG, lastCallDuration: 30000 }, // 默认预估10秒
     [TaskChannelEnum.COMFYUI]: { config: undefined, lastCallDuration: 0 } // ComfyUI 不使用此配置
 };
 
@@ -174,34 +174,36 @@ export const callLLMAPI = async (params: any, taskChannel: TaskChannelEnum): Pro
 
 /**
  * 启动 SSE 进度推送定时器
- * @param sseId SSE 连接 ID
- * @param taskId 任务 ID
+ * @param task 队列任务
  * @param taskChannel 任务渠道
  * @returns 定时器 ID，用于后续清理
  */
-const startSSEProgressTimer = (sseId: string, taskId: string, taskChannel: TaskChannelEnum): NodeJS.Timeout => {
-    let progress = 0;
+const startSSEProgressTimer = (task: IGenerationQueue, taskChannel: TaskChannelEnum): NodeJS.Timeout => {
+    let progress = Math.max(1, Number(task.progress || 0));
     const estimatedDuration = ChannelConfigMapping[taskChannel]?.lastCallDuration || 15000;
     const updateIntervalMs = 1000;
-    // 每次更新增加的进度百分比，基于预估耗时计算，确保在预估时间内达到约90%
     const progressStep = Math.max(1, Math.floor((90 / (estimatedDuration / updateIntervalMs))));
 
     return setInterval(() => {
         if (progress < 95) {
-            // 如果快到95%了，减慢速度
             if (progress > 85) {
                 progress += 1;
             } else {
                 progress += progressStep;
             }
-            // 确保不超过95%
             progress = Math.min(progress, 95);
-
-            sseService.send(sseId, "status", {
-                taskId: taskId,
-                status: TaskStatusEnum.PROCESSING,
-                progress: progress
+            task.progress = progress;
+            void GenerationQueue.findByIdAndUpdate(task._id, { progress }).catch((error: any) => {
+                logger.warn(`[Task ${task.taskId}] Failed to persist queue progress: ${error?.message || error}`);
             });
+
+            if (task.sseId) {
+                sseService.send(task.sseId, "status", {
+                    taskId: task.taskId,
+                    status: TaskStatusEnum.PROCESSING,
+                    progress: progress
+                });
+            }
         }
     }, updateIntervalMs);
 };
@@ -224,15 +226,14 @@ export const executeThirdPartyTask = async (task: IGenerationQueue, generationTa
         userId: task.userId
     };
 
+    const taskChannel = (generationTask.purpose && TaskPurposeChannelMapping[generationTask.purpose]) || TaskChannelEnum.THIRD_PARTY_GENERATION_IMAGE;
+    if (taskChannel === TaskChannelEnum.THIRD_PARTY_GENERATION_IMAGE && generationTask.translatedPrompt) {
+        params.prompt = generationTask.translatedPrompt;
+    }
     logger.info(`[executeThirdPartyTask] params.prompt length: ${params.prompt?.length || 0}`);
 
-    const taskChannel = (generationTask.purpose && TaskPurposeChannelMapping[generationTask.purpose]) || TaskChannelEnum.THIRD_PARTY_GENERATION_IMAGE;
-
-    // 启动SSE进度推送定时器
     let progressInterval: NodeJS.Timeout | null = null;
-    if (task.sseId) {
-        progressInterval = startSSEProgressTimer(task.sseId, task.taskId, taskChannel);
-    }
+    progressInterval = startSSEProgressTimer(task, taskChannel);
 
     try {
         const { content, imageUrl, savedImageGenId } = await callLLMAPI(params, taskChannel);

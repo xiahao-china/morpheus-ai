@@ -10,6 +10,7 @@ import { TaskChannelEnum } from "@/models/generationTask";
 import { sendResponse } from "@/utils/const";
 import {
   buildOptimizePromptInput,
+  buildTranslatePromptInput,
   buildFengShuiPromptInput,
   Context,
   createGenerationTaskRecord,
@@ -123,6 +124,14 @@ export const generateImage = async (ctx: Context) => {
     }
 
     const user = ctx.state.user as any;
+    let translatedPrompt = prompt;
+    try {
+      const translateInput = buildTranslatePromptInput(prompt);
+      const translated = await callLLMAPI({ prompt: translateInput }, TaskChannelEnum.LLM);
+      translatedPrompt = normalizeOptimizedPrompt(translated.content) || prompt;
+    } catch (error: any) {
+      logger.warn(`Translate prompt failed, fallback to original prompt: ${error?.message || error}`);
+    }
 
     // 根据是否有底图决定使用 ComfyUI 还是第三方服务
     const purpose = getGeneratedTaskPurpose(base_images);
@@ -141,7 +150,7 @@ export const generateImage = async (ctx: Context) => {
       baseImages: base_images
     };
 
-    const generationTask = createGenerationTaskRecord(user.uid, purpose, params);
+    const generationTask = createGenerationTaskRecord(user.uid, purpose, params, translatedPrompt);
 
     await generationTask.save();
     const taskId = generationTask._id.toString();

@@ -15,6 +15,11 @@ export const LLM_OPTIMIZE_SYSTEM_INSTRUCTION = `作为一名Stable Diffusion/Com
 2. 自动补充高质量相关的提示词（如：(Masterpiece, Best Quality, 8k, highly detailed, photorealistic)）。
 3. 补充适当的室内设计光影、材质、氛围描述（如：cinematic lighting, ray tracing, architectural photography）。
 4. 只返回最终的英文提示词字符串，不要返回任何其他解释性文字。`;
+export const LLM_TRANSLATE_SYSTEM_INSTRUCTION = `请将用户输入的中文图像提示词翻译为自然、准确、适合AI生图模型理解的英文提示词。
+要求：
+1. 保留原始语义，不要臆造未提及内容。
+2. 使用简洁高质量英文表达，适合Stable Diffusion/ComfyUI等生图模型。
+3. 只返回英文提示词字符串，不要返回解释。`;
 export const FENG_SHUI_SYSTEM_INSTRUCTION = `你是一位资深住宅风水分析师。请基于用户提供的户型图与补充信息，输出可直接被前端消费的JSON结果。
 
 必须严格遵守以下要求：
@@ -77,6 +82,10 @@ export const buildOptimizePromptInput = (prompt: string) => {
   return `${LLM_OPTIMIZE_SYSTEM_INSTRUCTION}\n\n用户输入: ${prompt}\n\n优化后的提示词:`;
 };
 
+export const buildTranslatePromptInput = (prompt: string) => {
+  return `${LLM_TRANSLATE_SYSTEM_INSTRUCTION}\n\n用户输入: ${prompt}\n\n英文提示词:`;
+};
+
 export const buildFengShuiPromptInput = (input: {
   houseInfo?: string;
   residentProfile?: string;
@@ -107,13 +116,15 @@ export const parsePositiveInt = (value: unknown, fallback: number) => {
 export const createGenerationTaskRecord = (
   userId: string,
   purpose: TaskPurposeEnum,
-  params: any
+  params: any,
+  translatedPrompt?: string
 ) => {
   return new GenerationTask({
     userId,
     status: TaskStatusEnum.PENDING,
     purpose,
     params,
+    translatedPrompt,
     comfyui: {
       seed: params.seed
     },

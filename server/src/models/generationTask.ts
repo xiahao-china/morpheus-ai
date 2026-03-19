@@ -93,6 +93,7 @@ export interface IGenerationTask extends Document {
   status: TaskStatusEnum; // 任务状态
   purpose?: TaskPurposeEnum; // 用途
   params: any; // 生成参数
+  translatedPrompt?: string; // 翻译后的提示词
   comfyui: any; // ComfyUI配置
 
   // 结果信息
@@ -111,6 +112,7 @@ const GenerationTaskSchema: Schema = new Schema({
   purpose: { type: String, enum: Object.values(TaskPurposeEnum) }, // 用途
 
   params: GenerationParamsSchema, // 生成参数
+  translatedPrompt: { type: String }, // 翻译后的提示词
   comfyui: ComfyUIConfigSchema, // ComfyUI配置
 
   // 结果信息

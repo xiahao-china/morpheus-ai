@@ -259,7 +259,16 @@ class GenerationScheduler {
   // @param generationTask 生成任务对象
   // @param client ComfyUI客户端实例
   private async executeComfyUITask(task: IGenerationQueue, generationTask: IGenerationTask, client: ComfyUIClient) {
-    const params = generationTask.params;
+    const rawParams = generationTask.params?.toJSON
+      ? generationTask.params.toJSON()
+      : (generationTask.params?._doc ? generationTask.params._doc : generationTask.params);
+    const params = { ...rawParams };
+    if (generationTask.translatedPrompt) {
+      params.prompt = generationTask.translatedPrompt;
+    }
+    if (!params.seed || Number.isNaN(Number(params.seed))) {
+      params.seed = Math.floor(Math.random() * 1000000000000000);
+    }
     const clientId = `morpheus_${task.taskId}_${Date.now()}`;
 
     // 1. 生成ComfyUI工作流
