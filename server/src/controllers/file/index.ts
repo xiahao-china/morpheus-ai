@@ -2,6 +2,7 @@ import { Context as KoaContext } from "koa";
 type Context = KoaContext | any;
 import { minioClient, BUCKET_NAME } from "@/lib/minio";
 import FileResource from "@/models/fileResource";
+import { sendResponse, EReqStatus } from "@/utils/const";
 
 /**
  * 上传文件到 MinIO
@@ -35,7 +36,7 @@ export const uploadFile = async (ctx: Context) => {
   });
   await fileResource.save();
 
-  ctx.body = { code: 200, data: { filename, url, id: fileResource._id } };
+  sendResponse.success(ctx, { filename, url, id: fileResource._id });
 };
 
 /**
@@ -44,7 +45,7 @@ export const uploadFile = async (ctx: Context) => {
 export const getFileUrl = async (ctx: Context) => {
     const { filename } = ctx.params;
     const url = await minioClient.presignedGetObject(BUCKET_NAME, filename, 24*60*60);
-    ctx.body = { code: 200, data: { url } };
+    sendResponse.success(ctx, { url });
 }
 
 /**
@@ -85,15 +86,12 @@ export const uploadGeneralFile = async (ctx: Context) => {
   });
   await fileResource.save();
 
-  ctx.body = {
-    code: 200,
-    data: {
-      fileId: fileResource._id,
-      fileName: file.originalname,
-      fileUrl: url,
-      fileType: fileType,
-      downloadName: file.originalname,
-      minioPath: objectPath
-    }
-  };
+  sendResponse.success(ctx, {
+    fileId: fileResource._id,
+    fileName: file.originalname,
+    fileUrl: url,
+    fileType: fileType,
+    downloadName: file.originalname,
+    minioPath: objectPath
+  });
 };

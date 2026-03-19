@@ -2,6 +2,7 @@ import { Context as KoaContext } from "koa";
 type Context = KoaContext | any;
 import * as paymentService from "@/services/payment";
 import { logger } from "@/lib/log4js";
+import { sendResponse, EReqStatus } from "@/utils/const";
 
 /**
  * 创建支付宝支付订单
@@ -19,10 +20,10 @@ export const createPayment = async (ctx: Context) => {
 
   try {
     const result = await paymentService.createAlipayOrder(user._id, packageId, payType);
-    ctx.body = { code: 200, data: result };
+    sendResponse.success(ctx, result);
   } catch (error: any) {
     logger.error("Alipay Create Payment Error:", error);
-    ctx.body = { code: 500, msg: error.message || "Internal server error" };
+    sendResponse.error(ctx, error.message || "Internal server error");
   }
 };
 

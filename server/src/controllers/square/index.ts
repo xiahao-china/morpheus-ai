@@ -2,6 +2,7 @@ import { Context as KoaContext } from "koa";
 type Context = KoaContext | any;
 import Square from "@/models/square";
 import ImageGenInfo from "@/models/imageGenInfo";
+import { sendResponse, EReqStatus } from "@/utils/const";
 
 /**
  * 获取广场列表（支持风格和场景标签筛选）
@@ -32,7 +33,7 @@ export const getSquareList = async (ctx: Context) => {
     .skip((Number(page) - 1) * Number(pageSize))
     .limit(Number(pageSize));
   const total = await Square.countDocuments(filter);
-  ctx.body = { code: 200, data: { list, total } };
+  sendResponse.success(ctx, { list, total });
 };
 
 /**
@@ -73,7 +74,7 @@ export const publishSquare = async (ctx: Context) => {
   });
 
   await square.save();
-  ctx.body = { code: 200, data: square };
+  sendResponse.success(ctx, square);
 };
 
 /**
@@ -96,7 +97,7 @@ export const deleteSquare = async (ctx: Context) => {
   }
 
   await Square.findByIdAndDelete(id);
-  ctx.body = { code: 200, msg: 'Deleted successfully' };
+  sendResponse.success(ctx, { msg: 'Deleted successfully' });
 };
 
 /**
@@ -119,5 +120,5 @@ export const likeSquare = async (ctx: Context) => {
   }
 
   await square.save();
-  ctx.body = { code: 200, data: square };
+  sendResponse.success(ctx, square);
 };

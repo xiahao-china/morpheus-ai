@@ -7,6 +7,7 @@ import { logger } from "@/lib/log4js";
 import { MINI_PROGRAM_CONFIG, MP_CONFIG, REDIS_KEYS, SMS_CONFIG } from "@/config/index";
 import axios from "axios";
 import { v4 as uuidv4 } from 'uuid';
+import { sendResponse, EReqStatus } from "@/utils/const";
 
 /**
  * 绑定手机号 - Web端微信登录后绑定手机号
@@ -87,15 +88,11 @@ export const bindPhone = async (ctx: Context) => {
     // 4. 生成新 Token
     const token = signToken(finalUser);
 
-    ctx.body = {
-        code: 200,
-        msg: "Bind successful",
-        data: { token, user: finalUser }
-    };
+    sendResponse.success(ctx, { token, user: finalUser });
 
   } catch (error) {
     logger.error(`[Wechat Bind Phone] Error:`, error);
-    ctx.body = { code: 500, msg: "Internal server error", error };
+    sendResponse.error(ctx, "Internal server error");
   }
 };
 
@@ -187,13 +184,10 @@ export const miniProgramLogin = async (ctx: Context) => {
     // 4. 生成 token
     const token = signToken(user);
 
-    ctx.body = {
-      code: 200,
-      data: { token, user }
-    };
+    sendResponse.success(ctx, { token, user });
   } catch (error) {
     logger.error(`[Wechat Mini Login] Error:`, error);
-    ctx.body = { code: 500, msg: "Internal server error", error };
+    sendResponse.error(ctx, "Internal server error");
   }
 };
 
@@ -216,15 +210,12 @@ export const getQrCode = async (ctx: Context) => {
     300
   );
 
-  ctx.body = {
-    code: 200,
-    data: {
-      appId: MP_CONFIG.appId,
-      redirectUri: authorizeUrl,
-      state: state,
-      qrcodeUrl: authorizeUrl
-    }
-  };
+  sendResponse.success(ctx, {
+    appId: MP_CONFIG.appId,
+    redirectUri: authorizeUrl,
+    state: state,
+    qrcodeUrl: authorizeUrl
+  });
 };
 
 /**
@@ -252,7 +243,7 @@ export const checkLoginStatus = async (ctx: Context) => {
     ctx.body = loginData;
   } catch (error) {
     logger.error(`[Wechat Check Status] Error:`, error);
-    ctx.body = { code: 500, msg: "Internal server error", error };
+    sendResponse.error(ctx, "Internal server error");
   }
 };
 
@@ -390,6 +381,6 @@ export const wechatCallback = async (ctx: Context) => {
 
   } catch (error) {
     logger.error(`[Wechat Callback] Error:`, error);
-    ctx.body = { code: 500, msg: "Internal server error", error };
+    sendResponse.error(ctx, "Internal server error");
   }
 };

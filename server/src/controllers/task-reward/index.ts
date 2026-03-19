@@ -2,6 +2,7 @@ import { Context as KoaContext } from "koa";
 type Context = KoaContext | any;
 import * as taskService from "@/services/task";
 import { getLogger } from "@/lib/log4js";
+import { sendResponse, EReqStatus } from "@/utils/const";
 
 const logger = getLogger("TaskRewardController");
 
@@ -13,9 +14,9 @@ export const getTasks = async (ctx: Context) => {
   const user = ctx.state.user as any;
   try {
     const tasks = await taskService.getUserTasks(user._id);
-    ctx.body = { code: 200, data: tasks };
+    sendResponse.success(ctx, tasks);
   } catch (error) {
-    ctx.body = { code: 500, msg: "Internal server error", error };
+    sendResponse.error(ctx, "Internal server error");
   }
 };
 
@@ -34,15 +35,11 @@ export const claimReward = async (ctx: Context) => {
 
     try {
         const result = await taskService.claimReward(user._id, taskId);
-        ctx.body = {
-            code: 200,
-            msg: "Reward claimed",
-            data: result
-        };
+        sendResponse.success(ctx, result);
 
     } catch (error: any) {
         logger.error(`Error claiming reward for task ${taskId}:`, error);
-        ctx.body = { code: 500, msg: error.message || "Internal server error" };
+        sendResponse.error(ctx, error.message || "Internal server error");
     }
 };
 
@@ -62,11 +59,11 @@ export const performTask = async (ctx: Context) => {
     try {
         if (taskCode === 'daily_sign_in') {
             await taskService.incrementTaskProgress(user._id, taskCode, 1);
-            ctx.body = { code: 200, msg: "Task progress updated" };
+            sendResponse.success(ctx, { msg: "Task progress updated" });
         } else {
             ctx.body = { code: 403, msg: "This task cannot be triggered manually" };
         }
     } catch (error: any) {
-        ctx.body = { code: 500, msg: error.message || "Internal server error" };
+        sendResponse.error(ctx, error.message || "Internal server error");
     }
 };

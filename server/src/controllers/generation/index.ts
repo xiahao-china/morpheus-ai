@@ -10,6 +10,7 @@ import { generationScheduler } from "@/services/generation-scheduler";
 import { calculateDimensions } from "./const";
 import { callLLMAPI } from "@/services/generation-scheduler/llmTool";
 import { TaskChannelEnum } from "@/models/generationTask";
+import { sendResponse, EReqStatus } from "@/utils/const";
 
 const logger = getLogger("GenerationController");
 
@@ -47,10 +48,10 @@ export const submitFeedback = async (ctx: Context) => {
     }
 
     await image.save();
-    ctx.body = { code: 200, msg: "Feedback submitted", data: { isLiked: image.isLiked } };
+    sendResponse.success(ctx, { isLiked: image.isLiked });
 
   } catch (error) {
-    ctx.body = { code: 500, msg: "Internal server error", error };
+    sendResponse.error(ctx, "Internal server error");
   }
 };
 
@@ -85,16 +86,13 @@ export const optimizePrompt = async (ctx: Context) => {
       optimizedPrompt = optimizedPrompt.slice(1, -1);
     }
 
-    ctx.body = {
-      code: 200,
-      data: {
-        originalPrompt: prompt,
-        optimizedPrompt: optimizedPrompt
-      }
-    };
+    sendResponse.success(ctx, {
+      originalPrompt: prompt,
+      optimizedPrompt: optimizedPrompt
+    });
   } catch (error: any) {
     logger.error("Error optimizing prompt:", error);
-    ctx.body = { code: 500, msg: "Failed to optimize prompt", error: error.message };
+    sendResponse.error(ctx, "Failed to optimize prompt");
   }
 };
 
@@ -124,7 +122,7 @@ export const generateImage = async (ctx: Context) => {
     // 根据是否有底图决定使用 ComfyUI 还是第三方服务
     const hasBaseImages = base_images && Array.isArray(base_images) && base_images.length > 0;
     const purpose = hasBaseImages ? TaskPurposeEnum.IMG2IMG : TaskPurposeEnum.TXT2IMG;
-    
+
     // 如果没有底图，根据比例计算宽高
     let width = 1024;
     let height = 1024;
@@ -177,20 +175,18 @@ export const generateImage = async (ctx: Context) => {
     logger.info(`Task ${taskId} created and queued for user ${user.uid} (Purpose: ${purpose})`);
 
     // 返回任务ID
-    ctx.body = {
-      code: 200,
-      data: {
-        taskId,
-        status: 'queued',
-        queueId: queueItem._id }
-    };
+    sendResponse.success(ctx, {
+      taskId,
+      status: 'queued',
+      queueId: queueItem._id
+    });
 
     // 立即触发调度器检查队列
     generationScheduler.triggerCheck();
 
   } catch (error: any) {
     logger.error("Error creating generation task:", error);
-    ctx.body = { code: 500, msg: "Failed to create generation task", error: error.message };
+    sendResponse.error(ctx, "Failed to create generation task");
   }
 };
 
@@ -311,13 +307,10 @@ export const getTaskDetail = async (ctx: Context) => {
       result.images = images;
     }
 
-    ctx.body = {
-      code: 200,
-      data: result
-    };
+    sendResponse.success(ctx, result);
   } catch (error: any) {
     logger.error(`Error getting task detail for ${ctx.params.taskId}:`, error);
-    ctx.body = { code: 500, msg: "Internal server error", error: error.message };
+    sendResponse.error(ctx, "Internal server error");
   }
 };
 
@@ -339,23 +332,20 @@ export const getGenerationHistory = async (ctx: Context) => {
 
     const total = await ImageGenInfo.countDocuments({ userId: user.uid });
 
-    ctx.body = {
-      code: 200,
-      data: {
-        list: images,
-        total,
+    sendResponse.success(ctx, {
+      list: images,
+      total,
+      page,
+      pageSize,
+      pagination: {
         page,
         pageSize,
-        pagination: {
-          page,
-          pageSize,
-          total,
-          totalPages: Math.ceil(total / pageSize)
-        }
+        total,
+        totalPages: Math.ceil(total / pageSize)
       }
-    };
+    });
   } catch (error: any) {
     logger.error(`Error getting history for user:`, error);
-    ctx.body = { code: 500, msg: "Internal server error", error: error.message };
+    sendResponse.error(ctx, "Internal server error");
   }
 };

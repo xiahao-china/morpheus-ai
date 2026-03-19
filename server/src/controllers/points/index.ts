@@ -1,6 +1,7 @@
 import { Context } from "koa";
 import PointsRecord from "@/models/pointsRecord";
 import User from "@/models/user";
+import { sendResponse } from "@/utils/const";
 
 /**
  * 获取用户积分余额和会员信息
@@ -16,9 +17,9 @@ export const getPointsBalance = async (ctx: Context) => {
         expiry: currentUser?.membershipExpiry
     };
 
-    ctx.body = { code: 200, data: { points: balance, membership } };
+    sendResponse.success(ctx, { points: balance, membership });
   } catch (error) {
-    ctx.body = { code: 500, msg: "Internal server error", error };
+    sendResponse.error(ctx, "Internal server error");
   }
 };
 
@@ -40,16 +41,13 @@ export const getPointsHistory = async (ctx: Context) => {
             .skip(skip)
             .limit(limit);
 
-        ctx.body = {
-            code: 200,
-            data: {
-                list,
-                total,
-                page: pageNum,
-                pageSize: limit
-            }
-        };
+        sendResponse.success(ctx, {
+            list,
+            total,
+            page: pageNum,
+            pageSize: limit
+        });
     } catch (error) {
-        ctx.body = { code: 500, msg: "Internal server error", error };
+        sendResponse.error(ctx, "Internal server error");
     }
 };

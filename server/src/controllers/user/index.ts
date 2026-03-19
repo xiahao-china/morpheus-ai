@@ -6,6 +6,7 @@ import redis from "@/lib/redis";
 import { logger } from "@/lib/log4js";
 import { SMS_CONFIG, REDIS_KEYS, USER_CONSTANTS } from "@/config/index";
 import { sendSMS, sendEmail } from "./const";
+import { sendResponse, EReqStatus } from "@/utils/const";
 
 /**
  * 发送验证码
@@ -34,7 +35,7 @@ export const sendVerifyCode = async (ctx: Context) => {
     return;
   }
 
-  ctx.body = { code: 200, msg: 'Code sent' };
+  sendResponse.success(ctx, { msg: 'Code sent' });
 };
 
 /**
@@ -64,7 +65,7 @@ export const login = async (ctx: Context) => {
         sameSite: 'lax'
       });
 
-      ctx.body = { code: 200, data: { user } };
+      sendResponse.success(ctx, { user });
       return;
   }
 
@@ -110,7 +111,7 @@ export const login = async (ctx: Context) => {
     sameSite: 'lax'
   });
 
-  ctx.body = { code: 200, data: { user } };
+  sendResponse.success(ctx, { user });
 };
 
 /**
@@ -119,7 +120,7 @@ export const login = async (ctx: Context) => {
 export const getUserInfo = async (ctx: Context) => {
     const user = ctx.state.user;
     const dbUser = await User.findById(user._id);
-    ctx.body = { code: 200, data: dbUser };
+    sendResponse.success(ctx, dbUser);
 }
 
 /**
@@ -142,8 +143,8 @@ export const updateUserInfo = async (ctx: Context) => {
       { new: true }
     );
 
-    ctx.body = { code: 200, data: updatedUser };
+    sendResponse.success(ctx, updatedUser);
   } catch (error) {
-    ctx.body = { code: 500, msg: "Internal server error", error };
+    sendResponse.error(ctx, "Internal server error");
   }
 };
