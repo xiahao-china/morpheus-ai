@@ -44,6 +44,7 @@
     border: none;
     background-color: @weak-gray2;
     box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+    cursor: pointer;
 
     .search-icon {
       display: inline-flex;
@@ -53,35 +54,14 @@
       margin-right: 21rpx;
     }
 
-    .search-btn {
-      display: none;
-    }
-
-    .search-input {
-      display: inline-flex;
+    .search-placeholder {
+      display: inline-block;
       flex: 1;
-      padding: 0;
-      min-width: 0;
-      background: transparent;
-      border: none;
-
-    }
-
-    .search-input :global .nut-searchbar__search-input {
-      height: 100%;
-      padding-left: 8rpx;
-      background: transparent;
-      border: none;
-    }
-
-    .search-input :global input {
       font-size: 28rpx;
       color: @second-text-color;
-      background: transparent;
-    }
-
-    .search-input :global input::placeholder {
-      color: @weak-text-gray2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 

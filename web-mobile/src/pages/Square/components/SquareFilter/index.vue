@@ -3,118 +3,82 @@
     <!-- 上方筛选项区域 -->
     <view :class="pageStyle['filter-options']">
       <!-- 搜索框 -->
-      <view :class="pageStyle['search-container']">
+      <view :class="pageStyle['search-container']" @click="openSearchPopup">
         <Search :class="pageStyle['search-icon']"></Search>
-        <nut-searchbar
-          :class="pageStyle['search-input']"
-          v-model="keyword"
-          placeholder="输入关键词搜索作品..."
-          @search="()=>handleSearch()"
-          :max-length="10"
-        />
-        <nut-button :class="pageStyle['search-btn']">搜索</nut-button>
+        <view :class="pageStyle['search-placeholder']">{{ keyword || "搜索灵感作品..." }}</view>
       </view>
-
+      <!--
       <view :class="pageStyle['filter-options-popover']">
-        <view :class="pageStyle['segment']">
-          <view
-            :class="[pageStyle['segment-item'], activeCategory.value === 'community' ? pageStyle['segment-item-active'] : '']"
-            @click="handleCategoryChange(categoryOptions[0])"
-          >
-            <IconFont :class="pageStyle['segment-icon']" font-class-name="iconfont" class-prefix="icon" name="sparkles" />
-            <view :class="pageStyle['segment-text']">社区广场</view>
-          </view>
-          <view
-            :class="[pageStyle['segment-item'], activeCategory.value === 'myGroups' ? pageStyle['segment-item-active'] : pageStyle['segment-item-disabled']]"
-            @click="handleCategoryChange(categoryOptions[1])"
-          >
-            <IconFont :class="pageStyle['segment-icon']" font-class-name="iconfont" class-prefix="icon" name="user" />
-            <view :class="pageStyle['segment-text']">我的小组</view>
-          </view>
-        </view>
-
-        <view :class="pageStyle['sort-toggles']">
-          <view
-            :class="[pageStyle['sort-item'], activeSort.value === 'publishedTime' ? pageStyle['sort-item-active'] : '']"
-            @click="handleSortChange(sortOptions[0])"
-          >
-            最新发布
-          </view>
-          <view :class="pageStyle['sort-divider']"></view>
-          <view
-            :class="[pageStyle['sort-item'], activeSort.value === 'collectCount' ? pageStyle['sort-item-active'] : '']"
-            @click="handleSortChange(sortOptions[1])"
-          >
-            最受欢迎
-          </view>
-        </view>
+        ...
       </view>
+      -->
 
       <!-- 标签筛选 -->
-      <view :class="pageStyle['filter-section']">
-        <view :class="pageStyle['left-arrow-btn']" @click="handleArrowClick('left')">
-          <RectLeft></RectLeft>
-        </view>
-        <scroll-view
-          id="square-tag-list"
-          :class="pageStyle['button-group']"
-          :enhanced="true"
-          :scroll-x="true"
-          :scroll-with-animation="true"
-          :show-scrollbar="false"
-          :scroll-left="scrollLeft"
-          @binddragging="handleScroll"
-        >
-          <view
-            v-for="item in spaceOptions"
-            :key="item.value"
-            class="square-tag-item"
-            :class="[pageStyle['filter-button'], { [pageStyle['is-active']]: activeSpace?.value === item.value }]"
-            @click="handleSpaceChange(item)"
-          >
-            {{ item.label }}
-          </view>
-        </scroll-view>
-        <view :class="pageStyle['right-arrow-btn']" @click="handleArrowClick('right')">
-          <RectRight></RectRight>
-        </view>
-      </view>
+<!--      <view :class="pageStyle['filter-section']">-->
+<!--        <view :class="pageStyle['left-arrow-btn']" @click="handleArrowClick('left')">-->
+<!--          <RectLeft></RectLeft>-->
+<!--        </view>-->
+<!--        <scroll-view-->
+<!--          id="square-tag-list"-->
+<!--          :class="pageStyle['button-group']"-->
+<!--          :enhanced="true"-->
+<!--          :scroll-x="true"-->
+<!--          :scroll-with-animation="true"-->
+<!--          :show-scrollbar="false"-->
+<!--          :scroll-left="scrollLeft"-->
+<!--          @binddragging="handleScroll"-->
+<!--        >-->
+<!--          <view-->
+<!--            v-for="item in spaceOptions"-->
+<!--            :key="item.value"-->
+<!--            class="square-tag-item"-->
+<!--            :class="[pageStyle['filter-button'], { [pageStyle['is-active']]: activeSpace?.value === item.value }]"-->
+<!--            @click="handleSpaceChange(item)"-->
+<!--          >-->
+<!--            {{ item.label }}-->
+<!--          </view>-->
+<!--        </scroll-view>-->
+<!--        <view :class="pageStyle['right-arrow-btn']" @click="handleArrowClick('right')">-->
+<!--          <RectRight></RectRight>-->
+<!--        </view>-->
+<!--      </view>-->
     </view>
   </view>
+  <SearchPopup
+    :visible="showSearchPopup"
+    :keyword="keyword"
+    :scene="activeSpace?.label || ''"
+    :scene-options="spaceOptions.map((item) => item.label)"
+    @close="closeSearchPopup"
+    @submit="handleSearchByPopup"
+  />
   <Loading :visible="loading" text="LOADING" />
 </template>
 
 <script setup lang="ts">
-import { ref, defineProps, defineEmits, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, defineEmits, onMounted, onUnmounted, nextTick } from 'vue'
 import Taro from '@tarojs/taro'
 import { Toast } from '@nutui/nutui-taro'
 import {Search} from "@nutui/icons-vue-taro";
-import {RectLeft, RectRight, IconFont} from '@nutui/icons-vue-taro'
-import {cloneDeep} from "@/util/cloneDeep";
-import {ACTIVE_COLOR} from "@/constants";
 import {ScrollInfo} from "@/util/scrollInfo";
 import type { IWorkBaseInfo } from '@/pages/Square/components/WorkCard/const'
 import { getSquareList } from '@/api/square/listSquare';
 import { getTags } from '@/api/square/getTags';
 import {
-  CATEGORY_OPTIONS,
   DEFAULT_SPACE_OPTIONS,
   type ISortItem,
   mergeWorks,
-  PAGE_SIZE, SORT_OPTIONS,
+  PAGE_SIZE,
   TagListManager
 } from './const';
 import pageStyle from './index.module.less';
 import Loading from '@/components/Loading/index.vue';
 import {debounce} from "@tarojs/runtime";
-import {IObject} from "@/constants/types";
+import SearchPopup from "@/pages/Square/components/SearchPopup/index.vue";
 
 
 let tagListManager:TagListManager|null = null;
 let scrollInfo: ScrollInfo | null = null;
-
-// 定义组件属性
-const props = defineProps({});
 
 // 定义事件发射
 const emit = defineEmits<{
@@ -122,15 +86,11 @@ const emit = defineEmits<{
 }>();
 
 const spaceOptions = ref<ISortItem[]>(DEFAULT_SPACE_OPTIONS);
-const sortOptions = ref<ISortItem[]>(cloneDeep(SORT_OPTIONS));
-const categoryOptions = ref<ISortItem[]>(cloneDeep(CATEGORY_OPTIONS));
-
-
 // 响应式状态
-const activeCategory = ref<ISortItem>(cloneDeep(CATEGORY_OPTIONS[0]));
-const activeSort = ref<ISortItem>(cloneDeep(SORT_OPTIONS[0]));
+const activeSort = ref<ISortItem>({ label: '最新发布', value: 'publishedTime', name: '最新发布' });
 const activeSpace = ref<ISortItem>();
 const keyword = ref('');
+const showSearchPopup = ref(false);
 
 const scrollLeft = ref(0);
 
@@ -168,43 +128,6 @@ const handleSearch = async (noRefresh?: boolean) => {
   emit('filterResult', list);
 };
 
-// 处理分类变更
-const handleCategoryChange = (value: ISortItem | any) => {
-  if (value.value === 'myGroups') {
-    Taro.showToast({
-      title: '功能暂未开放',
-      icon: 'none'
-    })
-    return;
-  }
-  const selectedItem = value.value ? value : categoryOptions.value.find(item => item.value === value);
-  if (!selectedItem || activeCategory.value.value === selectedItem.value) return
-  delete selectedItem.color;
-  categoryOptions.value.forEach((item, index) => {
-    categoryOptions.value[index].color = undefined;
-    if (item.value === selectedItem.value) {
-      item.color = ACTIVE_COLOR;
-    }
-  })
-  activeCategory.value = selectedItem;
-  handleSearch();
-};
-
-// 处理排序变更
-const handleSortChange = (value: ISortItem | any) => {
-  const selectedItem = value.value ? value : sortOptions.value.find(item => item.value === value);
-  if (!selectedItem || activeSort.value.value === selectedItem.value) return
-  delete selectedItem.color;
-  sortOptions.value.forEach((item, index) => {
-    sortOptions.value[index].color = undefined;
-    if (item.value === selectedItem.value) {
-      item.color = ACTIVE_COLOR;
-    }
-  })
-  activeSort.value = selectedItem;
-  handleSearch();
-};
-
 // 处理空间分类变更
 const handleSpaceChange = (value: ISortItem) => {
   if (activeSpace.value?.label===value.label) {
@@ -214,6 +137,21 @@ const handleSpaceChange = (value: ISortItem) => {
   }
   handleSearch();
 };
+
+const openSearchPopup = () => {
+  showSearchPopup.value = true;
+}
+
+const closeSearchPopup = () => {
+  showSearchPopup.value = false;
+}
+
+const handleSearchByPopup = (payload: { keyword: string; scene: string }) => {
+  keyword.value = payload.keyword;
+  activeSpace.value = spaceOptions.value.find((item) => item.label === payload.scene);
+  showSearchPopup.value = false;
+  handleSearch();
+}
 
 const handleScrollBottom = debounce(async () => {
   if (!scrollInfo) return;

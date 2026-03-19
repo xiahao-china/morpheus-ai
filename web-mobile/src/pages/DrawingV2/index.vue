@@ -21,6 +21,13 @@
         :generating="generating"
         @submit="handleSubmit"
       />
+      <PublishSquareDialog
+        :visible="publishDialogVisible"
+        :image-url="publishTargetMessage?.imageUrl"
+        :confirm-loading="publishLoading"
+        @close="closePublishDialog"
+        @submit="handlePublishSubmit"
+      />
     </view>
   </Layouts>
 </template>
@@ -41,7 +48,9 @@ import {
 import { publishToSquare } from "@/api/square/publishToSquare";
 import InfiniteConversation from "@/pages/DrawingV2/components/InfiniteConversation/index.vue";
 import BottomDialog from "@/pages/DrawingV2/components/BottomDialog/index.vue";
+import PublishSquareDialog from "@/pages/DrawingV2/components/PublishSquareDialog/index.vue";
 import type { IDrawingSubmitPayload } from "@/pages/DrawingV2/components/BottomDialog/const";
+import type { IPublishSquarePayload } from "@/pages/DrawingV2/components/PublishSquareDialog/const";
 import {
   createPendingServiceMessage,
   createUserMessage,
@@ -59,6 +68,9 @@ const historyLoading = ref(false);
 const historyLoadEnd = ref(false);
 const pollingTaskMap = new Map<string, number>();
 const bottomDialogRef = ref<InstanceType<typeof BottomDialog> | null>(null);
+const publishDialogVisible = ref(false);
+const publishTargetMessage = ref<IDrawingV2Message | null>(null);
+const publishLoading = ref(false);
 
 const mergeHistoryMessages = (historyMessages: IDrawingV2Message[]) => {
   const existed = new Set(messages.value.map((item) => item.id));
@@ -215,16 +227,38 @@ const handlePublish = async (message: IDrawingV2Message) => {
     Taro.showToast({ title: "图片未完成", icon: "none" });
     return;
   }
+  publishTargetMessage.value = message;
+  publishDialogVisible.value = true;
+};
+
+const closePublishDialog = () => {
+  if (publishLoading.value) {
+    return;
+  }
+  publishDialogVisible.value = false;
+  publishTargetMessage.value = null;
+};
+
+const handlePublishSubmit = async (payload: IPublishSquarePayload) => {
+  if (!publishTargetMessage.value?.imageId) {
+    Taro.showToast({ title: "图片未完成", icon: "none" });
+    return;
+  }
+  publishLoading.value = true;
   const response = await publishToSquare({
-    title: (message.prompt || "AI生成方案").slice(0, 20),
-    caption: message.prompt || "AI生成内容",
-    imageId: message.imageId,
-    drawTaskId: message.taskId,
+    title: payload.title,
+    caption: payload.caption,
+    styleTags: payload.styleTags.length ? payload.styleTags : undefined,
+    sceneTags: payload.sceneTags.length ? payload.sceneTags : undefined,
+    imageId: publishTargetMessage.value.imageId,
+    drawTaskId: publishTargetMessage.value.taskId,
   });
+  publishLoading.value = false;
   if (response instanceof Error || response.code !== 200) {
     Taro.showToast({ title: "发布失败", icon: "error" });
     return;
   }
+  closePublishDialog();
   Taro.showToast({ title: "已发布到广场", icon: "success" });
 };
 
