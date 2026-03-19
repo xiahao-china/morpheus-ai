@@ -1,18 +1,38 @@
-import { Context as KoaContext } from "koa";
-type Context = KoaContext | any;
 import GenerationQueue from "@/models/generationQueue";
-import GenerationTask, { TaskStatusEnum, TaskPurposeEnum } from "@/models/generationTask";
+import GenerationTask, { TaskPurposeEnum, TaskStatusEnum } from "@/models/generationTask";
 import ImageGenInfo from "@/models/imageGenInfo";
-import { getLogger } from "@/lib/log4js";
 import { BUCKET_NAME } from "@/lib/minio";
 import { sseService } from "@/services/sse-service";
 import { generationScheduler } from "@/services/generation-scheduler";
-import { calculateDimensions } from "./const";
 import { callLLMAPI } from "@/services/generation-scheduler/llmTool";
 import { TaskChannelEnum } from "@/models/generationTask";
-import { sendResponse, EReqStatus } from "@/utils/const";
+import { sendResponse } from "@/utils/const";
+import {
+  buildOptimizePromptInput,
+  buildFengShuiPromptInput,
+  Context,
+  createGenerationTaskRecord,
+  createSseId,
+  createTaskDetailBase,
+  DEFAULT_GENERATION_PAGE,
+  DEFAULT_GENERATION_PAGE_SIZE,
+  generateFilenamePrefix,
+  generateTaskSeed,
+  getDimensionsByPurpose,
+  getGeneratedTaskPurpose,
+  isProcessingTaskStatus,
+  logger,
+  normalizeOptimizedPrompt,
+  parseGenerationAction,
+  parsePositiveInt
+} from "./const";
 
-const logger = getLogger("GenerationController");
+interface IFengShuiRequestBody {
+  imageUrl?: string;
+  houseInfo?: string;
+  residentProfile?: string;
+  residentNeeds?: string;
+}
 
 /**
  * 提交图片反馈（点赞/点踩）
@@ -21,7 +41,6 @@ const logger = getLogger("GenerationController");
 export const submitFeedback = async (ctx: Context) => {
   const { id } = ctx.params;
   const { action } = ctx.request.body as any;
-  const user = ctx.state.user as any;
 
   if (!id) {
     ctx.body = { code: 400, msg: "Image ID is required" };
@@ -36,16 +55,12 @@ export const submitFeedback = async (ctx: Context) => {
     }
 
     // 更新点赞状态
-    if (action === 'like') {
-      image.isLiked = true;
-    } else if (action === 'dislike') {
-      image.isLiked = false;
-    } else if (action === 'cancel') {
-      image.isLiked = undefined;
-    } else {
+    const feedbackValue = parseGenerationAction(action);
+    if (feedbackValue === null) {
       ctx.body = { code: 400, msg: "Invalid action" };
       return;
     }
+    image.isLiked = feedbackValue;
 
     await image.save();
     sendResponse.success(ctx, { isLiked: image.isLiked });
@@ -69,22 +84,11 @@ export const optimizePrompt = async (ctx: Context) => {
 
   try {
     // 构造优化提示词的系统指令和参数
-    const systemInstruction = `作为一名Stable Diffusion/ComfyUI室内设计提示词专家，请将用户输入的简短描述优化并润色为高质量的英文提示词。
-要求：
-1. 提取用户意图并翻译为准确的英文。
-2. 自动补充高质量相关的提示词（如：(Masterpiece, Best Quality, 8k, highly detailed, photorealistic)）。
-3. 补充适当的室内设计光影、材质、氛围描述（如：cinematic lighting, ray tracing, architectural photography）。
-4. 只返回最终的英文提示词字符串，不要返回任何其他解释性文字。`;
-
-    const llmPrompt = `${systemInstruction}\n\n用户输入: ${prompt}\n\n优化后的提示词:`;
+    const llmPrompt = buildOptimizePromptInput(prompt);
 
     const result = await callLLMAPI({ prompt: llmPrompt }, TaskChannelEnum.LLM);
 
-    // 清理可能的两边引号或空格
-    let optimizedPrompt = result.content.trim();
-    if (optimizedPrompt.startsWith('"') && optimizedPrompt.endsWith('"')) {
-      optimizedPrompt = optimizedPrompt.slice(1, -1);
-    }
+    const optimizedPrompt = normalizeOptimizedPrompt(result.content);
 
     sendResponse.success(ctx, {
       originalPrompt: prompt,
@@ -120,17 +124,8 @@ export const generateImage = async (ctx: Context) => {
     const user = ctx.state.user as any;
 
     // 根据是否有底图决定使用 ComfyUI 还是第三方服务
-    const hasBaseImages = base_images && Array.isArray(base_images) && base_images.length > 0;
-    const purpose = hasBaseImages ? TaskPurposeEnum.IMG2IMG : TaskPurposeEnum.TXT2IMG;
-
-    // 如果没有底图，根据比例计算宽高
-    let width = 1024;
-    let height = 1024;
-    if (!hasBaseImages) {
-        const dimensions = calculateDimensions(ratio);
-        width = dimensions.width;
-        height = dimensions.height;
-    }
+    const purpose = getGeneratedTaskPurpose(base_images);
+    const { width, height } = getDimensionsByPurpose(purpose, ratio);
 
     // 准备参数
     const params = {
@@ -139,23 +134,13 @@ export const generateImage = async (ctx: Context) => {
       width,
       height,
       count: Number(count),
-      seed: Math.floor(Math.random() * 1000000000000000),
+      seed: generateTaskSeed(),
       bucket_name: BUCKET_NAME,
-      filename_prefix: `Morpheus_${Date.now()}`,
+      filename_prefix: generateFilenamePrefix(),
       baseImages: base_images
     };
 
-    // 创建 GenerationTask 记录
-    const generationTask = new GenerationTask({
-      userId: user.uid,
-      status: TaskStatusEnum.PENDING,
-      purpose: purpose,
-      params: params,
-      comfyui: {
-        seed: params.seed
-      },
-      createdTime: new Date()
-    });
+    const generationTask = createGenerationTaskRecord(user.uid, purpose, params);
 
     await generationTask.save();
     const taskId = generationTask._id.toString();
@@ -190,12 +175,74 @@ export const generateImage = async (ctx: Context) => {
   }
 };
 
+export const generateFengShui = async (ctx: Context) => {
+  try {
+    const {
+      imageUrl,
+      houseInfo,
+      residentProfile,
+      residentNeeds
+    } = ctx.request.body as IFengShuiRequestBody;
+
+    if (!imageUrl) {
+      ctx.body = { code: 400, msg: "Image URL is required" };
+      return;
+    }
+
+    const user = ctx.state.user as any;
+    const llmPrompt = buildFengShuiPromptInput({
+      houseInfo,
+      residentProfile,
+      residentNeeds
+    });
+
+    const params = {
+      prompt: llmPrompt,
+      ratio: "1:1",
+      width: 1024,
+      height: 1024,
+      count: 1,
+      seed: generateTaskSeed(),
+      bucket_name: BUCKET_NAME,
+      filename_prefix: generateFilenamePrefix(),
+      baseImages: [imageUrl]
+    };
+
+    const generationTask = createGenerationTaskRecord(user.uid, TaskPurposeEnum.FENG_SHUI, params);
+
+    await generationTask.save();
+    const taskId = generationTask._id.toString();
+
+    const queueItem = new GenerationQueue({
+      taskId,
+      userId: user.uid,
+      status: 'queued',
+      priority: 0,
+      progress: 0,
+      createdAt: new Date()
+    });
+
+    await queueItem.save();
+
+    sendResponse.success(ctx, {
+      taskId,
+      status: 'queued',
+      queueId: queueItem._id
+    });
+
+    generationScheduler.triggerCheck();
+  } catch (error: any) {
+    logger.error("Error creating feng shui task:", error);
+    sendResponse.error(ctx, "Failed to create feng shui task");
+  }
+};
+
 /**
  * 建立SSE连接，获取任务实时状态
  */
 export const getGenerationStatus = async (ctx: Context) => {
   const { taskId } = ctx.params;
-  const sseId = `sse_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const sseId = createSseId();
 
   if (!taskId) {
     ctx.status = 400;
@@ -229,7 +276,7 @@ export const getGenerationStatus = async (ctx: Context) => {
     ctx.body = stream;
 
     // 更新队列中的 SSE ID
-    if (task.status === TaskStatusEnum.PENDING || task.status === TaskStatusEnum.PROCESSING || task.status === TaskStatusEnum.INITIATED) {
+    if (isProcessingTaskStatus(task.status)) {
         await GenerationQueue.findOneAndUpdate({ taskId }, { sseId });
 
         sseService.send(sseId, "status", {
@@ -278,17 +325,10 @@ export const getTaskDetail = async (ctx: Context) => {
       return;
     }
 
-    let result: any = {
-      taskId: task._id,
-      status: task.status,
-      createdTime: task.createdTime,
-      startedTime: task.startedTime,
-      completedTime: task.completedTime,
-      progress: 0
-    };
+    let result: any = createTaskDetailBase(task);
 
     // 获取队列进度
-    if (task.status === TaskStatusEnum.PENDING || task.status === TaskStatusEnum.PROCESSING || task.status === TaskStatusEnum.INITIATED) {
+    if (isProcessingTaskStatus(task.status)) {
       const queueItem = await GenerationQueue.findOne({ taskId });
       if (queueItem) {
         result.progress = queueItem.progress || 0;
@@ -305,6 +345,9 @@ export const getTaskDetail = async (ctx: Context) => {
       // 保留 images 数组以防新版前端使用
       const images = await ImageGenInfo.find({ imageGenTaskId: taskId });
       result.images = images;
+      if (task.textGenText) {
+        result.content = task.textGenText;
+      }
     }
 
     sendResponse.success(ctx, result);
@@ -320,20 +363,75 @@ export const getTaskDetail = async (ctx: Context) => {
 export const getGenerationHistory = async (ctx: Context) => {
   try {
     const user = ctx.state.user as any;
-    const page = parseInt(ctx.query.page as string) || 1;
-    const pageSize = parseInt(ctx.query.pageSize as string) || 20;
+    const page = parsePositiveInt(ctx.query.page, DEFAULT_GENERATION_PAGE);
+    const pageSize = parsePositiveInt(ctx.query.pageSize, DEFAULT_GENERATION_PAGE_SIZE);
     const skip = (page - 1) * pageSize;
 
-    // 获取用户所有已完成的图片
-    const images = await ImageGenInfo.find({ userId: user.uid })
+    const historyFilter = {
+      userId: user.uid,
+      status: TaskStatusEnum.COMPLETED,
+      purpose: { $in: [TaskPurposeEnum.TXT2IMG, TaskPurposeEnum.IMG2IMG] },
+    };
+
+    const tasks = await GenerationTask.find(historyFilter)
       .sort({ createdTime: -1 })
       .skip(skip)
       .limit(pageSize);
 
-    const total = await ImageGenInfo.countDocuments({ userId: user.uid });
+    const total = await GenerationTask.countDocuments(historyFilter);
+
+    const taskIds = tasks.map((task) => task._id.toString());
+    const imageList = taskIds.length
+      ? await ImageGenInfo.find({ imageGenTaskId: { $in: taskIds } }).sort({ createdTime: -1 })
+      : [];
+
+    const imageMap = imageList.reduce((map, image) => {
+      const taskId = image.imageGenTaskId;
+      if (!map[taskId]) {
+        map[taskId] = [];
+      }
+      map[taskId].push({
+        imageId: image._id.toString(),
+        imageUrl: image.imageUrl,
+        fileResourceId: image.fileResourceId,
+        width: image.width,
+        height: image.height,
+        createdTime: image.createdTime,
+      });
+      return map;
+    }, {} as Record<string, Array<{
+      imageId: string;
+      imageUrl: string;
+      fileResourceId: string;
+      width?: number;
+      height?: number;
+      createdTime: Date;
+    }>>);
+
+    const list = tasks.map((task) => {
+      const taskId = task._id.toString();
+      const images = imageMap[taskId] || [];
+      const firstImage = images[0];
+      return {
+        _id: taskId,
+        userId: task.userId,
+        imageGenTaskId: taskId,
+        prompt: task.params?.prompt || "",
+        underImageUrl: task.params?.baseImages?.[0] || "",
+        type: task.purpose,
+        status: task.status,
+        width: firstImage?.width || task.params?.width || 0,
+        height: firstImage?.height || task.params?.height || 0,
+        imageUrl: firstImage?.imageUrl || "",
+        imageId: firstImage?.imageId || "",
+        createdTime: task.createdTime,
+        completedTime: task.completedTime,
+        images,
+      };
+    });
 
     sendResponse.success(ctx, {
-      list: images,
+      list,
       total,
       page,
       pageSize,

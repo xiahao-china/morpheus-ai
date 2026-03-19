@@ -1,7 +1,7 @@
-import { Context } from "koa";
 import PointsRecord from "@/models/pointsRecord";
 import User from "@/models/user";
 import { sendResponse } from "@/utils/const";
+import { Context, DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE, parsePositiveInt } from "./const";
 
 /**
  * 获取用户积分余额和会员信息
@@ -28,11 +28,11 @@ export const getPointsBalance = async (ctx: Context) => {
  */
 export const getPointsHistory = async (ctx: Context) => {
     const user = ctx.state.user as any;
-    const { page = 1, pageSize = 20 } = ctx.query;
+    const { page = DEFAULT_PAGE_NUMBER, pageSize = DEFAULT_PAGE_SIZE } = ctx.query;
 
     try {
-        const pageNum = Math.max(1, parseInt(page as string));
-        const limit = Math.max(1, parseInt(pageSize as string));
+        const pageNum = parsePositiveInt(page, DEFAULT_PAGE_NUMBER);
+        const limit = parsePositiveInt(pageSize, DEFAULT_PAGE_SIZE);
         const skip = (pageNum - 1) * limit;
 
         const total = await PointsRecord.countDocuments({ userId: user._id });

@@ -1,5 +1,5 @@
 import Router from "koa-router";
-import * as alipayController from "@/controllers/payment/alipay";
+import * as alipayController from "@/controllers/payment";
 import { authMiddleware } from "@/middleware/auth";
 
 export default (router: Router) => {

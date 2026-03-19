@@ -1,11 +1,50 @@
+import { Context as KoaContext } from "koa";
 import axios from "axios";
 import qs from "qs";
 import { logger } from "@/lib/log4js";
-import { SMS_CONFIG } from "@/config/index";
+import { REDIS_KEYS, SMS_CONFIG, USER_CONSTANTS } from "@/config/index";
 import { sendEmail as sendEmailUtil } from "@/utils/email";
 import verificationCodeTemplate from "@/static/verificationCodeTemplate";
 
-// 发送短信验证码
+export type Context = KoaContext | any;
+
+export const VERIFY_CODE_TYPE_PHONE = "phone";
+export const VERIFY_CODE_TYPE_EMAIL = "email";
+export const VERIFY_CODE_TYPE_USERNAME = "username";
+export const LOGIN_COOKIE_KEY = "token";
+export const LOGIN_COOKIE_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
+export const MOCK_VERIFY_CODE = "666666";
+
+export const generateVerifyCode = () => {
+  if (SMS_CONFIG.mockSend) return MOCK_VERIFY_CODE;
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+export const buildVerifyCodeRedisKey = (type: string, target: string) => {
+  if (type === VERIFY_CODE_TYPE_PHONE) return `${REDIS_KEYS.SMS_LOGIN_CODE}${target}`;
+  if (type === VERIFY_CODE_TYPE_EMAIL) return `${REDIS_KEYS.EMAIL_LOGIN_CODE}${target}`;
+  return "";
+};
+
+export const getVerifyCodeExpireSeconds = () => USER_CONSTANTS.VERIFY_CODE_EXPIRE_SECONDS;
+export const shouldSendVerificationMessage = () => !SMS_CONFIG.mockSend;
+
+export const getLoginCookieOptions = () => ({
+  maxAge: LOGIN_COOKIE_MAX_AGE,
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  path: "/",
+  sameSite: "lax" as const
+});
+
+export const isMockVerifyCode = (code: string) => SMS_CONFIG.mockSend && code === MOCK_VERIFY_CODE;
+
+export const getTargetFieldByType = (type: string) => {
+  if (type === VERIFY_CODE_TYPE_PHONE) return "phone";
+  if (type === VERIFY_CODE_TYPE_EMAIL) return "email";
+  return "";
+};
+
 export const sendSMS = async (phone: string, code: string) => {
   // 测试环境直接返回
   if (SMS_CONFIG.mockSend) {
@@ -45,7 +84,6 @@ export const sendSMS = async (phone: string, code: string) => {
   }
 };
 
-// 发送邮箱验证码
 export const sendEmail = async (email: string, code: string) => {
   logger.info(`Sending Email to ${email}: ${code}`);
   try {

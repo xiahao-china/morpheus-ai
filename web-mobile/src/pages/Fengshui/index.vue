@@ -48,10 +48,33 @@ import Taro from '@tarojs/taro';
 import Layouts from '@/components/Layouts/index.vue';
 import { IconFont } from '@nutui/icons-vue-taro';
 import { createFengshuiTask } from '@/api/fengshui';
+import { uploadImageByTaroUrl } from '@/api/files/uploadFileByTaroUrl';
+import type { UploadImageResponse } from '@/api/files/uploadFile';
 import styles from './index.module.less';
 
 const imageUrl = ref('');
 const loading = ref(false);
+
+const uploadFengshuiImage = (filePath: string) => {
+  return new Promise<string>((resolve, reject) => {
+    uploadImageByTaroUrl({
+      filePath,
+      fileType: 'UNDER_IMAGE',
+      onSuccess: (resp) => {
+        const data = resp.data as UploadImageResponse | undefined;
+        const url = data?.fileUrl || data?.url;
+        if (!url) {
+          reject(new Error('上传结果缺少图片地址'));
+          return;
+        }
+        resolve(url);
+      },
+      onFail: (err) => {
+        reject(err);
+      }
+    });
+  });
+};
 
 const handleUpload = async () => {
   try {
@@ -74,9 +97,8 @@ const handleStart = async () => {
 
   loading.value = true;
   try {
-    // 模拟上传图片并创建任务
-    // 实际项目中这里应该先上传图片到服务器拿到URL，或者直接传文件
-    const { taskId } = await createFengshuiTask(imageUrl.value);
+    const uploadedImageUrl = await uploadFengshuiImage(imageUrl.value);
+    const { taskId } = await createFengshuiTask({ imageUrl: uploadedImageUrl });
 
     Taro.navigateTo({
       url: `/pages/Fengshui/Progress/index?taskId=${taskId}`

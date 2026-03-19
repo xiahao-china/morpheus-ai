@@ -1,5 +1,17 @@
 <template>
-  <view :class="styles.bottomNavigation" style="height: 100rpx;">
+  <view :class="styles.bottomNavigation" :style="bottomNavigationStyle">
+    <view
+      :class="styles.activeIndicator"
+      :style="activeIndicatorStyle"
+    >
+      <IconFont
+        v-if="activeNavItem"
+        :class="styles.activeIndicatorIcon"
+        font-class-name="iconfont"
+        class-prefix="icon"
+        :name="activeNavItem.icon"
+      />
+    </view>
     <view
       v-for="item in navItems"
       :key="item.key"
@@ -17,14 +29,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { computed, ref, onMounted } from "vue";
 import Taro from "@tarojs/taro";
 import { navItems } from "@/components/BottomNavigation/const";
 import styles from "./index.module.less";
-import pageStyle from "@/pages/Square/components/SquareFilter/index.module.less";
 import {IconFont} from "@nutui/icons-vue-taro";
 
 const activeTab = ref("draw");
+const activeIndex = computed(() => {
+  const index = navItems.findIndex((item) => item.key === activeTab.value);
+  return index >= 0 ? index : 0;
+});
+const activeNavItem = computed(() => navItems[activeIndex.value]);
+const bottomNavigationStyle = computed(() => ({
+  '--nav-count': String(navItems.length),
+}));
+
+const activeIndicatorStyle = computed(() => ({
+  left: `${((activeIndex.value + 0.5) * 100) / navItems.length}%`,
+}));
+
 const resolveActiveByPath = (path: string) => {
   if (!path) return;
   const clean = path.split('?')[0];
@@ -33,6 +57,7 @@ const resolveActiveByPath = (path: string) => {
   );
   activeTab.value = activeItem?.key || "draw";
 };
+
 const getCurrentPage = () => {
   const instancePath = Taro.getCurrentInstance()?.router?.path || '';
   if (instancePath) {
@@ -51,6 +76,7 @@ const getCurrentPage = () => {
     resolveActiveByPath(hashPath);
   }
 };
+
 const handleNavClick = (item: any) => {
   const path = item?.path;
   if (!path) return;

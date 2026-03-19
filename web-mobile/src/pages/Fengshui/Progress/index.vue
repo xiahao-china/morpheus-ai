@@ -32,11 +32,13 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import Taro, { useRouter } from '@tarojs/taro';
 import Layouts from '@/components/Layouts/index.vue';
+import { getFengshuiTaskStatus } from '@/api/fengshui';
 import styles from './index.module.less';
 
 const router = useRouter();
 const progress = ref(0);
 const timer = ref<any>(null);
+const polling = ref<any>(null);
 
 // SVG 圆环参数
 const radius = 44;
@@ -45,29 +47,56 @@ const dashOffset = computed(() => {
   return circumference - (progress.value / 100) * circumference;
 });
 
-const startProgress = () => {
-  // 模拟进度条
-  // 前 80% 快速，后 20% 慢速，最后跳转
+const stopTimers = () => {
+  if (timer.value) {
+    clearInterval(timer.value);
+    timer.value = null;
+  }
+  if (polling.value) {
+    clearInterval(polling.value);
+    polling.value = null;
+  }
+};
+
+const startAnimation = () => {
   timer.value = setInterval(() => {
-    if (progress.value < 80) {
-      progress.value += 2;
-    } else if (progress.value < 99) {
-      progress.value += 0.5;
-    } else {
-      clearInterval(timer.value);
-      progress.value = 100;
-      handleComplete();
+    if (progress.value < 95) {
+      progress.value += progress.value < 70 ? 1 : 0.5;
     }
-  }, 50);
+  }, 120);
 };
 
 const handleComplete = () => {
+  stopTimers();
+  progress.value = 100;
   setTimeout(() => {
     const taskId = router.params.taskId;
     Taro.redirectTo({
       url: `/pages/Fengshui/Report/index?taskId=${taskId}`
     });
   }, 500);
+};
+
+const pollTaskStatus = async (taskId: string) => {
+  try {
+    const statusRes = await getFengshuiTaskStatus(taskId);
+    if (statusRes.progress > progress.value) {
+      progress.value = statusRes.progress;
+    }
+    if (statusRes.status === 'completed') {
+      handleComplete();
+      return;
+    }
+    if (statusRes.status === 'failed') {
+      stopTimers();
+      Taro.showToast({ title: '任务失败，请重试', icon: 'none' });
+      setTimeout(() => Taro.navigateBack(), 1200);
+    }
+  } catch (err) {
+    stopTimers();
+    Taro.showToast({ title: '获取进度失败', icon: 'none' });
+    setTimeout(() => Taro.navigateBack(), 1200);
+  }
 };
 
 onMounted(() => {
@@ -77,12 +106,14 @@ onMounted(() => {
     setTimeout(() => Taro.navigateBack(), 1500);
     return;
   }
-  startProgress();
+  startAnimation();
+  pollTaskStatus(taskId);
+  polling.value = setInterval(() => {
+    pollTaskStatus(taskId);
+  }, 1200);
 });
 
 onUnmounted(() => {
-  if (timer.value) {
-    clearInterval(timer.value);
-  }
+  stopTimers();
 });
 </script>

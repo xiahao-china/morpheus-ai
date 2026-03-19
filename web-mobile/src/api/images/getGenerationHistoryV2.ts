@@ -28,10 +28,24 @@ export interface IGetGenerationHistoryItem {
   userId: string;
   imageGenTaskId: string;
   imageUrl: string;
+  imageId?: string;
   width: number;
   height: number;
-  createdTime: string;
-  
+  createdTime: string | Date;
+  completedTime?: string | Date;
+  prompt?: string;
+  underImageUrl?: string;
+  type?: string;
+  status?: string;
+  images?: Array<{
+    imageId: string;
+    imageUrl: string;
+    fileResourceId?: string;
+    width?: number;
+    height?: number;
+    createdTime: string | Date;
+  }>;
+
   // 兼容旧字段
   generatedImages?: { imageUrl: string }[];
 }

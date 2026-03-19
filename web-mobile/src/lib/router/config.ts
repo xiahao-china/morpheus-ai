@@ -15,6 +15,13 @@ export const ROUTER_INFO = {
     needMobileNav: false,
     needBottomBar: false
   },
+  '/pages/DrawingV2/index': {
+    pageName: 'AI生图',
+    needLogin: true,
+    needNavBar: false,
+    needMobileNav: false,
+    needBottomBar: true
+  },
   '/pages/app/index': {
     pageName: 'AI绘图',
     needLogin: true,

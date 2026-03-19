@@ -17,15 +17,19 @@ export const mapToCards = (
   records: IGetGenerationHistoryItem[]
 ): IHistoryCardInfo[] => {
   return records.map((item) => {
+    const firstImage = item.images?.[0];
+    const imageUrl = item.imageUrl || firstImage?.imageUrl || "";
+    const width = item.width || firstImage?.width || 1024;
+    const height = item.height || firstImage?.height || 1024;
     return {
       taskId: item.imageGenTaskId,
       type: 'DRAWING' as unknown as IHistoryCardInfo["type"],
       defaultImgId: 0,
-      imageUrl: item.imageUrl,
-      ratioText: calcTaskRatio(item.width || 1024, item.height || 1024),
+      imageUrl,
+      ratioText: calcTaskRatio(width, height),
       title: "文生图", // 暂时硬编码，后端模型中没有 type 字段
       statusText: "已完成", // 历史记录通常是已完成的
-      desc: "", // 列表接口没有返回 prompt
+      desc: item.prompt || "",
       timeText: dayjs(item.createdTime).format(
         "YYYY-MM-DD HH:mm"
       ),

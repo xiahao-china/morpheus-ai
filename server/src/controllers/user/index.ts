@@ -1,12 +1,22 @@
-import { Context as KoaContext } from "koa";
-type Context = KoaContext | any;
 import User, { IUser, UserRoleEnum, UserStatusEnum } from "@/models/user";
 import { signToken } from "@/utils/token";
 import redis from "@/lib/redis";
-import { logger } from "@/lib/log4js";
-import { SMS_CONFIG, REDIS_KEYS, USER_CONSTANTS } from "@/config/index";
-import { sendSMS, sendEmail } from "./const";
-import { sendResponse, EReqStatus } from "@/utils/const";
+import { sendEmail, sendSMS } from "./const";
+import {
+  buildVerifyCodeRedisKey,
+  Context,
+  generateVerifyCode,
+  getLoginCookieOptions,
+  getTargetFieldByType,
+  getVerifyCodeExpireSeconds,
+  isMockVerifyCode,
+  LOGIN_COOKIE_KEY,
+  shouldSendVerificationMessage,
+  VERIFY_CODE_TYPE_EMAIL,
+  VERIFY_CODE_TYPE_PHONE,
+  VERIFY_CODE_TYPE_USERNAME
+} from "./const";
+import { sendResponse } from "@/utils/const";
 
 /**
  * 发送验证码
@@ -15,21 +25,18 @@ import { sendResponse, EReqStatus } from "@/utils/const";
  */
 export const sendVerifyCode = async (ctx: Context) => {
   const { type, target } = ctx.request.body as any;
+  const code = generateVerifyCode();
 
-  const isMock = SMS_CONFIG.mockSend;
-  const code = isMock ? '666666' : Math.floor(100000 + Math.random() * 900000).toString();
-
-  if (type === 'phone') {
-    if (!isMock) {
+  if (type === VERIFY_CODE_TYPE_PHONE) {
+    if (shouldSendVerificationMessage()) {
       await sendSMS(target, code);
     }
-    // 验证码存入 Redis，有效期 5 分钟
-    await redis.set(`${REDIS_KEYS.SMS_LOGIN_CODE}${target}`, code, 'EX', USER_CONSTANTS.VERIFY_CODE_EXPIRE_SECONDS);
-  } else if (type === 'email') {
-    if (!isMock) {
+    await redis.set(buildVerifyCodeRedisKey(type, target), code, "EX", getVerifyCodeExpireSeconds());
+  } else if (type === VERIFY_CODE_TYPE_EMAIL) {
+    if (shouldSendVerificationMessage()) {
       await sendEmail(target, code);
     }
-    await redis.set(`${REDIS_KEYS.EMAIL_LOGIN_CODE}${target}`, code, 'EX', USER_CONSTANTS.VERIFY_CODE_EXPIRE_SECONDS);
+    await redis.set(buildVerifyCodeRedisKey(type, target), code, "EX", getVerifyCodeExpireSeconds());
   } else {
     ctx.body = { code: 400, msg: 'Invalid type' };
     return;
@@ -47,52 +54,42 @@ export const login = async (ctx: Context) => {
   const { type, target, code, password } = ctx.request.body as any;
 
   // 用户名密码登录
-  if (type === 'username') {
+  if (type === VERIFY_CODE_TYPE_USERNAME) {
       const user = await User.findOne({ username: target });
       if (!user || user.password !== password) {
           ctx.body = { code: 401, msg: 'Invalid username or password' };
           return;
       }
       const token = signToken(user);
-
-      // 设置 Cookie
-      const maxAge = 30 * 24 * 60 * 60 * 1000;
-      ctx.cookies.set('token', token, {
-        maxAge,
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        path: '/',
-        sameSite: 'lax'
-      });
+      ctx.cookies.set(LOGIN_COOKIE_KEY, token, getLoginCookieOptions());
 
       sendResponse.success(ctx, { user });
       return;
   }
 
-  // 验证码登录
-  let redisKey = '';
-  if (type === 'phone') {
-    redisKey = `${REDIS_KEYS.SMS_LOGIN_CODE}${target}`;
-  } else if (type === 'email') {
-    redisKey = `${REDIS_KEYS.EMAIL_LOGIN_CODE}${target}`;
+  const redisKey = buildVerifyCodeRedisKey(type, target);
+  if (!redisKey) {
+    ctx.body = { code: 400, msg: "Invalid type" };
+    return;
   }
-
   const storedCode = await redis.get(redisKey);
 
-  // 测试环境允许 666666
-  if (SMS_CONFIG.mockSend && code === '666666') {
-      // 通过
+  if (isMockVerifyCode(code)) {
   } else if (!storedCode || storedCode !== code) {
     ctx.body = { code: 401, msg: 'Invalid verification code' };
     return;
   }
 
-  // 查找或创建用户
-  let user = await User.findOne({ [type === 'phone' ? 'phone' : 'email']: target });
+  const targetField = getTargetFieldByType(type);
+  if (!targetField) {
+    ctx.body = { code: 400, msg: "Invalid type" };
+    return;
+  }
+  let user = await User.findOne({ [targetField]: target });
   if (!user) {
     user = new User({
       username: `User_${Date.now()}`,
-      [type === 'phone' ? 'phone' : 'email']: target,
+      [targetField]: target,
       status: UserStatusEnum.ACTIVE,
       role: UserRoleEnum.USER
     });
@@ -100,16 +97,7 @@ export const login = async (ctx: Context) => {
   }
 
   const token = signToken(user);
-
-  // 设置 Cookie
-  const maxAge = 30 * 24 * 60 * 60 * 1000;
-  ctx.cookies.set('token', token, {
-    maxAge,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    sameSite: 'lax'
-  });
+  ctx.cookies.set(LOGIN_COOKIE_KEY, token, getLoginCookieOptions());
 
   sendResponse.success(ctx, { user });
 };
@@ -120,7 +108,7 @@ export const login = async (ctx: Context) => {
 export const getUserInfo = async (ctx: Context) => {
     const user = ctx.state.user;
     const dbUser = await User.findById(user._id);
-    sendResponse.success(ctx, dbUser);
+    sendResponse.success(ctx, dbUser as any);
 }
 
 /**
@@ -143,7 +131,7 @@ export const updateUserInfo = async (ctx: Context) => {
       { new: true }
     );
 
-    sendResponse.success(ctx, updatedUser);
+    sendResponse.success(ctx, updatedUser as any);
   } catch (error) {
     sendResponse.error(ctx, "Internal server error");
   }

@@ -14,20 +14,6 @@ import { generationQueueCheckTask } from "@/tasks/index";
 const app = new Koa();
 const router = new RouterClass();
 
-// Connect DB
-connectMongoDB();
-
-// Init MinIO
-initMinio();
-
-// Start Generation Scheduler
-generationScheduler.start();
-
-// Initialize Scheduled Tasks
-const scheduledTasksInstance = new ScheduledTasks();
-scheduledTasksInstance
-  .addTask(generationQueueCheckTask);
-
 // Middlewares
 app.use(bodyParser({
   enableTypes: ['json', 'form', 'text'],
@@ -40,9 +26,20 @@ app.use(bodyParser({
 apiRouter(router);
 app.use(router.routes()).use(router.allowedMethods());
 
-const PORT = serverConfig.server?.port || 3000;
-app.listen(PORT, () => {
-  logger.info(`Server running on port ${PORT}`);
-});
+export const bootstrapServer = () => {
+  connectMongoDB();
+  initMinio();
+  generationScheduler.start();
+  const scheduledTasksInstance = new ScheduledTasks();
+  scheduledTasksInstance.addTask(generationQueueCheckTask);
+};
+
+if (process.env.NODE_ENV !== "test") {
+  bootstrapServer();
+  const PORT = serverConfig.server?.port || 3000;
+  app.listen(PORT, () => {
+    logger.info(`Server running on port ${PORT}`);
+  });
+}
 
 export default app;

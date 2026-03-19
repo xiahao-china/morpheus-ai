@@ -17,7 +17,7 @@ jest.mock('uuid', () => ({
 }));
 
 import app from '../src/index'; // Adjust path if needed
-// import { connectMongoDB } from '../src/lib/mongodb';
+import { connectMongoDB } from '../src/lib/mongodb';
 import User from '../src/models/user';
 import UserTaskRecord from '../src/models/userTaskRecord';
 import PointsRecord from '../src/models/pointsRecord';
@@ -28,12 +28,11 @@ let token: string;
 let userId: string;
 
 beforeAll(async () => {
-  // Connect to a test database
-  // connectMongoDB();
-  
-  // Wait for connection? Mongoose buffers commands, but better to wait if possible
-  // Or just rely on mongoose buffering
-  
+  if (mongoose.connection.readyState === 0) {
+    connectMongoDB();
+    await mongoose.connection.asPromise();
+  }
+
   server = app.listen(3001); // Run on different port for testing
 
   // Create Test User

@@ -7,7 +7,7 @@ const BASE_URL = 'http://localhost:3000';
  */
 describe('用户认证 API 测试', () => {
   const testPhone = '13632958426'; // 测试手机号
-  const verifyCode = '783284';     // 接收到的验证码
+  const verifyCode = '666666';     // 接收到的验证码
   let authToken: string;
   let userId: string;
 
@@ -25,9 +25,10 @@ describe('用户认证 API 测试', () => {
 
       expect(response.status).toBe(200);
       expect(response.data.code).toBe(200);
-      expect(response.data.data).toHaveProperty('token');
-
-      authToken = response.data.data.token;
+      const cookies = response.headers['set-cookie'] || [];
+      const tokenCookie = cookies.find((c: string) => c.startsWith('token='));
+      expect(tokenCookie).toBeDefined();
+      authToken = tokenCookie.split(';')[0].split('=')[1];
       userId = response.data.data.user._id;
 
     } catch (error: any) {

@@ -1,10 +1,6 @@
-import { Context as KoaContext } from "koa";
-type Context = KoaContext | any;
 import * as taskService from "@/services/task";
-import { getLogger } from "@/lib/log4js";
-import { sendResponse, EReqStatus } from "@/utils/const";
-
-const logger = getLogger("TaskRewardController");
+import { sendResponse } from "@/utils/const";
+import { canTriggerTaskManually, Context, logger, MANUAL_TRIGGER_TASK_CODE } from "./const";
 
 /**
  * 获取用户任务列表
@@ -57,8 +53,8 @@ export const performTask = async (ctx: Context) => {
     }
 
     try {
-        if (taskCode === 'daily_sign_in') {
-            await taskService.incrementTaskProgress(user._id, taskCode, 1);
+        if (canTriggerTaskManually(taskCode)) {
+            await taskService.incrementTaskProgress(user._id, MANUAL_TRIGGER_TASK_CODE, 1);
             sendResponse.success(ctx, { msg: "Task progress updated" });
         } else {
             ctx.body = { code: 403, msg: "This task cannot be triggered manually" };

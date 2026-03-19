@@ -1,7 +1,9 @@
-import axios from '@/lib/axios';
+import { httpGet, httpPost } from '@/lib/request/http';
 
 export interface IFengshuiTask {
   taskId: string;
+  status: string;
+  queueId?: string;
 }
 
 export interface IFengshuiTaskStatus {
@@ -24,62 +26,155 @@ export interface IFengshuiReport {
   }>;
 }
 
-// 模拟创建风水检测任务
-export const createFengshuiTask = (imageUrl: string): Promise<IFengshuiTask> => {
-  // TODO: Replace with real API
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ taskId: `fs_${Date.now()}` });
-    }, 1000);
-  });
+interface ICreateFengshuiTaskParams {
+  imageUrl: string;
+  houseInfo?: string;
+  residentProfile?: string;
+  residentNeeds?: string;
+}
+
+interface ITaskDetailResponse {
+  taskId: string;
+  status: 'INITIATED' | 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCEL';
+  progress: number;
+  content?: string;
+}
+
+const getReportSection = (content: string, title: string, nextTitle?: string) => {
+  const escapedTitle = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escapedNext = nextTitle ? nextTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
+  const pattern = nextTitle
+    ? new RegExp(`${escapedTitle}[\\s\\S]*?(?=${escapedNext})`)
+    : new RegExp(`${escapedTitle}[\\s\\S]*$`);
+  const matched = content.match(pattern);
+  return matched?.[0] || '';
 };
 
-// 模拟查询风水检测进度
-export const getFengshuiTaskStatus = (taskId: string): Promise<IFengshuiTaskStatus> => {
-  // TODO: Replace with real API
-  // 这里做一个简单的模拟进度自增
-  return new Promise((resolve) => {
-    // 实际场景中应该是后端返回进度
-    // 前端轮询或者WebSocket
-    resolve({
-      taskId,
-      status: 'processing', // 永远 processing，前端自己模拟进度条动画
-      progress: 0
+const normalizeStatus = (status: ITaskDetailResponse['status']): IFengshuiTaskStatus['status'] => {
+  if (status === 'COMPLETED') return 'completed';
+  if (status === 'FAILED' || status === 'CANCEL') return 'failed';
+  if (status === 'PROCESSING') return 'processing';
+  return 'pending';
+};
+
+const parseLevel = (score: number) => {
+  if (score >= 9) return '上吉';
+  if (score >= 8) return '吉';
+  if (score >= 6) return '中';
+  if (score >= 4) return '平';
+  return '凶';
+};
+
+const parseMarkdownReport = (content: string): IFengshuiReport => {
+  const scoreSection = getReportSection(content, '### 一、风水评分', '### 二、优势分析');
+  const scoreMatches = [...scoreSection.matchAll(/\|\s*(整体格局|门窗朝向|功能区域|煞气排查|五行平衡|(?:\*\*)?综合评分(?:\*\*)?)\s*\|\s*(\d+(?:\.\d+)?)\s*\|/g)];
+  const scoreList = scoreMatches
+    .map((item) => Number(item[2]))
+    .filter((item) => Number.isFinite(item) && item > 0);
+  const score = scoreList.length ? Math.round(scoreList.reduce((acc, cur) => acc + cur, 0) / scoreList.length) : 0;
+
+  const advantageSection = getReportSection(content, '### 二、优势分析', '### 三、问题诊断');
+  const advantageList = [...advantageSection.matchAll(/\d+\.\s*(.+)/g)].map((item) => item[1]?.trim()).filter(Boolean);
+
+  const diagnosisSection = getReportSection(content, '### 三、问题诊断', '### 四、优化建议');
+  const diagnosisRows = [...diagnosisSection.matchAll(/\|\s*\d+\s*\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|/g)];
+
+  const suggestionSection = getReportSection(content, '### 四、优化建议', '### 五、特别提醒');
+  const suggestionRows = [...suggestionSection.matchAll(/\|\s*\d+\s*\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|/g)];
+
+  const remindSection = getReportSection(content, '### 五、特别提醒');
+  const remindList = [...remindSection.matchAll(/-\s*(.+)/g)].map((item) => item[1]?.trim()).filter(Boolean);
+
+  const items: IFengshuiReport['items'] = [];
+
+  diagnosisRows.forEach((row) => {
+    const problemType = row[1]?.trim() || '问题';
+    const severity = row[2]?.trim() || '';
+    const position = row[3]?.trim() || '';
+    const impact = row[4]?.trim() || '';
+    const type = severity.includes('高') ? 'danger' : (severity.includes('中') ? 'warning' : 'success');
+    items.push({
+      type,
+      title: `${problemType}${position ? `：${position}` : ''}`,
+      tag: severity || '提示',
+      impact
     });
   });
+
+  suggestionRows.forEach((row, index) => {
+    if (!items[index]) return;
+    items[index].suggestion = row[2]?.trim() || '';
+  });
+
+  if (!items.length && advantageList.length) {
+    advantageList.forEach((item) => {
+      items.push({
+        type: 'success',
+        title: item,
+        tag: '优势',
+        analysis: item
+      });
+    });
+  }
+
+  const summaryParts = [
+    advantageList.length ? `优势：${advantageList.join('；')}` : '',
+    remindList.length ? `提醒：${remindList.join('；')}` : ''
+  ].filter(Boolean);
+
+  return {
+    score,
+    level: parseLevel(score),
+    summary: summaryParts.join('。') || '风水分析已完成，请查看下方详细结果。',
+    items: items.length ? items : [{
+      type: 'warning',
+      title: '报告结构化提取中',
+      tag: '提示',
+      analysis: content
+    }]
+  };
 };
 
-// 模拟获取风水检测报告
-export const getFengshuiReport = (taskId: string): Promise<IFengshuiReport> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        score: 88,
-        level: '上吉',
-        summary: '您的房间整体气场稳定，采光充足，符合“藏风聚气”的基本原则，仅需局部微调即可达到最佳状态。',
-        items: [
-          {
-            type: 'danger',
-            title: '门冲煞：入户门对卫生间',
-            tag: '严重',
-            impact: '财气易流失，湿气直冲玄关，影响居住者健康。',
-            suggestion: '在玄关处设置实木屏风或悬挂长帘，阻断气流直冲。'
-          },
-          {
-            type: 'warning',
-            title: '靠山不实：床头靠窗',
-            tag: '中等',
-            impact: '缺乏安全感，睡眠质量波动，事业运势不稳。',
-            suggestion: '尽量将床头靠向实墙。若无法移动，请使用厚重的遮光帘并保持窗户常闭。'
-          },
-          {
-            type: 'success',
-            title: '明堂开阔：采光极佳',
-            tag: '优异',
-            analysis: '客厅采光充足，阳气旺盛，有利于家庭和谐与事业上升。'
-          }
-        ]
-      });
-    }, 500);
-  });
+export const createFengshuiTask = async (params: ICreateFengshuiTaskParams): Promise<IFengshuiTask> => {
+  const res = await httpPost<ICreateFengshuiTaskParams, IFengshuiTask>('/generation/fengshui', params);
+  if (res instanceof Error) {
+    throw res;
+  }
+  if (res.code !== 200 || !res.data?.taskId) {
+    throw new Error(res.message || '创建风水任务失败');
+  }
+  return res.data;
+};
+
+export const getFengshuiTaskStatus = async (taskId: string): Promise<IFengshuiTaskStatus> => {
+  const res = await httpGet<object, ITaskDetailResponse>(`/image/detail/${taskId}`, {});
+  if (res instanceof Error) {
+    throw res;
+  }
+  if (res.code !== 200 || !res.data?.taskId) {
+    throw new Error(res.message || '获取风水任务状态失败');
+  }
+  return {
+    taskId: res.data.taskId,
+    status: normalizeStatus(res.data.status),
+    progress: Math.max(0, Math.min(100, Number(res.data.progress || 0)))
+  };
+};
+
+export const getFengshuiReport = async (taskId: string): Promise<IFengshuiReport> => {
+  const res = await httpGet<object, ITaskDetailResponse>(`/image/detail/${taskId}`, {});
+  if (res instanceof Error) {
+    throw res;
+  }
+  if (res.code !== 200 || !res.data?.taskId) {
+    throw new Error(res.message || '获取风水报告失败');
+  }
+  if (normalizeStatus(res.data.status) !== 'completed') {
+    throw new Error('风水任务尚未完成');
+  }
+  const content = res.data.content || '';
+  if (!content) {
+    throw new Error('报告内容为空');
+  }
+  return parseMarkdownReport(content);
 };

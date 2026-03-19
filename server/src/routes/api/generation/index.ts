@@ -1,6 +1,6 @@
 import Router from "koa-router";
 // 导入生成控制器函数
-import { submitFeedback, optimizePrompt, generateImage, getGenerationStatus, getTaskDetail, getGenerationHistory } from "@/controllers/generation";
+import { submitFeedback, optimizePrompt, generateImage, generateFengShui, getGenerationStatus, getTaskDetail, getGenerationHistory } from "@/controllers/generation";
 // 导入认证中间件
 import { authMiddleware } from "@/middleware/auth";
 
@@ -16,6 +16,9 @@ export default (router: Router) => {
 
   // AI任务生成接口（需要登录）- 兼容旧的图片生成路径
   router.post('/api/image/generate', authMiddleware, generateImage);
+
+  // AI风水分析任务接口（需要登录）
+  router.post('/api/v1/generation/fengshui', authMiddleware, generateFengShui);
 
   // 查询任务状态接口 (SSE) - 兼容旧路径
   router.get('/api/image/status/:taskId', getGenerationStatus);

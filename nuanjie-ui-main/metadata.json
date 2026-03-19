@@ -1,0 +1,7 @@
+{
+  "name": "Remix: 暖界AI",
+  "description": "专业级AI室内设计与风水检测工具，提供极速可视化装修方案与智能风水评估。",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

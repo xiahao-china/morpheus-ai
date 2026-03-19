@@ -3,6 +3,7 @@ export const appConfig = {
     "pages/Square/index", // 广场页
     "pages/PersonalSpace/index", // 我的空间
     "pages/LoginPage/index", // 登录页
+    "pages/DrawingV2/index",
     "pages/Drawing/index",
     "pages/Fengshui/index", // 风水页
     "pages/Fengshui/Progress/index", // 风水进度页

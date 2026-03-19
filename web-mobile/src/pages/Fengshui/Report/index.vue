@@ -78,7 +78,12 @@ const fetchReport = async (taskId: string) => {
     const res = await getFengshuiReport(taskId);
     report.value = res;
   } catch (err) {
-    Taro.showToast({ title: '获取报告失败', icon: 'none' });
+    Taro.showToast({ title: '报告生成中，正在跳转', icon: 'none' });
+    setTimeout(() => {
+      Taro.redirectTo({
+        url: `/pages/Fengshui/Progress/index?taskId=${taskId}`
+      });
+    }, 700);
   }
 };
 

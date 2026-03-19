@@ -1,32 +1,14 @@
-import { Context as KoaContext } from "koa";
-type Context = KoaContext | any;
 import Square from "@/models/square";
 import ImageGenInfo from "@/models/imageGenInfo";
-import { sendResponse, EReqStatus } from "@/utils/const";
+import { sendResponse } from "@/utils/const";
+import { buildSquareFilter, Context, getNextLikeCount } from "./const";
 
 /**
  * 获取广场列表（支持风格和场景标签筛选）
  */
 export const getSquareList = async (ctx: Context) => {
   const { page = 1, pageSize = 20, styleTags, sceneTags } = ctx.query;
-
-  const filter: any = {};
-
-  // 风格标签筛选
-  if (styleTags) {
-      const tags = (styleTags as string).split(',').filter(t => t.trim());
-      if (tags.length > 0) {
-          filter.styleTags = { $in: tags };
-      }
-  }
-
-  // 场景标签筛选
-  if (sceneTags) {
-      const tags = (sceneTags as string).split(',').filter(t => t.trim());
-      if (tags.length > 0) {
-          filter.sceneTags = { $in: tags };
-      }
-  }
+  const filter = buildSquareFilter(styleTags, sceneTags);
 
   const list = await Square.find(filter)
     .sort({ publishedTime: -1 })
@@ -105,7 +87,7 @@ export const deleteSquare = async (ctx: Context) => {
  */
 export const likeSquare = async (ctx: Context) => {
   const { id } = ctx.params;
-  const { action } = ctx.request.body as any; // 'like' or 'unlike'
+  const { action } = ctx.request.body as any;
 
   const square = await Square.findById(id);
   if (!square) {
@@ -113,11 +95,7 @@ export const likeSquare = async (ctx: Context) => {
     return;
   }
 
-  if (action === 'like') {
-    square.likeCount = (square.likeCount || 0) + 1;
-  } else {
-    square.likeCount = Math.max(0, (square.likeCount || 0) - 1);
-  }
+  square.likeCount = getNextLikeCount(action, square.likeCount || 0);
 
   await square.save();
   sendResponse.success(ctx, square);

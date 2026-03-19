@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Deployment tools for Morpheus AI",
   "scripts": {
+    "server": "cd server && npm run serve",
     "publish:env": "node tools/publish-env.js",
     "build:server": "cd server && npm install && npm run build:prod",
     "build:server-test": "cd server && npm install && npm run build:test",

@@ -7,7 +7,7 @@ const BASE_URL = 'http://localhost:3000';
  */
 describe('生图 API 测试', () => {
   const testPhone = '13632958426';
-  const verifyCode = '783284';
+  const verifyCode = '666666';
   let authToken: string;
 
   // 1. 先登录
@@ -18,7 +18,11 @@ describe('生图 API 测试', () => {
         target: testPhone,
         code: verifyCode
       });
-      authToken = response.data.data.token;
+      const cookies = response.headers['set-cookie'] || [];
+      const tokenCookie = cookies.find((c: string) => c.startsWith('token='));
+      if (tokenCookie) {
+        authToken = tokenCookie.split(';')[0].split('=')[1];
+      }
     } catch (error) {
       console.error('登录失败，测试可能会失败');
     }

@@ -7,14 +7,46 @@
   left: 0;
   right: 0;
   height: 110rpx;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(48rpx);
+  background: #ffffff;
+  backdrop-filter: blur(24rpx);
   border-top: 2rpx solid rgb(243,244,246);
   display: flex;
   align-items: center;
   justify-content: space-around;
   z-index: 10;
-  box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.02) 0px -5px 20px 0px;
+  box-shadow: 0 -8rpx 32rpx rgba(0, 0, 0, 0.06);
+  padding-top: 8rpx;
+  overflow: visible;
+
+  .activeIndicator {
+    position: absolute;
+    top: -48rpx;
+    margin-left: -48rpx;
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: 50%;
+    background: @gradient-primary2;
+    border: 8rpx solid #f7f7f7;
+    box-shadow: 0 10rpx 24rpx rgba(70, 106, 252, 0.24);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+    transition: left 0.46s cubic-bezier(0.22, 1, 0.36, 1), transform 0.34s ease;
+    animation: indicatorFloatIn 0.4s ease-out;
+    pointer-events: none;
+
+    .activeIndicatorIcon {
+      color: #ffffff;
+      font-size: 42rpx;
+      width: 42rpx;
+      height: 42rpx;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
 
   .navItem {
     flex: 1;
@@ -22,29 +54,31 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 8rpx 16rpx;
+    padding: 4rpx 16rpx;
     cursor: pointer;
     position: relative;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     border-radius: 24rpx;
     margin: 0 8rpx;
+    height: 100%;
+    overflow: visible;
 
     .navIcon {
       color: @third-text-color;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       align-items: center;
       justify-content: center;
       position: relative;
       z-index: 2;
-      margin-bottom: 10rpx;
-      width: 60rpx;
-      height: 60rpx;
+      margin-bottom: 8rpx;
+      width: 56rpx;
+      height: 56rpx;
       border-radius: 16rpx;
 
 
       .iconfont {
-        font-size: 46rpx;
+        font-size: 44rpx;
         width: 46rpx;
         height: 46rpx;
         display: inline-block;
@@ -67,14 +101,17 @@
 
     &.active {
 
+      transform: translateY(-4rpx);
+
       .navIcon {
-        color: white;
-        background: @gradient-primary2;
+        opacity: 0;
+        transform: translateY(-18rpx) scale(0.92);
       }
 
       .navLabel {
         color: @main-color;
         font-weight: 600;
+        transform: translateY(6rpx);
       }
     }
 
@@ -104,9 +141,9 @@
     .navLabel {
       font-size: 22rpx;
       color: @third-text-color;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
       white-space: nowrap;
-      font-weight: 400;
+      font-weight: 600;
       letter-spacing: 0.5rpx;
       text-align: center;
       line-height: 1.1;
@@ -133,6 +170,17 @@
 }
 
 // 动画关键帧
+@keyframes indicatorFloatIn {
+  0% {
+    opacity: 0;
+    transform: translateY(16rpx) scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @keyframes slideIn {
   0% {
     width: 0;

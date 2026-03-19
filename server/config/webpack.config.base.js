@@ -6,11 +6,19 @@ const fs = require('fs')
 
 // Load config from root
 let serverConfig = {};
-const appEnv = process.env.APP_ENV || 'dev';
+const appEnv = (process.env.APP_ENV || '').toLowerCase();
+const lifecycleEvent = (process.env.npm_lifecycle_event || '').toLowerCase();
 let configFileName = 'config.json';
 
-if (appEnv === 'test') {
+if (
+  appEnv === 'test' ||
+  lifecycleEvent === 'serve' ||
+  lifecycleEvent === 'server' ||
+  lifecycleEvent === 'build:test'
+) {
   configFileName = 'config.test.json';
+} else if (appEnv === 'prod' || appEnv === 'production') {
+  configFileName = 'config.prod.json';
 }
 
 try {

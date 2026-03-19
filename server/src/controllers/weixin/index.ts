@@ -1,13 +1,23 @@
-import { Context as KoaContext } from "koa";
-type Context = KoaContext | any;
 import User, { IUser, UserRoleEnum, UserStatusEnum } from "@/models/user";
 import { signToken } from "@/utils/token";
 import redis from "@/lib/redis";
 import { logger } from "@/lib/log4js";
-import { MINI_PROGRAM_CONFIG, MP_CONFIG, REDIS_KEYS, SMS_CONFIG } from "@/config/index";
+import { MINI_PROGRAM_CONFIG, MP_CONFIG, SMS_CONFIG } from "@/config/index";
 import axios from "axios";
-import { v4 as uuidv4 } from 'uuid';
-import { sendResponse, EReqStatus } from "@/utils/const";
+import { sendResponse } from "@/utils/const";
+import {
+  buildSmsLoginRedisKey,
+  buildWechatAuthorizeUrl,
+  buildWechatLoginCodeRedisKey,
+  buildWechatLoginStateRedisKey,
+  Context,
+  createLoginSuccessHtml,
+  createWechatState,
+  WECHAT_LOGIN_CODE_EXPIRE_SECONDS,
+  WECHAT_STATE_EXPIRE_SECONDS,
+  WECHAT_TOKEN_API_URL,
+  WECHAT_USER_INFO_API_URL
+} from "./const";
 
 /**
  * 绑定手机号 - Web端微信登录后绑定手机号
@@ -26,7 +36,7 @@ export const bindPhone = async (ctx: Context) => {
 
   try {
     // 1. 验证验证码
-    const redisKey = `${REDIS_KEYS.SMS_LOGIN_CODE}${phone}`;
+    const redisKey = buildSmsLoginRedisKey(phone);
     const storedCode = await redis.get(redisKey);
 
     // 测试环境允许 666666
@@ -196,18 +206,15 @@ export const miniProgramLogin = async (ctx: Context) => {
  * 生成唯一的 state 并构造授权 URL
  */
 export const getQrCode = async (ctx: Context) => {
-  const state = uuidv4().replace(/-/g, '');
-  const redirectUri = encodeURIComponent(MP_CONFIG.redirectUri);
-
-  // 构造微信授权地址
-  const authorizeUrl = `https://open.weixin.qq.com/connect/qrconnect?appid=${MP_CONFIG.appId}&redirect_uri=${redirectUri}&response_type=code&scope=${MP_CONFIG.scope}&state=${state}#wechat_redirect`;
+  const state = createWechatState();
+  const authorizeUrl = buildWechatAuthorizeUrl(state);
 
   // 将 state 存入 Redis，有效期 5 分钟
   await redis.set(
-    `${REDIS_KEYS.WECHAT_LOGIN_STATE}${state}`,
+    buildWechatLoginStateRedisKey(state),
     "1",
     "EX",
-    300
+    WECHAT_STATE_EXPIRE_SECONDS
   );
 
   sendResponse.success(ctx, {
@@ -230,7 +237,7 @@ export const checkLoginStatus = async (ctx: Context) => {
   }
 
   try {
-    const result = await redis.get(`${REDIS_KEYS.WECHAT_LOGIN_CODE}${state}`);
+    const result = await redis.get(buildWechatLoginCodeRedisKey(state));
 
     if (!result) {
       ctx.body = { code: 202, msg: "Waiting for scan", data: null };
@@ -238,7 +245,7 @@ export const checkLoginStatus = async (ctx: Context) => {
     }
 
     const loginData = JSON.parse(result);
-    await redis.del(`${REDIS_KEYS.WECHAT_LOGIN_CODE}${state}`);
+    await redis.del(buildWechatLoginCodeRedisKey(state));
 
     ctx.body = loginData;
   } catch (error) {
@@ -265,14 +272,14 @@ export const wechatCallback = async (ctx: Context) => {
 
   try {
     // 1. 验证 state
-    const savedState = await redis.get(`${REDIS_KEYS.WECHAT_LOGIN_STATE}${state}`);
+    const savedState = await redis.get(buildWechatLoginStateRedisKey(state));
     if (!savedState) {
       ctx.body = { code: 400, msg: "Invalid state or expired" };
       return;
     }
 
     // 2. 通过 code 获取 access_token 和 openid
-    const tokenResponse = await axios.get("https://api.weixin.qq.com/sns/oauth2/access_token", {
+    const tokenResponse = await axios.get(WECHAT_TOKEN_API_URL, {
       params: {
         appid: MP_CONFIG.appId,
         secret: MP_CONFIG.appSecret,
@@ -290,7 +297,7 @@ export const wechatCallback = async (ctx: Context) => {
     }
 
     // 3. 获取用户信息
-    const userInfoResponse = await axios.get("https://api.weixin.qq.com/sns/userinfo", {
+    const userInfoResponse = await axios.get(WECHAT_USER_INFO_API_URL, {
       params: {
         access_token,
         openid,
@@ -338,46 +345,19 @@ export const wechatCallback = async (ctx: Context) => {
     const token = signToken(user);
 
     // 6. 清理 Redis
-    await redis.del(`${REDIS_KEYS.WECHAT_LOGIN_STATE}${state}`);
+    await redis.del(buildWechatLoginStateRedisKey(state));
 
     // 7. 将登录结果存入 Redis，供前端轮询获取
     await redis.set(
-      `${REDIS_KEYS.WECHAT_LOGIN_CODE}${state}`,
+      buildWechatLoginCodeRedisKey(state),
       JSON.stringify({ code: 200, msg: "Login successful", data: { token, user } }),
       "EX",
-      300
+      WECHAT_LOGIN_CODE_EXPIRE_SECONDS
     );
 
     // 8. 返回 HTML 提示
     ctx.type = 'html';
-    ctx.body = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Login Successful</title>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f5f5f5; }
-          .container { text-align: center; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-          h1 { color: #07c160; margin-bottom: 1rem; }
-          p { color: #666; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <h1>登录成功</h1>
-          <p>您已成功登录，请返回原页面。</p>
-          <script>
-            if (window.opener) {
-              window.opener.postMessage({ type: 'wechat_login_success', token: '${token}' }, '*');
-              window.close();
-            }
-          </script>
-        </div>
-      </body>
-      </html>
-    `;
+    ctx.body = createLoginSuccessHtml(token);
 
   } catch (error) {
     logger.error(`[Wechat Callback] Error:`, error);

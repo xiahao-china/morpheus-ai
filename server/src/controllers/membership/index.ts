@@ -1,11 +1,7 @@
-import { Context as KoaContext } from "koa";
-type Context = KoaContext | any;
 import MembershipPackage from "@/models/membershipPackage";
 import * as paymentService from "@/services/payment";
-import { getLogger } from "@/lib/log4js";
-import { sendResponse, EReqStatus } from "@/utils/const";
-
-const logger = getLogger("MembershipController");
+import { sendResponse } from "@/utils/const";
+import { Context, DEFAULT_PAYMENT_METHOD, DEFAULT_PAY_TYPE, isAlipayPayment, logger } from "./const";
 
 /**
  * 获取会员套餐列表
@@ -28,7 +24,7 @@ export const getPackages = async (ctx: Context) => {
  * paymentMethod: 支付方式（目前仅支持 ALIPAY）
  */
 export const createOrder = async (ctx: Context) => {
-  const { packageId, payType = 'wap', paymentMethod = 'ALIPAY' } = ctx.request.body as any;
+  const { packageId, payType = DEFAULT_PAY_TYPE, paymentMethod = DEFAULT_PAYMENT_METHOD } = ctx.request.body as any;
   const user = ctx.state.user as any;
 
   if (!packageId) {
@@ -43,7 +39,7 @@ export const createOrder = async (ctx: Context) => {
       return;
     }
 
-    if (paymentMethod === 'ALIPAY') {
+    if (isAlipayPayment(paymentMethod)) {
       const result = await paymentService.createAlipayOrder(user._id, packageId, payType);
       sendResponse.success(ctx, result);
     } else {

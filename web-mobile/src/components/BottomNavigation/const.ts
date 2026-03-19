@@ -15,7 +15,7 @@ export const navItems = [
   {
     key: "draw",
     label: "绘图",
-    path: "/pages/Drawing/index",
+    path: "/pages/DrawingV2/index",
     icon: "pen",
   },
   // {
@@ -33,7 +33,7 @@ export const navItems = [
     key: "profile",
     label: "我的",
     path: "/pages/PersonalSpace/index",
-    icon: "my",
+    icon: "user",
   },
 ];
 

@@ -1,8 +1,7 @@
-import { Context as KoaContext } from "koa";
-type Context = KoaContext | any;
 import { minioClient, BUCKET_NAME } from "@/lib/minio";
 import FileResource from "@/models/fileResource";
-import { sendResponse, EReqStatus } from "@/utils/const";
+import { sendResponse } from "@/utils/const";
+import { buildFilename, buildObjectPath, Context, FILE_URL_EXPIRE_SECONDS } from "./const";
 
 /**
  * 上传文件到 MinIO
@@ -17,11 +16,11 @@ export const uploadFile = async (ctx: Context) => {
       return;
   }
 
-  const filename = `${Date.now()}-${file.originalname}`;
+  const filename = buildFilename(file.originalname);
   await minioClient.putObject(BUCKET_NAME, filename, file.buffer);
 
   // 生成预签名 URL，有效期 24 小时
-  const url = await minioClient.presignedGetObject(BUCKET_NAME, filename, 24*60*60);
+  const url = await minioClient.presignedGetObject(BUCKET_NAME, filename, FILE_URL_EXPIRE_SECONDS);
 
   // 保存到数据库
   const fileResource = new FileResource({
@@ -44,7 +43,7 @@ export const uploadFile = async (ctx: Context) => {
  */
 export const getFileUrl = async (ctx: Context) => {
     const { filename } = ctx.params;
-    const url = await minioClient.presignedGetObject(BUCKET_NAME, filename, 24*60*60);
+    const url = await minioClient.presignedGetObject(BUCKET_NAME, filename, FILE_URL_EXPIRE_SECONDS);
     sendResponse.success(ctx, { url });
 }
 
@@ -62,15 +61,15 @@ export const uploadGeneralFile = async (ctx: Context) => {
   }
 
   // 使用指定的对象名或生成新的
-  const filename = objectName || `${Date.now()}-${file.originalname}`;
+  const filename = objectName || buildFilename(file.originalname);
 
   // 按文件类型组织存储路径
-  const objectPath = fileType ? `${fileType.toLowerCase()}/${filename}` : filename;
+  const objectPath = buildObjectPath(fileType, filename);
 
   await minioClient.putObject(BUCKET_NAME, objectPath, file.buffer);
 
   // 生成预签名 URL
-  const url = await minioClient.presignedGetObject(BUCKET_NAME, objectPath, 24*60*60);
+  const url = await minioClient.presignedGetObject(BUCKET_NAME, objectPath, FILE_URL_EXPIRE_SECONDS);
 
   // 保存到数据库
   const fileResource = new FileResource({
