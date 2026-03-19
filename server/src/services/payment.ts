@@ -6,7 +6,7 @@ import PointsRecord from '@/models/pointsRecord';
 import User from '@/models/user';
 import { logger } from '@/lib/log4js';
 
-// Initialize Alipay SDK
+// 初始化支付宝SDK
 const alipaySdk = new AlipaySdk({
   appId: ALIPAY_CONFIG.appId,
   privateKey: ALIPAY_CONFIG.privateKey,
@@ -16,7 +16,10 @@ const alipaySdk = new AlipaySdk({
 });
 
 /**
- * Create Alipay Order
+ * 创建支付宝订单
+ * @param userId 用户ID
+ * @param packageId 套餐ID
+ * @param payType 支付类型（wap或page）
  */
 export const createAlipayOrder = async (userId: string, packageId: string, payType: 'wap' | 'page' = 'wap') => {
   const pkg = await MembershipPackage.findById(packageId);
@@ -24,7 +27,7 @@ export const createAlipayOrder = async (userId: string, packageId: string, payTy
     throw new Error('Package not found');
   }
 
-  // Create Order Record
+  // 创建订单记录
   const orderNo = `ORD_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
   const order = new Order({
     userId,
@@ -38,10 +41,10 @@ export const createAlipayOrder = async (userId: string, packageId: string, payTy
   });
   await order.save();
 
-  // Prepare Alipay Form Data
+  // 准备支付宝表单数据
   const formData = new AlipayFormData();
   formData.setMethod('get');
-  
+
   const bizContent = {
     out_trade_no: orderNo,
     product_code: payType === 'page' ? 'FAST_INSTANT_TRADE_PAY' : 'QUICK_WAP_WAY',
@@ -49,12 +52,12 @@ export const createAlipayOrder = async (userId: string, packageId: string, payTy
     subject: pkg.name,
     body: pkg.description || `Purchase ${pkg.name}`,
   };
-  
+
   formData.addField('bizContent', bizContent);
   formData.addField('returnUrl', ALIPAY_CONFIG.returnUrl);
   formData.addField('notifyUrl', ALIPAY_CONFIG.notifyUrl);
 
-  // Generate Payment URL
+  // 生成支付链接
   const method = payType === 'page' ? 'alipay.trade.page.pay' : 'alipay.trade.wap.pay';
   const result = await alipaySdk.exec(method, {}, { formData: formData });
 
@@ -62,28 +65,32 @@ export const createAlipayOrder = async (userId: string, packageId: string, payTy
 };
 
 /**
- * Verify Alipay Notification Signature
+ * 验证支付宝通知签名
+ * @param params 支付宝回调参数
  */
 export const verifyAlipaySignature = (params: any) => {
   return alipaySdk.checkNotifySign(params);
 };
 
 /**
- * Handle Payment Success Logic
+ * 处理支付成功逻辑
+ * @param out_trade_no 商户订单号
+ * @param trade_no 支付宝交易号
+ * @param total_amount 支付金额
  */
 export const handlePaymentSuccess = async (out_trade_no: string, trade_no: string, total_amount: string) => {
   const order = await Order.findOne({ orderNo: out_trade_no });
-        
+
   if (order && order.status === 'PENDING') {
-    // Verify amount
+    // 验证金额
     if (parseFloat(total_amount) === order.amount) {
-      // Update Order Status
+      // 更新订单状态
       order.status = 'SUCCESS';
       order.tradeNo = trade_no;
       order.payTime = new Date();
       await order.save();
-      
-      // Grant Benefits
+
+      // 授予权益
       await grantBenefits(order);
       return true;
     } else {
@@ -91,16 +98,19 @@ export const handlePaymentSuccess = async (out_trade_no: string, trade_no: strin
        return false;
     }
   }
-  return true; // Already processed or not found (idempotent)
+  return true; // 已处理或未找到（幂等）
 };
 
-// Helper: Grant Benefits
+/**
+ * 授予权益的辅助函数
+ * @param order 订单对象
+ */
 const grantBenefits = async (order: any) => {
   try {
     const pkg = await MembershipPackage.findById(order.packageId);
     if (!pkg) return;
 
-    // 1. Add Points Record (Log)
+    // 1. 添加积分记录（日志）
     const pointsRecord = new PointsRecord({
       userId: order.userId,
       pointType: 'RECHARGE',
@@ -110,18 +120,18 @@ const grantBenefits = async (order: any) => {
       expiryDate: pkg.validMonths ? new Date(Date.now() + pkg.validMonths * 30 * 24 * 60 * 60 * 1000) : undefined,
     });
     await pointsRecord.save();
-    
-    // 2. Update User Balance and Membership
+
+    // 2. 更新用户余额和会员等级
     const updateData: any = {
-      $inc: { points: pkg.coins }, // Increment points
+      $inc: { points: pkg.coins }, // 增加积分
     };
 
-    // If package has level, update membership
+    // 如果套餐有等级，更新会员等级
     if (pkg.level) {
       updateData.membershipLevel = pkg.level;
       if (pkg.validMonths) {
-         // If user already has this level and it's not expired, extend it?
-         // For simplicity, we just set it from now + validMonths
+         // 如果用户已有该等级且未过期，从现在开始延长
+         // 为简单起见，我们直接从现在 + validMonths 设置
          updateData.membershipExpiry = new Date(Date.now() + pkg.validMonths * 30 * 24 * 60 * 60 * 1000);
       }
     }

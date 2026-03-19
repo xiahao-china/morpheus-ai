@@ -1,4 +1,5 @@
-import { Context } from "koa";
+import { Context as KoaContext } from "koa";
+type Context = KoaContext | any;
 import { minioClient, BUCKET_NAME } from "@/lib/minio";
 import FileResource from "@/models/fileResource";
 

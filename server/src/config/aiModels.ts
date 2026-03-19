@@ -19,11 +19,11 @@ export const IMAGE_GENERATION_CONFIG: AIModelConfig = {
   apiKeyHeaderKey: "Authorization",
 };
 
-// 视觉大语言模型配置（预留）
+// 视觉大语言模型配置
 export const VISION_LLM_CONFIG: AIModelConfig = {
-  apiKey: "",
-  baseUrl: "",
-  model: "",
+  apiKey: "sk-434a09ccb0264d9aab87b3825e840da3",
+  baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+  model: "qwen3.5-plus",
   apiKeyHeaderKey: "Authorization",
 };
 

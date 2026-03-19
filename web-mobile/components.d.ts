@@ -25,8 +25,6 @@ declare module 'vue' {
     NutInput: typeof import('@nutui/nutui-taro')['Input']
     NutPopup: typeof import('@nutui/nutui-taro')['Popup']
     NutSearchbar: typeof import('@nutui/nutui-taro')['Searchbar']
-    NutSwiper: typeof import('@nutui/nutui-taro')['Swiper']
-    NutSwiperItem: typeof import('@nutui/nutui-taro')['SwiperItem']
     NutTag: typeof import('@nutui/nutui-taro')['Tag']
     NutTextarea: typeof import('@nutui/nutui-taro')['Textarea']
     PublishWork: typeof import('./src/components/HistoryDetail/components/PublishWork/index.vue')['default']

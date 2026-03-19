@@ -33,7 +33,7 @@ export const navItems = [
     key: "profile",
     label: "我的",
     path: "/pages/PersonalSpace/index",
-    icon: "wode",
+    icon: "my",
   },
 ];
 

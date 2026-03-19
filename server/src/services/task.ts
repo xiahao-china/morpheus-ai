@@ -5,29 +5,29 @@ import User from "@/models/user";
 import { logger } from "@/lib/log4js";
 
 /**
- * Increment Task Progress
- * @param userId User ID
- * @param taskCode Task Code
- * @param count Increment count (default 1)
+ * 增加任务进度
+ * @param userId 用户ID
+ * @param taskCode 任务代码
+ * @param count 增加的进度值（默认1）
  */
 export const incrementTaskProgress = async (userId: string, taskCode: string, count: number = 1) => {
   try {
     const task = ACTIVE_TASKS.find(t => t.code === taskCode && t.isEnabled);
-    if (!task) return; // Task not found or disabled
+    if (!task) return; // 任务未找到或已禁用
 
     let record = await UserTaskRecord.findOne({ userId, taskCode });
 
-    // Handle Daily Task Reset
+    // 处理每日任务重置
     if (task.frequency === TaskFrequencyEnum.DAILY) {
       if (record) {
         const lastUpdate = new Date(record.updatedTime);
         const now = new Date();
-        const isSameDay = lastUpdate.getDate() === now.getDate() && 
-                          lastUpdate.getMonth() === now.getMonth() && 
+        const isSameDay = lastUpdate.getDate() === now.getDate() &&
+                          lastUpdate.getMonth() === now.getMonth() &&
                           lastUpdate.getFullYear() === now.getFullYear();
-        
+
         if (!isSameDay) {
-          // Reset progress for new day
+          // 新一天，重置进度
           record.progress = 0;
           record.status = TaskStatusEnum.IN_PROGRESS;
           record.completionTime = undefined;
@@ -45,20 +45,20 @@ export const incrementTaskProgress = async (userId: string, taskCode: string, co
       });
     }
 
-    // If already completed/claimed, do nothing (unless it was reset above)
+    // 如果已完成或已领取，则不处理（除非在上面被重置了）
     if (record.status !== TaskStatusEnum.IN_PROGRESS) return;
 
-    // Update Progress
+    // 更新进度
     record.progress += count;
 
-    // Check Completion
+    // 检查是否完成
     if (record.progress >= task.targetCount) {
-      record.progress = task.targetCount; // Cap at target
+      record.progress = task.targetCount; // 限制在目标值
       record.status = TaskStatusEnum.COMPLETED;
       record.completionTime = new Date();
     }
-    
-    // Explicitly update updatedTime for daily check
+
+    // 明确更新updatedTime用于每日检查
     record.updatedTime = new Date();
 
     await record.save();
@@ -69,19 +69,19 @@ export const incrementTaskProgress = async (userId: string, taskCode: string, co
 };
 
 /**
- * Claim Reward
- * @param userId User ID
- * @param taskCode Task Code (Used to be ID, now Code)
+ * 领取任务奖励
+ * @param userId 用户ID
+ * @param taskCode 任务代码
  */
 export const claimReward = async (userId: string, taskCode: string) => {
   const task = ACTIVE_TASKS.find(t => t.code === taskCode);
   if (!task) throw new Error("Task not found");
 
   const record = await UserTaskRecord.findOne({ userId, taskCode: task.code });
-  
-  // Special handling for 'newcomer_report': if not exists, create it as completed (since they are registered)
+
+  // 特殊处理 'newcomer_report'：如果不存在，则创建为已完成状态（因为用户已注册）
   if (!record && task.code === 'newcomer_report') {
-      // Auto-complete
+      // 自动完成
       const newRecord = new UserTaskRecord({
           userId,
           taskCode: task.code,
@@ -95,22 +95,27 @@ export const claimReward = async (userId: string, taskCode: string) => {
 
   if (!record) throw new Error("Task record not found");
 
-  // Check Status
+  // 检查状态
   if (record.status === TaskStatusEnum.IN_PROGRESS) throw new Error("Task not completed yet");
   if (record.status === TaskStatusEnum.CLAIMED) throw new Error("Reward already claimed");
 
   return await processClaim(userId, task, record);
 };
 
-// Helper to process the actual claim transaction
+/**
+ * 处理实际领取交易的辅助函数
+ * @param userId 用户ID
+ * @param task 任务对象
+ * @param record 用户任务记录
+ */
 const processClaim = async (userId: string, task: any, record: any) => {
   try {
-    // 1. Mark as Claimed
+    // 1. 标记为已领取
     record.status = TaskStatusEnum.CLAIMED;
     record.claimTime = new Date();
     await record.save();
 
-    // 2. Add Points Record
+    // 2. 添加积分记录
     const pointsRecord = new PointsRecord({
       userId,
       pointType: 'TASK_REWARD',
@@ -119,7 +124,7 @@ const processClaim = async (userId: string, task: any, record: any) => {
     });
     await pointsRecord.save();
 
-    // 3. Update User Balance
+    // 3. 更新用户余额
     await User.findByIdAndUpdate(userId, { $inc: { points: task.rewardPoints } });
 
     return { rewardPoints: task.rewardPoints };
@@ -131,7 +136,8 @@ const processClaim = async (userId: string, task: any, record: any) => {
 };
 
 /**
- * Get User Task List with Status
+ * 获取用户任务列表及其状态
+ * @param userId 用户ID
  */
 export const getUserTasks = async (userId: string) => {
   const tasks = ACTIVE_TASKS.filter(t => t.isEnabled).sort((a, b) => a.sort - b.sort);
@@ -139,8 +145,8 @@ export const getUserTasks = async (userId: string) => {
 
   return tasks.map(task => {
     let record = records.find(r => r.taskCode === task.code);
-    
-    // Virtual Reset for Display
+
+    // 用于显示的虚拟重置
     let status = TaskStatusEnum.IN_PROGRESS;
     let progress = 0;
 
@@ -148,14 +154,14 @@ export const getUserTasks = async (userId: string) => {
       if (task.frequency === TaskFrequencyEnum.DAILY) {
         const lastUpdate = new Date(record.updatedTime);
         const now = new Date();
-        const isSameDay = lastUpdate.getDate() === now.getDate() && 
-                          lastUpdate.getMonth() === now.getMonth() && 
+        const isSameDay = lastUpdate.getDate() === now.getDate() &&
+                          lastUpdate.getMonth() === now.getMonth() &&
                           lastUpdate.getFullYear() === now.getFullYear();
         if (isSameDay) {
           status = record.status;
           progress = record.progress;
         } else {
-           // It's a new day, show as 0 progress
+           // 新的一天，显示为0进度
            status = TaskStatusEnum.IN_PROGRESS;
            progress = 0;
         }
@@ -164,8 +170,8 @@ export const getUserTasks = async (userId: string) => {
         progress = record.progress;
       }
     } else if (task.code === 'newcomer_report') {
-        // Newcomer task is implicitly completed for all registered users if they haven't claimed it yet
-        status = TaskStatusEnum.COMPLETED; 
+        // 新人任务对所有已注册但未领取的用户默认完成
+        status = TaskStatusEnum.COMPLETED;
         progress = 1;
     }
 
@@ -177,7 +183,7 @@ export const getUserTasks = async (userId: string) => {
       rewardPoints: task.rewardPoints,
       targetCount: task.targetCount,
       icon: task.icon,
-      status,     // 0: InProgress, 1: Completed(Claimable), 2: Claimed
+      status,     // 0: 进行中, 1: 已完成(可领取), 2: 已领取
       progress
     };
   });

@@ -1,4 +1,5 @@
-import { Context } from "koa";
+import { Context as KoaContext } from "koa";
+type Context = KoaContext | any;
 import Square from "@/models/square";
 import ImageGenInfo from "@/models/imageGenInfo";
 

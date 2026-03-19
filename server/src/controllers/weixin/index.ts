@@ -1,4 +1,5 @@
-import { Context } from "koa";
+import { Context as KoaContext } from "koa";
+type Context = KoaContext | any;
 import User, { IUser, UserRoleEnum, UserStatusEnum } from "@/models/user";
 import { signToken } from "@/utils/token";
 import redis from "@/lib/redis";

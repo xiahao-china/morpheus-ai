@@ -1,4 +1,5 @@
-import { Context, Next } from 'koa';
+import { Context as KoaContext, Next } from "koa";
+type Context = KoaContext | any;
 import { verifyToken, getToken } from '@/utils/token';
 
 export const authMiddleware = async (ctx: Context, next: Next) => {

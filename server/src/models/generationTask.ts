@@ -9,26 +9,31 @@ export enum TaskStatusEnum {
   FAILED = 'FAILED' // 失败
 }
 
-export enum TaskProviderEnum {
-  COMFYUI = 'COMFYUI', // ComfyUI
-  THIRD_PARTY = 'THIRD_PARTY' // 第三方
+export enum TaskPurposeEnum {
+  TXT2IMG = 'TXT2IMG', // 文生图
+  IMG2IMG = 'IMG2IMG', // 图生图
+  UPSCALE = 'UPSCALE', // 高清放大
+  TRANSLATION = 'TRANSLATION', // 翻译
+  PROMPT_OPTIMIZATION = 'PROMPT_OPTIMIZATION', // 提示词优化
+  FENG_SHUI = 'FENG_SHUI' // 风水
 }
 
-export enum ImageActionModeEnum {
-  DRAWING = 'DRAWING', // 绘图模式
-  RENDER = 'RENDER', // 旧_渲染模式
-  INSPIRATION = 'INSPIRATION', // 灵感生图
-  MAKE_UP = 'MAKE_UP', // 毛坯精装
-  REHABILITATION = 'REHABILITATION', // 实景改造
-  RENDER_LY = 'RENDER_LY', // 一键渲染
-  LINEAR_RENDER = 'LINEAR_RENDER', // 线性渲染
-  HOME_MIGRATION = 'HOME_MIGRATION', // 家具植入
-  REDRAW = 'REDRAW', // 局部重绘
-  CLEAN = 'CLEAN', // 智能清除
-  UPSCALE = 'UPSCALE', // 高清放大
-  CUTOUT = 'CUTOUT', // 一键抠图
-  OBJECT_MIGRATION = 'OBJECT_MIGRATION' // 万物迁移
+export enum TaskChannelEnum {
+  COMFYUI = 'COMFYUI',
+  LLM = 'LLM',
+  VLLM = 'VLLM',
+  THIRD_PARTY_GENERATION_IMAGE = 'THIRD_PARTY_GENERATION_IMAGE'
 }
+
+// 任务用途与渠道的映射关系
+export const TaskPurposeChannelMapping: Record<TaskPurposeEnum, TaskChannelEnum> = {
+  [TaskPurposeEnum.TXT2IMG]: TaskChannelEnum.COMFYUI,
+  [TaskPurposeEnum.IMG2IMG]: TaskChannelEnum.THIRD_PARTY_GENERATION_IMAGE,
+  [TaskPurposeEnum.UPSCALE]: TaskChannelEnum.COMFYUI,
+  [TaskPurposeEnum.TRANSLATION]: TaskChannelEnum.LLM,
+  [TaskPurposeEnum.PROMPT_OPTIMIZATION]: TaskChannelEnum.LLM,
+  [TaskPurposeEnum.FENG_SHUI]: TaskChannelEnum.VLLM
+};
 
 // 输入图片配置
 const InputImageConfigSchema = new Schema({
@@ -80,13 +85,16 @@ const ComfyUIConfigSchema = new Schema({
   seed: { type: Number } // 随机种子
 }, { _id: false });
 
-export interface IImageGenTask extends Document {
+export interface IGenerationTask extends Document {
   userId: string; // 用户ID
   status: TaskStatusEnum; // 任务状态
-  type?: ImageActionModeEnum; // 图片操作模式
-  provider?: TaskProviderEnum; // 服务提供商
+  purpose?: TaskPurposeEnum; // 用途
   params: any; // 生成参数
   comfyui: any; // ComfyUI配置
+
+  // 结果信息
+  ImageGenIds?: string[]; // 关联的生成图片ID列表
+  textGenText?: string; // 生成的文本结果
 
   createdTime: Date; // 创建时间
   updatedTime: Date; // 更新时间
@@ -94,14 +102,17 @@ export interface IImageGenTask extends Document {
   completedTime?: Date; // 完成时间
 }
 
-const ImageGenTaskSchema: Schema = new Schema({
+const GenerationTaskSchema: Schema = new Schema({
   userId: { type: String, required: true, index: true }, // 用户ID
   status: { type: String, enum: Object.values(TaskStatusEnum), default: TaskStatusEnum.PENDING, index: true }, // 任务状态
-  type: { type: String, enum: Object.values(ImageActionModeEnum) }, // 图片操作模式
-  provider: { type: String, enum: Object.values(TaskProviderEnum), default: TaskProviderEnum.COMFYUI }, // 服务提供商
+  purpose: { type: String, enum: Object.values(TaskPurposeEnum) }, // 用途
 
   params: GenerationParamsSchema, // 生成参数
   comfyui: ComfyUIConfigSchema, // ComfyUI配置
+
+  // 结果信息
+  ImageGenIds: [{ type: String }], // 关联的生成图片ID列表
+  textGenText: { type: String }, // 生成的文本结果
 
   createdTime: { type: Date, default: Date.now }, // 创建时间
   updatedTime: { type: Date, default: Date.now }, // 更新时间
@@ -111,4 +122,4 @@ const ImageGenTaskSchema: Schema = new Schema({
   timestamps: { createdAt: 'createdTime', updatedAt: 'updatedTime' }
 });
 
-export default mongoose.model<IImageGenTask>("ImageGenTask", ImageGenTaskSchema);
+export default mongoose.model<IGenerationTask>("GenerationTask", GenerationTaskSchema);

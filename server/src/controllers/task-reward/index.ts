@@ -1,5 +1,9 @@
-import { Context } from "koa";
+import { Context as KoaContext } from "koa";
+type Context = KoaContext | any;
 import * as taskService from "@/services/task";
+import { getLogger } from "@/lib/log4js";
+
+const logger = getLogger("TaskRewardController");
 
 /**
  * 获取用户任务列表
@@ -36,7 +40,8 @@ export const claimReward = async (ctx: Context) => {
             data: result
         };
 
-    } catch (error) {
+    } catch (error: any) {
+        logger.error(`Error claiming reward for task ${taskId}:`, error);
         ctx.body = { code: 500, msg: error.message || "Internal server error" };
     }
 };
@@ -61,7 +66,7 @@ export const performTask = async (ctx: Context) => {
         } else {
             ctx.body = { code: 403, msg: "This task cannot be triggered manually" };
         }
-    } catch (error) {
+    } catch (error: any) {
         ctx.body = { code: 500, msg: error.message || "Internal server error" };
     }
 };

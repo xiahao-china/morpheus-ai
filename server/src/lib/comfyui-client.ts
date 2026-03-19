@@ -4,10 +4,33 @@
  */
 import axios, { AxiosInstance } from "axios";
 import FormData from "form-data";
+import WebSocket from "ws";
 import { COMFYUI_CONFIG, COMFYUI_NODES, ComfyUINode } from "@/config/comfyui";
 import { getLogger } from "@/lib/log4js";
 
 const logger = getLogger("ComfyUIClient");
+
+export enum ComfyUINodeStatus {
+  OFFLINE = 'OFFLINE', // 离线
+  BUSY = 'BUSY',       // 忙碌
+  IDLE = 'IDLE'        // 等待（空闲）
+}
+
+export interface ComfyUIExecutionProgress {
+  progress: number;
+  nodeId: string | null;
+  executedNodes: number;
+  totalNodes: number;
+}
+
+export interface ComfyUIExecutionListenerOptions {
+  promptId: string;
+  clientId: string;
+  totalNodes: number;
+  onProgress: (progress: ComfyUIExecutionProgress) => void | Promise<void>;
+  onComplete?: () => void | Promise<void>;
+  onError?: (error: Error) => void | Promise<void>;
+}
 
 /**
  * ComfyUI API 客户端类
@@ -17,9 +40,11 @@ export class ComfyUIClient {
   private client: AxiosInstance;    // axios 实例
   public baseUrl: string;          // ComfyUI 服务基础URL
   public nodeConfig: ComfyUINode;
+  public status: ComfyUINodeStatus; // 节点状态
 
   constructor(node: ComfyUINode) {
     this.nodeConfig = node;
+    this.status = ComfyUINodeStatus.IDLE;
     // 构建 ComfyUI 服务地址
     this.baseUrl = `http://${node.host}:${node.port}`;
     // 创建 axios 实例，配置60秒超时
@@ -27,6 +52,88 @@ export class ComfyUIClient {
       baseURL: this.baseUrl,
       timeout: 60000, // 60s timeout
     });
+  }
+
+  listenExecutionProgress(options: ComfyUIExecutionListenerOptions): () => void {
+    const wsUrl = `${this.nodeConfig.wsProtocol}://${this.nodeConfig.wsHost}:${this.nodeConfig.wsPort}/ws?clientId=${encodeURIComponent(options.clientId)}`;
+    const ws = new WebSocket(wsUrl);
+    const executedNodeSet = new Set<string>();
+    const totalNodes = Math.max(1, options.totalNodes);
+    let closed = false;
+
+    const invokeProgress = (nodeId: string | null) => {
+      const progress = Math.max(1, Math.min(99, Math.floor((executedNodeSet.size / totalNodes) * 99)));
+      Promise.resolve(options.onProgress({
+        progress,
+        nodeId,
+        executedNodes: executedNodeSet.size,
+        totalNodes
+      })).catch((err) => {
+        logger.warn(`[${this.baseUrl}] Failed to handle progress callback: ${err?.message || err}`);
+      });
+    };
+
+    ws.on("message", (message) => {
+      try {
+        const payload = JSON.parse(message.toString());
+        const eventType = payload?.type;
+        const data = payload?.data;
+
+        if (!data || data.prompt_id !== options.promptId) {
+          return;
+        }
+
+        if (eventType === "execution_cached") {
+          const cachedNodes = Array.isArray(data.nodes) ? data.nodes : [];
+          cachedNodes.forEach((node: string | number) => {
+            executedNodeSet.add(String(node));
+          });
+          invokeProgress(null);
+          return;
+        }
+
+        if (eventType !== "executing") {
+          return;
+        }
+
+        if (data.node === null) {
+          if (options.onComplete) {
+            Promise.resolve(options.onComplete()).catch((err) => {
+              logger.warn(`[${this.baseUrl}] Failed to handle completion callback: ${err?.message || err}`);
+            });
+          }
+          return;
+        }
+
+        executedNodeSet.add(String(data.node));
+        invokeProgress(String(data.node));
+      } catch (error: any) {
+        logger.warn(`[${this.baseUrl}] Failed to parse websocket message: ${error?.message || error}`);
+      }
+    });
+
+    ws.on("error", (error: Error) => {
+      if (options.onError) {
+        Promise.resolve(options.onError(error)).catch((callbackError) => {
+          logger.warn(`[${this.baseUrl}] Failed to handle websocket error callback: ${callbackError?.message || callbackError}`);
+        });
+      }
+      logger.warn(`[${this.baseUrl}] WebSocket error: ${error.message}`);
+    });
+
+    ws.on("close", () => {
+      closed = true;
+    });
+
+    return () => {
+      if (closed) {
+        return;
+      }
+      closed = true;
+      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+        ws.close();
+      }
+    };
   }
 
   /**
@@ -39,6 +146,7 @@ export class ComfyUIClient {
    * const result = await client.queuePrompt(workflowJson);
    */
   async queuePrompt(prompt: any, clientId?: string) {
+    this.status = ComfyUINodeStatus.BUSY;
     try {
       const payload: any = { prompt };
       if (clientId) {
@@ -51,6 +159,7 @@ export class ComfyUIClient {
       return response.data;
     } catch (error: any) {
       logger.error(`[${this.baseUrl}] Failed to queue prompt:`, error.message);
+      this.status = ComfyUINodeStatus.OFFLINE; // 如果请求失败，可能节点离线了
       throw error;
     }
   }
@@ -91,17 +200,32 @@ export class ComfyUIClient {
   }
 
   /**
-   * 获取队列状态
+   * 检查队列是否忙碌
    * 包含当前正在执行和等待的任务
+   * @param timeout - 超时时间（毫秒）
+   * @returns true 表示忙碌，false 表示空闲
    */
-  async getQueue(timeout?: number) {
+  async getQueueIsBusy(timeout?: number): Promise<boolean> {
+    if (this.status === ComfyUINodeStatus.BUSY) {
+        return true;
+    }
+
     try {
       const config: any = {};
       if (timeout) config.timeout = timeout;
       
       const response = await this.client.get("/prompt", config);
-      return response.data;
+      
+      // 如果能成功获取队列信息，且队列为空，说明节点空闲了
+      if (response.data?.exec_info?.queue_remaining === 0) {
+          this.status = ComfyUINodeStatus.IDLE;
+          return false;
+      } else {
+          this.status = ComfyUINodeStatus.BUSY;
+          return true;
+      }
     } catch (error: any) {
+      this.status = ComfyUINodeStatus.OFFLINE;
       throw error;
     }
   }
@@ -157,6 +281,3 @@ export class ComfyUIClient {
 
 // 初始化节点池
 export const comfyUIPool = COMFYUI_NODES.map(node => new ComfyUIClient(node));
-
-// 默认客户端（指向第一个节点，用于向后兼容）
-export const comfyUIClient = comfyUIPool[0];

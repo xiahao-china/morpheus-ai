@@ -1,6 +1,10 @@
-import { Context } from "koa";
+import { Context as KoaContext } from "koa";
+type Context = KoaContext | any;
 import MembershipPackage from "@/models/membershipPackage";
 import * as paymentService from "@/services/payment";
+import { getLogger } from "@/lib/log4js";
+
+const logger = getLogger("MembershipController");
 
 /**
  * 获取会员套餐列表
@@ -10,8 +14,9 @@ export const getPackages = async (ctx: Context) => {
   try {
     const packages = await MembershipPackage.find({ isEnabled: true }).sort({ levelSort: 1 });
     ctx.body = { code: 200, data: packages };
-  } catch (error) {
-    ctx.body = { code: 500, msg: "Internal server error", error };
+  } catch (error: any) {
+    logger.error("Failed to get membership packages:", error);
+    ctx.body = { code: 500, msg: error.message || "Internal server error" }; 
   }
 };
 
@@ -44,7 +49,7 @@ export const createOrder = async (ctx: Context) => {
       ctx.body = { code: 400, msg: "Unsupported payment method. Currently only ALIPAY is supported." };
     }
 
-  } catch (error) {
+  } catch (error: any) {
     ctx.body = { code: 500, msg: error.message || "Internal server error" };
   }
 };

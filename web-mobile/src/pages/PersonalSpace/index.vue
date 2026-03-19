@@ -28,7 +28,7 @@
 
         <view :class="styles.menuItem" @tap="navigateTo('/packageHistory/pages/History/index')">
           <view :class="styles.menuIcon">
-            <App size="20" />
+            <IconFont font-class-name="iconfont" class-prefix="icon" name="history" size="20" />
           </view>
           <view :class="styles.menuLabel">我的作品</view>
           <RectRight :class="styles.menuArrow" size="16" />
@@ -36,7 +36,7 @@
 
         <view :class="styles.menuItem" @tap="navigateTo('/pages/Fengshui/index')">
           <view :class="styles.menuIcon">
-            <Compass size="20" />
+            <IconFont font-class-name="iconfont" class-prefix="icon" name="compass" size="20" />
           </view>
           <view :class="styles.menuLabel">风水报告</view>
           <RectRight :class="styles.menuArrow" size="16" />
@@ -93,10 +93,10 @@
     <!-- Contact Modal -->
     <nut-popup
       v-model:visible="showContactModal"
-      closeable
       round
-      :style="{ padding: '40rpx', width: '680rpx' }"
+      :style="{ backgroundColor: 'transparent'}"
     >
+    <view :class="styles['contact-modal-content-shell']">
       <view :class="styles['contact-modal-content']">
         <image
           :src="`${STATIC_ASSETS_URL}/navbar/customerServiceQrCodeImg.png`"
@@ -105,6 +105,11 @@
         />
         <view :class="styles['contact-tip']">长按识别二维码联系客服</view>
       </view>
+       <view :class="styles['close-btn']" @tap="showContactModal = false">
+          <Close :class="styles['close-btn-icon']" />
+        </view>
+    </view>
+
     </nut-popup>
   </Layouts>
 </template>
@@ -116,14 +121,14 @@ import Layouts from "@/components/Layouts/index.vue";
 import { getUserInfo, type getUserInfoResponse } from "@/api/users/getUserInfo";
 import { STATIC_ASSETS_URL } from "@/constants";
 import {
-  App,
-  Compass,
   Heart,
   Order,
   Service,
   Ask,
   Setting,
-  RectRight
+  RectRight,
+  IconFont,
+  Close
 } from '@nutui/icons-vue-taro';
 import styles from "./index.module.less";
 
