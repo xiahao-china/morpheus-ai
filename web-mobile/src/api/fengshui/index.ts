@@ -26,6 +26,14 @@ export interface IFengshuiReport {
   }>;
 }
 
+export interface IFengshuiHistoryItem {
+  taskId: string;
+  imageUrl: string;
+  score: number;
+  level: string;
+  createdTime: string | Date;
+}
+
 interface ICreateFengshuiTaskParams {
   imageId: string;
   houseInfo?: string;
@@ -38,6 +46,16 @@ interface ITaskDetailResponse {
   status: 'INITIATED' | 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCEL';
   progress: number;
   content?: string;
+}
+
+interface IFengshuiHistoryResponse {
+  list: Array<{
+    imageGenTaskId: string;
+    imageUrl?: string;
+    underImageUrl?: string;
+    createdTime: string | Date;
+    content?: string;
+  }>;
 }
 
 const getReportSection = (content: string, title: string, nextTitle?: string) => {
@@ -63,6 +81,34 @@ const parseLevel = (score: number) => {
   if (score >= 6) return '中';
   if (score >= 4) return '平';
   return '凶';
+};
+
+const normalizeItemType = (type: unknown): 'danger' | 'warning' | 'success' => {
+  if (type === 'danger' || type === 'warning' || type === 'success') return type;
+  return 'warning';
+};
+
+const parseJsonReport = (content: string): IFengshuiReport | null => {
+  try {
+    const parsed = JSON.parse(content);
+    if (!parsed || typeof parsed !== 'object') return null;
+    const rawItems = Array.isArray((parsed as any).items) ? (parsed as any).items : [];
+    if (!rawItems.length) return null;
+    const score = Math.max(0, Math.min(10, Math.round(Number((parsed as any).score || 0))));
+    const level = typeof (parsed as any).level === 'string' ? (parsed as any).level : parseLevel(score);
+    const summary = typeof (parsed as any).summary === 'string' ? (parsed as any).summary : '风水分析已完成，请查看下方详细结果。';
+    const items: IFengshuiReport['items'] = rawItems.map((item: any) => ({
+      type: normalizeItemType(item?.type),
+      title: typeof item?.title === 'string' ? item.title : '分析项',
+      tag: typeof item?.tag === 'string' ? item.tag : '提示',
+      impact: typeof item?.impact === 'string' ? item.impact : '',
+      suggestion: typeof item?.suggestion === 'string' ? item.suggestion : '',
+      analysis: typeof item?.analysis === 'string' ? item.analysis : ''
+    }));
+    return { score, level, summary, items };
+  } catch {
+    return null;
+  }
 };
 
 const parseMarkdownReport = (content: string): IFengshuiReport => {
@@ -176,5 +222,35 @@ export const getFengshuiReport = async (taskId: string): Promise<IFengshuiReport
   if (!content) {
     throw new Error('报告内容为空');
   }
+  const jsonReport = parseJsonReport(content);
+  if (jsonReport) {
+    return jsonReport;
+  }
   return parseMarkdownReport(content);
+};
+
+export const getFengshuiHistory = async (params?: { page?: number; pageSize?: number }): Promise<IFengshuiHistoryItem[]> => {
+  const res = await httpGet<object, IFengshuiHistoryResponse>('/image/history', {
+    page: params?.page || 1,
+    pageSize: params?.pageSize || 20,
+    purpose: 'FENG_SHUI'
+  });
+  if (res instanceof Error) {
+    throw res;
+  }
+  if (res.code !== 200 || !Array.isArray(res.data?.list)) {
+    throw new Error(res.message || '获取风水历史失败');
+  }
+  return res.data.list.map((item) => {
+    const parsedReport = item.content ? (parseJsonReport(item.content) || parseMarkdownReport(item.content)) : null;
+    const score = parsedReport?.score || 0;
+    const level = parsedReport?.level || parseLevel(score);
+    return {
+      taskId: item.imageGenTaskId,
+      imageUrl: item.imageUrl || item.underImageUrl || '',
+      score,
+      level,
+      createdTime: item.createdTime
+    };
+  });
 };

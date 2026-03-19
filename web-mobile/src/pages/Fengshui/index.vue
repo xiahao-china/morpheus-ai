@@ -33,7 +33,7 @@
 
       <!-- Bottom Actions -->
       <view :class="styles.actionGroup">
-        <view :class="styles.historyBtn">查看记录</view>
+        <view :class="styles.historyBtn" @tap="handleOpenHistory">查看记录</view>
         <view :class="[styles.startBtn, imageId ? styles.active : '']" @tap="handleStart">
           {{ loading ? '处理中...' : '立即开始 (4积分)' }}
         </view>
@@ -121,6 +121,12 @@ const handleStart = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+const handleOpenHistory = () => {
+  Taro.navigateTo({
+    url: '/pages/Fengshui/History/index'
+  });
 };
 
 onMounted(() => {

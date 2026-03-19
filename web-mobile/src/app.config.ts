@@ -8,6 +8,7 @@ export const appConfig = {
     "pages/Fengshui/index", // 风水页
     "pages/Fengshui/Progress/index", // 风水进度页
     "pages/Fengshui/Report/index", // 风水报告页
+    "pages/Fengshui/History/index", // 风水历史页
   ],
   subPackages: [
     {

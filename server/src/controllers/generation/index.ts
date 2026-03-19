@@ -385,11 +385,20 @@ export const getGenerationHistory = async (ctx: Context) => {
     const page = parsePositiveInt(ctx.query.page, DEFAULT_GENERATION_PAGE);
     const pageSize = parsePositiveInt(ctx.query.pageSize, DEFAULT_GENERATION_PAGE_SIZE);
     const skip = (page - 1) * pageSize;
+    const queryPurpose = typeof ctx.query.purpose === "string" ? ctx.query.purpose : "";
+    const purposeWhitelist = new Set<string>([
+      TaskPurposeEnum.TXT2IMG,
+      TaskPurposeEnum.IMG2IMG,
+      TaskPurposeEnum.FENG_SHUI
+    ]);
+    const purposeFilterList = queryPurpose
+      ? queryPurpose.split(",").map((item: string) => item.trim()).filter((item: string) => purposeWhitelist.has(item))
+      : [TaskPurposeEnum.TXT2IMG, TaskPurposeEnum.IMG2IMG];
 
     const historyFilter = {
       userId: user.uid,
       status: TaskStatusEnum.COMPLETED,
-      purpose: { $in: [TaskPurposeEnum.TXT2IMG, TaskPurposeEnum.IMG2IMG] },
+      purpose: { $in: purposeFilterList.length ? purposeFilterList : [TaskPurposeEnum.TXT2IMG, TaskPurposeEnum.IMG2IMG] },
     };
 
     const tasks = await GenerationTask.find(historyFilter)
@@ -431,6 +440,7 @@ export const getGenerationHistory = async (ctx: Context) => {
       const taskId = task._id.toString();
       const images = imageMap[taskId] || [];
       const firstImage = images[0];
+      const taskImageUrl = firstImage?.imageUrl || task.params?.baseImages?.[0] || "";
       return {
         _id: taskId,
         userId: task.userId,
@@ -441,8 +451,9 @@ export const getGenerationHistory = async (ctx: Context) => {
         status: task.status,
         width: firstImage?.width || task.params?.width || 0,
         height: firstImage?.height || task.params?.height || 0,
-        imageUrl: firstImage?.imageUrl || "",
+        imageUrl: taskImageUrl,
         imageId: firstImage?.imageId || "",
+        content: task.textGenText || "",
         createdTime: task.createdTime,
         completedTime: task.completedTime,
         images,
