@@ -44,6 +44,12 @@ export const publishSquare = async (ctx: Context) => {
       return;
   }
 
+  // 检查是否已发布到广场
+  if (imageInfo.isPublishedToSquare) {
+      ctx.body = { code: 400, msg: "Image already published to square" };
+      return;
+  }
+
   const square = new Square({
     userId: user.uid,
     imageId: imageInfo._id,
@@ -56,6 +62,10 @@ export const publishSquare = async (ctx: Context) => {
   });
 
   await square.save();
+
+  // 更新图片的发布状态
+  await ImageGenInfo.findByIdAndUpdate(imageId, { isPublishedToSquare: true });
+
   sendResponse.success(ctx, square);
 };
 
@@ -79,6 +89,10 @@ export const deleteSquare = async (ctx: Context) => {
   }
 
   await Square.findByIdAndDelete(id);
+
+  // 更新图片的发布状态
+  await ImageGenInfo.findByIdAndUpdate(square.imageId, { isPublishedToSquare: false });
+
   sendResponse.success(ctx, { msg: 'Deleted successfully' });
 };
 
