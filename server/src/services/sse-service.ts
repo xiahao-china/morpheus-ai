@@ -27,7 +27,7 @@ class SSEService {
     const stream = new PassThrough();
     this.connections.set(id, { id, stream });
 
-    logger.info(`SSE Connection added: ${id}`);
+    logger.info(`SSE连接已添加: ${id}`);
 
     // 心跳保活定时器（每15秒发送一次）
     const interval = setInterval(() => {
@@ -38,7 +38,7 @@ class SSEService {
     stream.on("close", () => {
       clearInterval(interval);
       this.connections.delete(id);
-      logger.info(`SSE Connection closed: ${id}`);
+      logger.info(`SSE连接已关闭: ${id}`);
     });
 
     return stream;

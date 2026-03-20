@@ -30,13 +30,13 @@ class GenerationScheduler {
   }
   // 启动调度器，开始循环处理任务队列
   public start() {
-    logger.info("Starting Generation Scheduler...");
+    logger.info("启动生成调度器...");
     this.scheduleNext();
   }
 
   // 立即触发一次队列检查
   public triggerCheck() {
-    this.processQueue().catch(err => logger.error("Triggered check error:", err));
+    this.processQueue().catch(err => logger.error("触发检查错误:", err));
   }
 
   /**
@@ -48,11 +48,11 @@ class GenerationScheduler {
     const taskChannel = resolveTaskChannel(generationTask);
     
     if (!isSyncExecutableChannel(taskChannel)) {
-      throw new Error(`Sync execution is not supported for channel: ${taskChannel}`);
+      throw new Error(`不支持同步执行渠道: ${taskChannel}`);
     }
 
     const taskId = generationTask._id.toString();
-    logger.info(`[SyncTask ${taskId}] Starting synchronous execution (Channel: ${taskChannel})...`);
+    logger.info(`[同步任务 ${taskId}] 开始同步执行 (渠道: ${taskChannel})...`);
 
     // 更新任务状态为处理中
     await GenerationTask.findByIdAndUpdate(taskId, {
@@ -67,11 +67,11 @@ class GenerationScheduler {
 
         await GenerationTask.findByIdAndUpdate(taskId, updateData);
 
-        logger.info(`[SyncTask ${taskId}] Completed successfully.`);
+        logger.info(`[同步任务 ${taskId}] 成功完成。`);
 
         return buildSyncTaskResponse(taskId, content, savedImageGenId);
     } catch (error: any) {
-        logger.error(`[SyncTask ${taskId}] Failed:`, error);
+        logger.error(`[同步任务 ${taskId}] 失败:`, error);
         
         await GenerationTask.findByIdAndUpdate(taskId, {
             status: TaskStatusEnum.FAILED,
@@ -88,7 +88,7 @@ class GenerationScheduler {
       try {
         await this.processQueue();
       } catch (error) {
-        logger.error("Error processing queue:", error);
+        logger.error("处理队列错误:", error);
       } finally {
         this.scheduleNext();
       }
@@ -112,7 +112,7 @@ class GenerationScheduler {
     for (const queueTask of queuedTasks) {
       const generationTask = generationTaskMap.get(queueTask.taskId);
       if (!generationTask) {
-        logger.error(`GenerationTask not found for queue item ${queueTask.taskId}`);
+        logger.error(`队列项目找不到生成任务 ${queueTask.taskId}`);
         await GenerationQueue.findByIdAndUpdate(queueTask._id, { status: 'failed', error: 'GenerationTask not found' });
         continue;
       }
@@ -123,7 +123,7 @@ class GenerationScheduler {
       } else if (taskChannel === TaskChannelEnum.COMFYUI) {
         comfyQueue.push({ queueTask, generationTask, taskChannel });
       } else {
-        logger.warn(`[Task ${queueTask.taskId}] Unknown channel: ${taskChannel}. Marking as failed.`);
+        logger.warn(`[任务 ${queueTask.taskId}] 未知渠道: ${taskChannel}. 标记为失败.`);
         await GenerationQueue.findByIdAndUpdate(queueTask._id, { status: 'failed', error: 'Unknown channel' });
         await GenerationTask.findByIdAndUpdate(queueTask.taskId, { status: TaskStatusEnum.FAILED });
       }
@@ -145,7 +145,7 @@ class GenerationScheduler {
     try {
       idleNodes = await comfyUIPool.getAvailableNodes(2000);
     } catch (error) {
-      logger.error("Error checking ComfyUI nodes:", error);
+      logger.error("检查ComfyUI节点错误:", error);
       return;
     }
 
@@ -179,7 +179,7 @@ class GenerationScheduler {
       return null;
     }
 
-    logger.info(`Processing task ${startedTask.taskId} (User: ${startedTask.userId}, Channel: ${taskChannel})`);
+    logger.info(`正在处理任务 ${startedTask.taskId} (用户: ${startedTask.userId}, 渠道: ${taskChannel})`);
 
     await GenerationTask.findByIdAndUpdate(generationTask._id, {
       status: TaskStatusEnum.PROCESSING,
@@ -208,13 +208,13 @@ class GenerationScheduler {
       if (isThirdPartyChannel(taskChannel)) {
           await executeThirdPartyTask(task, generationTask);
       } else if (taskChannel === TaskChannelEnum.COMFYUI) {
-          if (!client) throw new Error("ComfyUI client not provided for ComfyUI task");
+          if (!client) throw new Error("ComfyUI任务未提供ComfyUI客户端");
           await this.executeComfyUITask(task, generationTask, client);
       } else {
-        throw new Error(`Unsupported channel: ${taskChannel}`);
+        throw new Error(`不支持的渠道: ${taskChannel}`);
       }
     } catch (error: any) {
-      logger.error(`Task ${task.taskId} failed:`, error);
+      logger.error(`Task ${task.taskId} 失败:`, error);
 
       // 如果有 client 并且失败了，重置其状态
       if (client) {
@@ -267,12 +267,12 @@ class GenerationScheduler {
 
     // 2. 将prompt提交到ComfyUI队列
     console.log('workflow',workflow);
-    logger.info(`[Task ${task.taskId}] Queueing prompt to ComfyUI...`);
+    logger.info(`[任务 ${task.taskId}] 正在将提示词提交到ComfyUI...`);
     const queueRes = await client.queuePrompt(workflow, clientId);
     const promptId = queueRes.prompt_id;
 
     // 记录ComfyUI的prompt ID
-    logger.info(`[Task ${task.taskId}] ComfyUI Prompt ID: ${promptId}`);
+    logger.info(`[任务 ${task.taskId}] ComfyUI提示词ID: ${promptId}`);
 
     // 更新图像生成任务的ComfyUI信息
     await GenerationTask.findByIdAndUpdate(task.taskId, {
@@ -284,13 +284,13 @@ class GenerationScheduler {
     const history = await this.waitForCompletion(promptId, task, client, workflow, clientId);
 
     if (!history) {
-      throw new Error("Generation timed out or failed");
+      throw new Error("生成超时或失败");
     }
 
     // 4. 从历史记录中提取输出
     const outputs = history[promptId]?.outputs;
     if (!outputs) {
-      throw new Error("No outputs found in history");
+      throw new Error("历史记录中找不到输出");
     }
 
     // 查找图像输出节点
@@ -303,11 +303,11 @@ class GenerationScheduler {
     }
 
     if (!imageOutput) {
-      throw new Error("No image output found");
+      throw new Error("找不到图像输出");
     }
 
     // 5. 获取生成的图像并上传到MinIO
-    logger.info(`[Task ${task.taskId}] Fetching image ${imageOutput.filename}...`);
+    logger.info(`[任务 ${task.taskId}] 获取图像 ${imageOutput.filename}...`);
     const imageBuffer = await client.getImage(
       imageOutput.filename,
       imageOutput.subfolder,
@@ -316,7 +316,7 @@ class GenerationScheduler {
 
     // 生成MinIO存储文件名
     const minioFilename = `${Date.now()}-${imageOutput.filename}`;
-    logger.info(`[Task ${task.taskId}] Uploading to MinIO as ${minioFilename}...`);
+    logger.info(`[任务 ${task.taskId}] 上传到MinIO，文件名 ${minioFilename}...`);
     await minioClient.putObject(BUCKET_NAME, minioFilename, imageBuffer);
 
     // 生成预签名访问URL
@@ -356,7 +356,7 @@ class GenerationScheduler {
     }
 
     // 8. 从队列中移除已完成的任务
-    logger.info(`[Task ${task.taskId}] Completed. Removing from queue.`);
+    logger.info(`[任务 ${task.taskId}] 已完成。从队列中移除.`);
     await GenerationQueue.findByIdAndDelete(task._id);
     
     // 更新节点状态为IDLE
@@ -410,7 +410,7 @@ class GenerationScheduler {
         await this.pushTaskProgress(task, 99);
       },
       onError: async (error) => {
-        logger.warn(`[Task ${task.taskId}] ComfyUI websocket error: ${error.message}`);
+        logger.warn(`[任务 ${task.taskId}] ComfyUI WebSocket错误: ${error.message}`);
       }
     });
 

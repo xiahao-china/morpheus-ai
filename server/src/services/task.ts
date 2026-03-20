@@ -64,7 +64,7 @@ export const incrementTaskProgress = async (userId: string, taskCode: string, co
     await record.save();
 
   } catch (error) {
-    logger.error(`Error incrementing task progress for user ${userId}, task ${taskCode}:`, error);
+    logger.error(`增加任务进度错误 ${userId}, task ${taskCode}:`, error);
   }
 };
 
@@ -130,7 +130,7 @@ const processClaim = async (userId: string, task: any, record: any) => {
     return { rewardPoints: task.rewardPoints };
 
   } catch (error) {
-    logger.error(`Error claiming reward for user ${userId}, task ${task.code}:`, error);
+    logger.error(`领取奖励错误 ${userId}, task ${task.code}:`, error);
     throw error;
   }
 };

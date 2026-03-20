@@ -59,7 +59,7 @@ export const callLLMAPI = async (params: any, taskChannel: TaskChannelEnum): Pro
             const base64 = Buffer.from(imgRes.data).toString('base64');
             return `data:${mimeType};base64,${base64}`;
         } catch (error: any) {
-            logger.warn(`[callLLMAPI] Failed to transform image url to data url: ${error?.message || error}`);
+            logger.warn(`[callLLMAPI] 图片URL转数据URL失败: ${error?.message || error}`);
             return imgUrl;
         }
     }));
@@ -71,7 +71,7 @@ export const callLLMAPI = async (params: any, taskChannel: TaskChannelEnum): Pro
         });
     });
 
-    logger.info(`[callLLMAPI] Calling ${config.baseUrl}/chat/completions with model ${config.model}`);
+    logger.info(`[callLLMAPI] 调用 ${config.model}`);
 
     const requestConfig = {
         headers: {
@@ -124,20 +124,20 @@ export const callLLMAPI = async (params: any, taskChannel: TaskChannelEnum): Pro
             const urlMatch = content.match(/!\[.*?\]\((https?:\/\/.*?)\)/);
             if (urlMatch && urlMatch[1]) {
                 const imgUrl = urlMatch[1];
-                logger.info(`Downloading image from URL: ${imgUrl}`);
+                logger.info(`从URL下载图像: ${imgUrl}`);
                 const imgRes = await axios.get(imgUrl, { responseType: 'arraybuffer' });
                 imageBuffer = Buffer.from(imgRes.data);
             }
         }
 
         if (!imageBuffer) {
-            throw new Error("Could not extract image from response content. Content preview: " + content.substring(0, 100));
+            throw new Error("无法从响应内容中提取图像. Content preview: " + content.substring(0, 100));
         }
 
         // 上传到MinIO
         const taskId = params.taskId || `sync_${Date.now()}`;
         const filename = `${taskId}_${Date.now()}.png`;
-        logger.info(`Uploading result to MinIO as ${filename}...`);
+        logger.info(`结果上传到MinIO as ${filename}...`);
         await minioClient.putObject(BUCKET_NAME, filename, imageBuffer);
 
         // 生成访问URL
@@ -167,7 +167,7 @@ export const callLLMAPI = async (params: any, taskChannel: TaskChannelEnum): Pro
     // 记录完整调用耗时
     const duration = Date.now() - startTime;
     ChannelConfigMapping[taskChannel].lastCallDuration = duration;
-    logger.info(`LLM API call for channel ${taskChannel} took ${duration}ms`);
+    logger.info(`调用LLM API 渠道 ${taskChannel} 耗时 ${duration}ms`);
 
     return { content, imageUrl, savedImageGenId, messages };
 };
@@ -194,7 +194,7 @@ const startSSEProgressTimer = (task: IGenerationQueue, taskChannel: TaskChannelE
             progress = Math.min(progress, 95);
             task.progress = progress;
             void GenerationQueue.findByIdAndUpdate(task._id, { progress }).catch((error: any) => {
-                logger.warn(`[Task ${task.taskId}] Failed to persist queue progress: ${error?.message || error}`);
+                logger.warn(`[任务 ${task.taskId}] 持久化队列进度失败: ${error?.message || error}`);
             });
 
             if (task.sseId) {
@@ -213,7 +213,7 @@ const startSSEProgressTimer = (task: IGenerationQueue, taskChannel: TaskChannelE
  * @param task 队列任务对象
  */
 export const executeThirdPartyTask = async (task: IGenerationQueue, generationTask: IGenerationTask) => {
-    logger.info(`[Task ${task.taskId}] Executing via Third Party API...`);
+    logger.info(`[任务 ${task.taskId}] 通过第三方API执行...`);
 
     // 正确获取 params：Mongoose 文档需要通过 toJSON() 或直接访问 _doc 获取原始数据
     const taskParams = generationTask.params?.toJSON ? generationTask.params.toJSON() :
@@ -230,7 +230,7 @@ export const executeThirdPartyTask = async (task: IGenerationQueue, generationTa
     if (taskChannel === TaskChannelEnum.THIRD_PARTY_GENERATION_IMAGE && generationTask.translatedPrompt) {
         params.prompt = generationTask.translatedPrompt;
     }
-    logger.info(`[executeThirdPartyTask] params.prompt length: ${params.prompt?.length || 0}`);
+    logger.info(`[executeThirdPartyTask] 参数提示词长度: ${params.prompt?.length || 0}`);
 
     let progressInterval: NodeJS.Timeout | null = null;
     progressInterval = startSSEProgressTimer(task, taskChannel);
@@ -274,7 +274,7 @@ export const executeThirdPartyTask = async (task: IGenerationQueue, generationTa
             });
         }
 
-        logger.info(`[Task ${task.taskId}] Third Party generation completed successfully.`);
+        logger.info(`[任务 ${task.taskId}] 第三方生成成功完成.`);
 
     } catch (error: any) {
         // 清理定时器
@@ -282,9 +282,9 @@ export const executeThirdPartyTask = async (task: IGenerationQueue, generationTa
             clearInterval(progressInterval);
         }
 
-        logger.error(`[Task ${task.taskId}] Third Party API Error:`, error.message);
+        logger.error(`[任务 ${task.taskId}] 第三方API错误:`, error.message);
         if (error.response) {
-            logger.error("Response data:", JSON.stringify(error.response.data));
+            logger.error("响应数据:", JSON.stringify(error.response.data));
         }
         throw error;
     }

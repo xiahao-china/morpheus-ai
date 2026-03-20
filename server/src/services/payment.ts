@@ -94,7 +94,7 @@ export const handlePaymentSuccess = async (out_trade_no: string, trade_no: strin
       await grantBenefits(order);
       return true;
     } else {
-       logger.warn(`Order amount mismatch: ${out_trade_no}, Expected: ${order.amount}, Actual: ${total_amount}`);
+       logger.warn(`订单金额不匹配: ${out_trade_no}, 预期: ${order.amount}, 实际: ${total_amount}`);
        return false;
     }
   }
@@ -138,9 +138,9 @@ const grantBenefits = async (order: any) => {
 
     await User.findByIdAndUpdate(order.userId, updateData);
 
-    logger.info(`Benefits granted for order ${order.orderNo}: ${pkg.coins} coins, Level ${pkg.level}`);
+    logger.info(`订单 已授予权益 ${order.orderNo}: ${pkg.coins} 积分, Level ${pkg.level}`);
   } catch (error) {
-    logger.error("Grant Benefits Error:", error);
+    logger.error("授予权益错误:", error);
     throw error;
   }
 };
