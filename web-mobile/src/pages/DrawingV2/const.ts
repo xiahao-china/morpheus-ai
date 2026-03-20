@@ -17,10 +17,13 @@ export interface IDrawingV2Message {
   prompt: string;
   mode: IDrawingModeOption;
   status: MessageStatus;
+  progress?: number;
+  isPublished?: boolean;
   createdTime: string;
   taskId?: string;
   imageUrl?: string;
   imageId?: string;
+  isLiked?: boolean;
   underImageId?: string;
   underImageUrl?: string;
 }
@@ -64,6 +67,8 @@ export const createPendingServiceMessage = (
     prompt,
     mode,
     status: "PENDING",
+    progress: 0,
+    isPublished: false,
     createdTime: dayjs().format("YYYY-MM-DD HH:mm"),
     underImageId,
     underImageUrl,
@@ -96,10 +101,13 @@ export const mapHistoryToServiceMessages = (
       prompt,
       mode,
       status: "COMPLETED",
+      progress: 100,
       createdTime: timeText,
       taskId,
       imageUrl: item.imageUrl || firstImage?.imageUrl || "",
       imageId: item.imageId || firstImage?.imageId,
+      isLiked: Boolean(firstImage?.isLiked),
+      isPublished: Boolean(firstImage?.isPublishedToSquare),
       underImageUrl: item.underImageUrl,
     };
 

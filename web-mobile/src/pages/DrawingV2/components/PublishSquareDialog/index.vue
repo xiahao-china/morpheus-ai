@@ -13,7 +13,9 @@
       <view :class="pageStyle['panel']" @click.stop>
         <view :class="pageStyle['header']">
           <text :class="pageStyle['title']">发布到广场</text>
-          <view :class="pageStyle['closeBtn']" @click="emit('close')">⌄</view>
+          <view :class="pageStyle['closeBtn']" @click="emit('close')">
+            <RectDown :class="pageStyle['closeIcon']" />
+          </view>
         </view>
 
         <scroll-view :scroll-y="true" :class="pageStyle['body']">
@@ -21,7 +23,7 @@
             <image
               v-if="props.imageUrl"
               :src="props.imageUrl"
-              mode="aspectFill"
+              mode="aspectFit"
               :class="pageStyle['previewImage']"
             />
           </view>
@@ -97,6 +99,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import Taro from "@tarojs/taro";
+import { RectDown } from "@nutui/icons-vue-taro";
 import type { IPublishSquareDialogProps, IPublishSquarePayload } from "./const";
 import { SCENE_TAGS, STYLE_TAGS } from "./const";
 import pageStyle from "./index.module.less";

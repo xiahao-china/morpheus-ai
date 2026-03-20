@@ -115,14 +115,16 @@ const handleSearch = async (noRefresh?: boolean) => {
     sortBy: activeSort.value.value,
     page: pageNum.value,
     pageSize: PAGE_SIZE
-  })
+  });
+  loading.value = false;
   if (response instanceof Error || response.code !== 200) {
-    console.error('Error fetching history:', response)
+    console.error('Error fetching history:', response);
     Toast.text('获取作品列表失败');
-    return
+    return;
   }
-  loading.value = false
-  if (!response.data.list.length) loadEnd.value = true
+  if (!response.data.list.length) {
+    loadEnd.value = true;
+  }
   const list = mergeWorks(currentWorksList.value, response.data.list);
   currentWorksList.value = list;
   emit('filterResult', list);

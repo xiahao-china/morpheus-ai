@@ -4,6 +4,7 @@ import { sseService } from "@/services/sse-service";
 import GenerationQueue, { IGenerationQueue } from "@/models/generationQueue";
 import GenerationTask, { IGenerationTask, TaskStatusEnum, TaskChannelEnum, TaskPurposeChannelMapping } from "@/models/generationTask";
 import ImageGenInfo from "@/models/imageGenInfo";
+import FileResource from "@/models/fileResource";
 import { getLogger } from "@/lib/log4js";
 import { IMAGE_GENERATION_CONFIG, VISION_LLM_CONFIG, LLM_CONFIG, AIModelConfig } from "@/config/aiModels";
 import { incrementTaskProgress } from "@/services/task";
@@ -21,6 +22,28 @@ export const ChannelConfigMapping: Record<TaskChannelEnum, ChannelConfigType> = 
     [TaskChannelEnum.LLM]: { config: LLM_CONFIG, lastCallDuration: 5000 }, // 默认预估5秒
     [TaskChannelEnum.VLLM]: { config: VISION_LLM_CONFIG, lastCallDuration: 30000 }, // 默认预估10秒
     [TaskChannelEnum.COMFYUI]: { config: undefined, lastCallDuration: 0 } // ComfyUI 不使用此配置
+};
+
+const streamToBuffer = async (stream: NodeJS.ReadableStream): Promise<Buffer> => {
+    const chunks: Buffer[] = [];
+    return new Promise((resolve, reject) => {
+        stream.on("data", (chunk: Buffer | string) => {
+            chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        });
+        stream.on("end", () => resolve(Buffer.concat(chunks)));
+        stream.on("error", reject);
+    });
+};
+
+const normalizeBaseUrl = (baseUrl: string): string => {
+    return baseUrl
+        .trim()
+        .replace(/^['"`\s]+|['"`\s]+$/g, "")
+        .replace(/\/+$/g, "");
+};
+
+const buildChatCompletionsUrl = (baseUrl: string): string => {
+    return `${normalizeBaseUrl(baseUrl)}/chat/completions`;
 };
 
 /**
@@ -49,18 +72,38 @@ export const callLLMAPI = async (params: any, taskChannel: TaskChannelEnum): Pro
     ];
 
     const baseImages = Array.isArray(params.baseImages) ? params.baseImages.filter(Boolean) : [];
-    const normalizedBaseImages = await Promise.all(baseImages.map(async (imgUrl: string) => {
-        if (taskChannel !== TaskChannelEnum.VLLM) {
-            return imgUrl;
+    const shouldUseDataUrl = taskChannel === TaskChannelEnum.VLLM || taskChannel === TaskChannelEnum.THIRD_PARTY_GENERATION_IMAGE;
+    const normalizedBaseImages = await Promise.all(baseImages.map(async (baseImage: string) => {
+        if (!shouldUseDataUrl) {
+            return baseImage;
+        }
+        if (baseImage.startsWith("data:image/")) {
+            return baseImage;
         }
         try {
-            const imgRes = await axios.get(imgUrl, { responseType: 'arraybuffer', timeout: 30000 });
-            const mimeType = (imgRes.headers?.['content-type'] || 'image/jpeg').split(';')[0];
-            const base64 = Buffer.from(imgRes.data).toString('base64');
-            return `data:${mimeType};base64,${base64}`;
+            if (/^https?:\/\//i.test(baseImage)) {
+                const imgRes = await axios.get(baseImage, { responseType: "arraybuffer", timeout: 30000 });
+                const mimeType = (imgRes.headers?.["content-type"] || "image/jpeg").split(";")[0];
+                const base64 = Buffer.from(imgRes.data).toString("base64");
+                return `data:${mimeType};base64,${base64}`;
+            }
+
+            const fileResource = await FileResource.findById(baseImage).lean();
+            if (fileResource?.path) {
+                const objectStream = await minioClient.getObject(fileResource.bucket || BUCKET_NAME, fileResource.path);
+                const imageBuffer = await streamToBuffer(objectStream as unknown as NodeJS.ReadableStream);
+                const mimeType = (fileResource.mimeType || "image/jpeg").split(";")[0];
+                const base64 = imageBuffer.toString("base64");
+                return `data:${mimeType};base64,${base64}`;
+            }
+
+            throw new Error(`图片资源不存在: ${baseImage}`);
         } catch (error: any) {
-            logger.warn(`[callLLMAPI] 图片URL转数据URL失败: ${error?.message || error}`);
-            return imgUrl;
+            if (taskChannel === TaskChannelEnum.THIRD_PARTY_GENERATION_IMAGE) {
+                throw new Error(`[callLLMAPI] 第三方生图要求 base64 图片输入，无法转换图片: ${error?.message || error}`);
+            }
+            logger.warn(`[callLLMAPI] 图片转数据URL失败: ${error?.message || error}`);
+            return baseImage;
         }
     }));
 
@@ -71,20 +114,28 @@ export const callLLMAPI = async (params: any, taskChannel: TaskChannelEnum): Pro
         });
     });
 
-    logger.info(`[callLLMAPI] 调用 ${config.model}`);
+    const completionUrl = buildChatCompletionsUrl(config.baseUrl);
+    const requestTimeoutMs = taskChannel === TaskChannelEnum.THIRD_PARTY_GENERATION_IMAGE
+        ? 300000
+        : taskChannel === TaskChannelEnum.VLLM
+            ? 180000
+            : 120000;
+
+    logger.info(`[callLLMAPI] 调用 ${config.model}, url=${completionUrl}, timeout=${requestTimeoutMs}ms`);
 
     const requestConfig = {
         headers: {
             [config.apiKeyHeaderKey || 'Authorization']: `Bearer ${config.apiKey}`,
             'Content-Type': 'application/json'
         },
-        timeout: 120000
+        timeout: requestTimeoutMs
     };
     let response: any;
     try {
-        response = await axios.post(`${config.baseUrl}/chat/completions`, {
+        response = await axios.post(completionUrl, {
             model: config.model,
-            messages: messages
+            messages: messages,
+            max_tokens: params.maxTokens || 1024
         }, requestConfig);
     } catch (error: any) {
         if (taskChannel !== TaskChannelEnum.VLLM) {
@@ -100,9 +151,10 @@ export const callLLMAPI = async (params: any, taskChannel: TaskChannelEnum): Pro
             }
             return item;
         });
-        response = await axios.post(`${config.baseUrl}/chat/completions`, {
+        response = await axios.post(completionUrl, {
             model: config.model,
-            messages: fallbackMessages
+            messages: fallbackMessages,
+            max_tokens: params.maxTokens || 1024
         }, requestConfig);
     }
 

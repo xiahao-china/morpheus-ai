@@ -44,6 +44,8 @@ export interface IGetGenerationHistoryItem {
     width?: number;
     height?: number;
     createdTime: string | Date;
+    isLiked?: boolean;
+    isPublishedToSquare?: boolean;
   }>;
 
   // 兼容旧字段

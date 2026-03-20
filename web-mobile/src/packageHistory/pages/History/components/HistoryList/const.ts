@@ -1,8 +1,13 @@
 import type { IGetGenerationHistoryItem } from "@/api/images/getGenerationHistoryV2";
 import type { IHistoryCardInfo } from "../HistoryCard/const";
-import { calcTaskRatio } from "@/pages/Drawing/const";
 import { MODE_LABEL_MAP } from "@/packageHistory/pages/GeneratedDetail/const";
 import dayjs from "dayjs";
+
+const calcTaskRatio = (width: number, height: number): string => {
+  const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
+  const divisor = gcd(width, height);
+  return `${width / divisor}:${height / divisor}`;
+};
 
 export const STATUS_TEXT_MAP: Record<string, string> = {
   PENDING: "排队中",

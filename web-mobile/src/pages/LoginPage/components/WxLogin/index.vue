@@ -80,7 +80,7 @@ const wxOneClickLogin = async (phoneInfo: IGetphonenumberData) => {
   });
   userStore.initLoginInfo();
   setTimeout(() => {
-    checkBackPath('/pages/Drawing/index');
+    checkBackPath('/pages/DrawingV2/index');
   }, 500)
 };
 

@@ -1,10 +1,10 @@
 <template>
   <view :class="pageStyle['dialogWrap']">
     <view :class="pageStyle['dialogBody']">
-      <view :class="pageStyle['modeTrigger']" @click="showModePopup = true">
-        <text>{{ selectedMode.label }}</text>
-        <RectRight :class="pageStyle['modeArrow']" />
-      </view>
+<!--      <view :class="pageStyle['modeTrigger']" @click="showModePopup = true">-->
+<!--        <text>{{ selectedMode.label }}</text>-->
+<!--        <RectRight :class="pageStyle['modeArrow']" />-->
+<!--      </view>-->
 
       <view :class="pageStyle['contentRow']">
         <view :class="pageStyle['uploadBox']" @click="handlePickImage">

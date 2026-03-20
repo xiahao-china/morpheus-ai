@@ -55,9 +55,14 @@ export async function httpGet<T = Record<string, unknown>, R = object>(
   params: T,
   options: Omit<RequestCustomOptions, "params"> = {}
 ): Promise<ApiResponse<R> | Error> {
-  const paramsUrl = new URLSearchParams(
-    params as Record<string, string>
-  ).toString();
+  const searchParams = new URLSearchParams();
+  Object.entries((params || {}) as Record<string, unknown>).forEach(([key, value]) => {
+    if (value === undefined || value === null) {
+      return;
+    }
+    searchParams.append(key, String(value));
+  });
+  const paramsUrl = searchParams.toString();
   return http
     .get<ApiResponse<T>>(`${url}${paramsUrl ? "?" : ""}${paramsUrl || ""}`, {
       ...options,

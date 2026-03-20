@@ -12,7 +12,7 @@
       <!-- Mode Switcher -->
       <view :class="styles.modeSwitcher">
         <view :class="[styles.modeBtn, styles.active]">检测分析</view>
-        <view :class="styles.modeBtn">AI风水顾问</view>
+        <view :class="styles.modeBtn" @tap="handleConsultantTip">AI风水顾问</view>
       </view>
 
       <!-- Upload Section -->
@@ -127,6 +127,10 @@ const handleOpenHistory = () => {
   Taro.navigateTo({
     url: '/pages/Fengshui/History/index'
   });
+};
+
+const handleConsultantTip = () => {
+  Taro.showToast({ title: '功能正在开发中，敬请期待', icon: 'none' });
 };
 
 onMounted(() => {

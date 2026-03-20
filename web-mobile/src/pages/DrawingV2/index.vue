@@ -68,6 +68,7 @@ const bottomDialogRef = ref<InstanceType<typeof BottomDialog> | null>(null);
 const publishDialogVisible = ref(false);
 const publishTargetMessage = ref<IDrawingV2Message | null>(null);
 const publishLoading = ref(false);
+const activeTaskTip = "当前任务正在进行中，喝杯茶等一下吧~";
 
 const mergeHistoryMessages = (historyMessages: IDrawingV2Message[]) => {
   const existed = new Set(messages.value.map((item) => item.id));
@@ -130,7 +131,7 @@ const startPollingTask = (messageId: string, taskId: string) => {
     }
     const data = statusResponse.data;
     if (data.status === "FAILED") {
-      patchMessage(messageId, { status: "FAILED" });
+      patchMessage(messageId, { status: "FAILED", progress: data.progress || 0 });
       clearPolling(messageId);
       generating.value = false;
       return;
@@ -138,6 +139,7 @@ const startPollingTask = (messageId: string, taskId: string) => {
     if (data.status === "COMPLETED") {
       patchMessage(messageId, {
         status: "COMPLETED",
+        progress: 100,
         imageUrl: data.imageUrl || "",
         imageId: data.imageId || "",
       });
@@ -145,12 +147,16 @@ const startPollingTask = (messageId: string, taskId: string) => {
       generating.value = false;
       return;
     }
-    patchMessage(messageId, { status: "PROCESSING" });
+    patchMessage(messageId, { status: "PROCESSING", progress: data.progress || 0 });
   }, 3000);
   pollingTaskMap.set(messageId, timer as unknown as number);
 };
 
 const handleSubmit = async (payload: IDrawingSubmitPayload) => {
+  if (generating.value) {
+    Taro.showToast({ title: activeTaskTip, icon: "none" });
+    return;
+  }
   const prompt = payload.prompt.trim();
   if (!prompt) {
     return;
@@ -176,9 +182,18 @@ const handleSubmit = async (payload: IDrawingSubmitPayload) => {
   });
 
   if (createResponse instanceof Error || createResponse.code !== 200) {
-    patchMessage(serviceMessage.id, { status: "FAILED" });
+    const errorMessage = createResponse instanceof Error
+      ? "任务创建失败"
+      : (createResponse.message || createResponse.msg || "任务创建失败");
+    if (errorMessage === activeTaskTip) {
+      messages.value = messages.value.filter(
+        (message) => message.id !== userMessage.id && message.id !== serviceMessage.id,
+      );
+    } else {
+      patchMessage(serviceMessage.id, { status: "FAILED" });
+    }
     generating.value = false;
-    Taro.showToast({ title: "任务创建失败", icon: "error" });
+    Taro.showToast({ title: errorMessage, icon: "none" });
     return;
   }
 
@@ -188,7 +203,7 @@ const handleSubmit = async (payload: IDrawingSubmitPayload) => {
     generating.value = false;
     return;
   }
-  patchMessage(serviceMessage.id, { status: "PROCESSING", taskId });
+  patchMessage(serviceMessage.id, { status: "PROCESSING", taskId, progress: 0 });
   bottomDialogRef.value?.reset();
   startPollingTask(serviceMessage.id, taskId);
 };
@@ -203,10 +218,14 @@ const handleLike = async (message: IDrawingV2Message) => {
     Taro.showToast({ title: "点赞失败", icon: "error" });
     return;
   }
-  Taro.showToast({ title: response.data?.isLiked ? "点赞成功" : "已取消点赞", icon: "success" });
+  patchMessage(message.id, { isLiked: Boolean(response.data?.isLiked) });
 };
 
 const handlePublish = async (message: IDrawingV2Message) => {
+  if (message.isPublished) {
+    Taro.showToast({ title: "已经发布", icon: "none" });
+    return;
+  }
   if (!message.imageId) {
     Taro.showToast({ title: "图片未完成", icon: "none" });
     return;
@@ -241,6 +260,9 @@ const handlePublishSubmit = async (payload: IPublishSquarePayload) => {
   if (response instanceof Error || response.code !== 200) {
     Taro.showToast({ title: "发布失败", icon: "error" });
     return;
+  }
+  if (publishTargetMessage.value) {
+    patchMessage(publishTargetMessage.value.id, { isPublished: true });
   }
   closePublishDialog();
   Taro.showToast({ title: "已发布到广场", icon: "success" });

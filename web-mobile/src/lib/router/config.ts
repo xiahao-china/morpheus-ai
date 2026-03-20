@@ -8,13 +8,6 @@ export const ROUTER_INFO = {
     needMobileNav: false,
     needBottomBar: false
   },
-  '/pages/Drawing/index': {
-    pageName: '推敲绘图',
-    needLogin: true,
-    needNavBar: false,
-    needMobileNav: false,
-    needBottomBar: false
-  },
   '/pages/DrawingV2/index': {
     pageName: 'AI生图',
     needLogin: true,

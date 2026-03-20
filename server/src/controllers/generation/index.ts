@@ -279,12 +279,23 @@ export const generateImage = async (ctx: Context) => {
       return;
     }
 
-    const user = ctx.state.user as any;
+    const userId = getCurrentUserId(ctx);
+    const activeTask = await GenerationTask.findOne({
+      userId,
+      purpose: { $in: [TaskPurposeEnum.TXT2IMG, TaskPurposeEnum.IMG2IMG, TaskPurposeEnum.UPSCALE] },
+      status: { $in: [TaskStatusEnum.INITIATED, TaskStatusEnum.PENDING, TaskStatusEnum.PROCESSING] }
+    }).select("_id");
+    if (activeTask) {
+      const message = "当前任务正在进行中，喝杯茶等一下吧~";
+      ctx.body = { code: 429, msg: message, message };
+      return;
+    }
+
     let translatedPrompt = prompt;
     try {
       const translateInput = buildTranslatePromptInput(prompt);
       const translationTask = createGenerationTaskRecord(
-        user.uid,
+        userId,
         TaskPurposeEnum.TRANSLATION,
         { prompt: translateInput, width: 1, height: 1 }
       );
@@ -318,7 +329,7 @@ export const generateImage = async (ctx: Context) => {
       ? INSPIRATION_COMFYUI_WORKFLOW
       : undefined;
     const generationTask = createGenerationTaskRecord(
-      user.uid,
+      userId,
       purpose,
       params,
       translatedPrompt,
@@ -331,7 +342,7 @@ export const generateImage = async (ctx: Context) => {
     // 加入队列
     const queueItem = new GenerationQueue({
       taskId: taskId,
-      userId: user.uid,
+      userId,
       status: 'queued',
       priority: 0,
       progress: 0,
@@ -340,7 +351,7 @@ export const generateImage = async (ctx: Context) => {
 
     await queueItem.save();
 
-    logger.info(`Task ${taskId} created and queued for user ${user.uid} (Purpose: ${purpose})`);
+    logger.info(`Task ${taskId} created and queued for user ${userId} (Purpose: ${purpose})`);
 
     // 返回任务ID
     sendResponse.success(ctx, {
@@ -619,6 +630,7 @@ export const getGenerationHistory = async (ctx: Context) => {
         createdTime: image.createdTime,
         isLiked: Boolean(image.isLiked),
         isCollected: collectedImageSet.has(imageId),
+        isPublishedToSquare: Boolean(image.isPublishedToSquare),
       });
       return map;
     }, {} as Record<string, Array<{
@@ -630,6 +642,7 @@ export const getGenerationHistory = async (ctx: Context) => {
       createdTime: Date;
       isLiked: boolean;
       isCollected: boolean;
+      isPublishedToSquare: boolean;
     }>>);
 
     const list = tasks.map((task) => {

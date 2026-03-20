@@ -29,8 +29,9 @@
   gap: 12rpx;
 
   .spin {
-    width: 28rpx;
-    height: 28rpx;
+    width: 24rpx;
+    height: 24rpx;
+    font-size: 24rpx;
     animation: spin 1s linear infinite;
   }
 }
@@ -95,6 +96,14 @@
   background: #ffffff;
 }
 
+.publishAction {
+  background: #ffffff;
+}
+
+.publishDisabled {
+  background: #e5e7eb;
+}
+
 .topIcon {
   width: 30rpx;
   height: 30rpx;
@@ -109,20 +118,11 @@
   color: #111827;
 }
 
-.content {
-  padding: 20rpx;
-}
-
-.titleRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.title {
-  font-size: 20rpx;
+.publishDisabled .topIcon {
   color: #9ca3af;
-  letter-spacing: 1rpx;
+}
+
+.content {
 }
 
 .time {
@@ -139,8 +139,7 @@
 }
 
 .actionRow {
-  margin-top: 16rpx;
-  padding-top: 12rpx;
+  padding: 20rpx;
   border-top: 2rpx solid #f3f4f6;
   display: flex;
   align-items: center;
@@ -168,8 +167,8 @@
   }
 }
 
-.failed {
-  color: #dc2626;
+.iconLiked {
+  color: @main-color2;
 }
 
 @keyframes spin {

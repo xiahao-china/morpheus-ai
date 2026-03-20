@@ -134,7 +134,7 @@ const handlePhoneLogin = async () => {
     title: '登录成功',
     icon: 'success'
   })
-  checkBackPath('/pages/Drawing/index');
+  checkBackPath('/pages/DrawingV2/index');
 }
 
 // 获取验证码
@@ -203,7 +203,7 @@ const handleVerifyCodeLogin = async () => {
       icon: 'success'
     })
     await userStore.initLoginInfo();
-    checkBackPath('/pages/Drawing/index');
+    checkBackPath('/pages/DrawingV2/index');
     return;
   }
   // 这里需要替换为实际的验证码登录API
@@ -227,7 +227,7 @@ const handleVerifyCodeLogin = async () => {
     title: '登录成功',
     icon: 'success'
   })
-  checkBackPath('/pages/Drawing/index');
+  checkBackPath('/pages/DrawingV2/index');
 }
 
 const changeLoginType = () => {
