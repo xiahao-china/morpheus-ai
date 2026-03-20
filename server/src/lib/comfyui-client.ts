@@ -279,5 +279,26 @@ export class ComfyUIClient {
   }
 }
 
-// 初始化节点池
-export const comfyUIPool = COMFYUI_NODES.map(node => new ComfyUIClient(node));
+class ComfyUIPool {
+  private readonly clients: ComfyUIClient[];
+
+  constructor(nodes: ComfyUINode[]) {
+    this.clients = nodes.map(node => new ComfyUIClient(node));
+  }
+
+  async getAvailableNodes(timeout: number = 2000): Promise<ComfyUIClient[]> {
+    const checkPromises = this.clients.map(async (client) => {
+      try {
+        const isBusy = await client.getQueueIsBusy(timeout);
+        return isBusy ? null : client;
+      } catch (error) {
+        return null;
+      }
+    });
+
+    const results = await Promise.all(checkPromises);
+    return results.filter((client): client is ComfyUIClient => client !== null);
+  }
+}
+
+export const comfyUIPool = new ComfyUIPool(COMFYUI_NODES);

@@ -127,7 +127,12 @@ export const generateImage = async (ctx: Context) => {
     let translatedPrompt = prompt;
     try {
       const translateInput = buildTranslatePromptInput(prompt);
-      const translated = await callLLMAPI({ prompt: translateInput }, TaskChannelEnum.LLM);
+      const translationTask = createGenerationTaskRecord(
+        user.uid,
+        TaskPurposeEnum.TRANSLATION,
+        { prompt: translateInput, width: 1, height: 1 }
+      );
+      const translated = await generationScheduler.executeSyncTask(translationTask);
       translatedPrompt = normalizeOptimizedPrompt(translated.content) || prompt;
     } catch (error: any) {
       logger.warn(`Translate prompt failed, fallback to original prompt: ${error?.message || error}`);

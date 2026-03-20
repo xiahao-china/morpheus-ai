@@ -3,12 +3,21 @@ import { workflowManager } from "@/lib/workflow-manager";
 import { minioClient, BUCKET_NAME } from "@/lib/minio";
 import { sseService } from "@/services/sse-service";
 import GenerationQueue, { IGenerationQueue } from "@/models/generationQueue";
-import GenerationTask, { IGenerationTask, TaskStatusEnum, TaskChannelEnum, TaskPurposeChannelMapping } from "@/models/generationTask";
+import GenerationTask, { IGenerationTask, TaskStatusEnum, TaskChannelEnum } from "@/models/generationTask";
 import ImageGenInfo from "@/models/imageGenInfo";
 import { getLogger } from "@/lib/log4js";
 import { incrementTaskProgress } from "@/services/task";
 import { executeThirdPartyTask, callLLMAPI } from "./llmTool";
-import { POLL_INTERVAL, DEFAULT_TIMEOUT } from "./const";
+import {
+  POLL_INTERVAL,
+  DEFAULT_TIMEOUT,
+  resolveTaskChannel,
+  isSyncExecutableChannel,
+  isThirdPartyChannel,
+  buildTaskRuntimeParams,
+  buildSyncCompletionUpdate,
+  buildSyncTaskResponse
+} from "./const";
 
 const logger = getLogger("GenerationScheduler");
 
@@ -36,13 +45,10 @@ class GenerationScheduler {
    * @returns 生成结果（文本或相关信息）
    */
   public async executeSyncTask(generationTask: IGenerationTask): Promise<any> {
-    const taskChannel = (generationTask.purpose && TaskPurposeChannelMapping[generationTask.purpose]) || TaskChannelEnum.COMFYUI;
+    const taskChannel = resolveTaskChannel(generationTask);
     
-    // 只允许大语言模型或第三方API的同步任务
-    if (taskChannel !== TaskChannelEnum.LLM && 
-        taskChannel !== TaskChannelEnum.VLLM && 
-        taskChannel !== TaskChannelEnum.THIRD_PARTY_GENERATION_IMAGE) {
-        throw new Error(`Sync execution is not supported for channel: ${taskChannel}`);
+    if (!isSyncExecutableChannel(taskChannel)) {
+      throw new Error(`Sync execution is not supported for channel: ${taskChannel}`);
     }
 
     const taskId = generationTask._id.toString();
@@ -55,31 +61,15 @@ class GenerationScheduler {
     });
 
     try {
-        const params = { ...generationTask.params, taskId, userId: generationTask.userId };
+        const params = buildTaskRuntimeParams(generationTask, taskId);
         const { content, savedImageGenId } = await callLLMAPI(params, taskChannel);
-
-        // 更新任务状态和结果
-        const updateData: any = {
-            status: TaskStatusEnum.COMPLETED,
-            completedTime: new Date()
-        };
-        
-        if (taskChannel === TaskChannelEnum.THIRD_PARTY_GENERATION_IMAGE && savedImageGenId) {
-            updateData.$push = { ImageGenIds: savedImageGenId };
-        } else {
-            updateData.textGenText = content;
-        }
+        const updateData = buildSyncCompletionUpdate(taskChannel, content, savedImageGenId);
 
         await GenerationTask.findByIdAndUpdate(taskId, updateData);
 
         logger.info(`[SyncTask ${taskId}] Completed successfully.`);
 
-        return {
-            taskId,
-            status: TaskStatusEnum.COMPLETED,
-            content,
-            imageGenId: savedImageGenId
-        };
+        return buildSyncTaskResponse(taskId, content, savedImageGenId);
     } catch (error: any) {
         logger.error(`[SyncTask ${taskId}] Failed:`, error);
         
@@ -107,99 +97,104 @@ class GenerationScheduler {
 
   // 处理任务队列，从队列中取出最高优先级、最早创建的任务进行执行
   private async processQueue() {
-    let idleNodes: ComfyUIClient[] = [];
-
-    try {
-        const checkPromises = comfyUIPool.map(async (client) => {
-            try {
-                const isBusy = await client.getQueueIsBusy(3000);
-                if (!isBusy) {
-                    return client;
-                }
-            } catch (error) {
-                // 忽略错误（节点宕机、超时等）
-            }
-            return null;
-        });
-
-        const results = await Promise.all(checkPromises);
-        idleNodes = results.filter((client): client is ComfyUIClient => client !== null);
-    } catch (error) {
-        logger.error("Error checking ComfyUI nodes:", error);
+    const queuedTasks = await GenerationQueue.find({ status: 'queued' }).sort({ priority: -1, createdAt: 1 });
+    if (!queuedTasks.length) {
+      return;
     }
 
-    const comfyCapacity = idleNodes.length;
-    const maxDispatchAttempts = Math.max(1, comfyCapacity * 3);
-    let comfyDispatched = 0;
+    const taskIds = queuedTasks.map(task => task.taskId);
+    const generationTasks = await GenerationTask.find({ _id: { $in: taskIds } });
+    const generationTaskMap = new Map(generationTasks.map(task => [task._id.toString(), task]));
 
-    for (let attempt = 0; attempt < maxDispatchAttempts; attempt++) {
-      const task = await GenerationQueue.findOneAndUpdate(
-        { status: 'queued' },
-        { status: 'processing', startedAt: new Date() },
-        { sort: { priority: -1, createdAt: 1 }, new: true }
-      );
+    const llmQueue: Array<{ queueTask: IGenerationQueue; generationTask: IGenerationTask; taskChannel: TaskChannelEnum }> = [];
+    const comfyQueue: Array<{ queueTask: IGenerationQueue; generationTask: IGenerationTask; taskChannel: TaskChannelEnum }> = [];
 
-      if (!task) {
-        return;
-      }
-
-      const generationTask = await GenerationTask.findOne({ _id: task.taskId });
+    for (const queueTask of queuedTasks) {
+      const generationTask = generationTaskMap.get(queueTask.taskId);
       if (!generationTask) {
-        logger.error(`GenerationTask not found for queue item ${task.taskId}`);
-        await GenerationQueue.findByIdAndUpdate(task._id, { status: 'failed', error: 'GenerationTask not found' });
+        logger.error(`GenerationTask not found for queue item ${queueTask.taskId}`);
+        await GenerationQueue.findByIdAndUpdate(queueTask._id, { status: 'failed', error: 'GenerationTask not found' });
         continue;
       }
 
-      const taskChannel = (generationTask.purpose && TaskPurposeChannelMapping[generationTask.purpose]) || TaskChannelEnum.COMFYUI;
-
-      if (taskChannel === TaskChannelEnum.COMFYUI && idleNodes.length === 0) {
-        await GenerationQueue.findByIdAndUpdate(task._id, { status: 'queued', startedAt: null });
-        break;
+      const taskChannel = resolveTaskChannel(generationTask);
+      if (isThirdPartyChannel(taskChannel)) {
+        llmQueue.push({ queueTask, generationTask, taskChannel });
+      } else if (taskChannel === TaskChannelEnum.COMFYUI) {
+        comfyQueue.push({ queueTask, generationTask, taskChannel });
+      } else {
+        logger.warn(`[Task ${queueTask.taskId}] Unknown channel: ${taskChannel}. Marking as failed.`);
+        await GenerationQueue.findByIdAndUpdate(queueTask._id, { status: 'failed', error: 'Unknown channel' });
+        await GenerationTask.findByIdAndUpdate(queueTask.taskId, { status: TaskStatusEnum.FAILED });
       }
-
-      logger.info(`Processing task ${task.taskId} (User: ${task.userId}, Channel: ${taskChannel})`);
-
-      await GenerationTask.findByIdAndUpdate(task.taskId, {
-        status: TaskStatusEnum.PROCESSING,
-        startedTime: new Date()
-      });
-
-      if (task.sseId) {
-        sseService.send(task.sseId, "status", {
-          taskId: task.taskId,
-          status: TaskStatusEnum.PROCESSING,
-          progress: 0
-        });
-      }
-
-      if (taskChannel === TaskChannelEnum.THIRD_PARTY_GENERATION_IMAGE ||
-          taskChannel === TaskChannelEnum.LLM ||
-          taskChannel === TaskChannelEnum.VLLM) {
-        this.runTaskSafe(task, generationTask);
-        continue;
-      }
-
-      if (taskChannel === TaskChannelEnum.COMFYUI) {
-        const assignedNode = idleNodes.shift();
-        if (!assignedNode) {
-          await GenerationQueue.findByIdAndUpdate(task._id, { status: 'queued', startedAt: null });
-          await GenerationTask.findByIdAndUpdate(task.taskId, { status: TaskStatusEnum.PENDING });
-          break;
-        }
-
-        this.runTaskSafe(task, generationTask, assignedNode);
-        comfyDispatched += 1;
-
-        if (comfyDispatched >= comfyCapacity) {
-          break;
-        }
-        continue;
-      }
-
-      logger.warn(`[Task ${task.taskId}] Unknown channel: ${taskChannel}. Marking as failed.`);
-      await GenerationQueue.findByIdAndUpdate(task._id, { status: 'failed', error: 'Unknown channel' });
-      await GenerationTask.findByIdAndUpdate(task.taskId, { status: TaskStatusEnum.FAILED });
     }
+
+    for (const item of llmQueue) {
+      const startedTask = await this.tryStartTask(item.queueTask, item.generationTask, item.taskChannel);
+      if (!startedTask) {
+        continue;
+      }
+      this.runTaskSafe(startedTask, item.generationTask);
+    }
+
+    if (!comfyQueue.length) {
+      return;
+    }
+
+    let idleNodes: ComfyUIClient[] = [];
+    try {
+      idleNodes = await comfyUIPool.getAvailableNodes(2000);
+    } catch (error) {
+      logger.error("Error checking ComfyUI nodes:", error);
+      return;
+    }
+
+    if (!idleNodes.length) {
+      return;
+    }
+
+    const comfyDispatchQueue = comfyQueue.slice(0, idleNodes.length);
+    for (let i = 0; i < comfyDispatchQueue.length; i++) {
+      const item = comfyDispatchQueue[i];
+      const assignedNode = idleNodes[i];
+      const startedTask = await this.tryStartTask(item.queueTask, item.generationTask, item.taskChannel);
+      if (!startedTask) {
+        continue;
+      }
+      this.runTaskSafe(startedTask, item.generationTask, assignedNode);
+    }
+  }
+
+  private async tryStartTask(
+    queueTask: IGenerationQueue,
+    generationTask: IGenerationTask,
+    taskChannel: TaskChannelEnum
+  ): Promise<IGenerationQueue | null> {
+    const startedTask = await GenerationQueue.findOneAndUpdate(
+      { _id: queueTask._id, status: 'queued' },
+      { status: 'processing', startedAt: new Date() },
+      { new: true }
+    );
+    if (!startedTask) {
+      return null;
+    }
+
+    logger.info(`Processing task ${startedTask.taskId} (User: ${startedTask.userId}, Channel: ${taskChannel})`);
+
+    await GenerationTask.findByIdAndUpdate(generationTask._id, {
+      status: TaskStatusEnum.PROCESSING,
+      startedTime: new Date()
+    });
+
+    if (startedTask.sseId) {
+      sseService.send(startedTask.sseId, "status", {
+        taskId: startedTask.taskId,
+        status: TaskStatusEnum.PROCESSING,
+        progress: 0
+      });
+    }
+
+    return startedTask;
   }
 
   // 安全执行任务（包含错误处理）
@@ -208,15 +203,11 @@ class GenerationScheduler {
   // @param client ComfyUI客户端实例（可选）
   private async runTaskSafe(task: IGenerationQueue, generationTask: IGenerationTask, client?: ComfyUIClient) {
     try {
-      const taskChannel = (generationTask.purpose && TaskPurposeChannelMapping[generationTask.purpose]) || TaskChannelEnum.COMFYUI;
+      const taskChannel = resolveTaskChannel(generationTask);
 
-      // 执行任务
-      if (taskChannel === TaskChannelEnum.THIRD_PARTY_GENERATION_IMAGE ||
-          taskChannel === TaskChannelEnum.LLM ||
-          taskChannel === TaskChannelEnum.VLLM) {
+      if (isThirdPartyChannel(taskChannel)) {
           await executeThirdPartyTask(task, generationTask);
       } else if (taskChannel === TaskChannelEnum.COMFYUI) {
-          // 如果是ComfyUI任务，必须提供client
           if (!client) throw new Error("ComfyUI client not provided for ComfyUI task");
           await this.executeComfyUITask(task, generationTask, client);
       } else {
