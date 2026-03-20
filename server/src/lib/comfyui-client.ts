@@ -78,6 +78,7 @@ export class ComfyUIClient {
         const payload = JSON.parse(message.toString());
         const eventType = payload?.type;
         const data = payload?.data;
+        console.log('message',message);
 
         if (!data || data.prompt_id !== options.promptId) {
           return;

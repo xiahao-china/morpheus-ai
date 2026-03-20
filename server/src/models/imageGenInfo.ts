@@ -9,7 +9,7 @@ export interface IImageGenInfo extends Document {
   height: number; // 高度
 
   // 反馈
-  isLiked?: boolean; // 点赞状态: true-点赞, false-踩, undefined-无反馈
+  isLiked: boolean; // 点赞状态: true-点赞, false-未点赞
 
   // 广场发布状态
   isPublishedToSquare?: boolean; // 是否已发布到广场
@@ -26,7 +26,7 @@ const ImageGenInfoSchema: Schema = new Schema({
   width: { type: Number }, // 宽度
   height: { type: Number }, // 高度
 
-  isLiked: { type: Boolean }, // 点赞状态
+  isLiked: { type: Boolean, default: false }, // 点赞状态
 
   isPublishedToSquare: { type: Boolean, default: false }, // 是否已发布到广场
 

@@ -27,7 +27,7 @@ export const navItems = [
     key: "fengshui",
     label: "风水",
     path: "/pages/Fengshui/index",
-    icon: "sparkles",
+    icon: "fengshui",
   },
   {
     key: "profile",

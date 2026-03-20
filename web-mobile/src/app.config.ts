@@ -1,6 +1,7 @@
 export const appConfig = {
   pages: [
     "pages/Square/index", // 广场页
+    "pages/MySpace/index", // 我的空间
     "pages/PersonalSpace/index", // 我的空间
     "pages/LoginPage/index", // 登录页
     "pages/DrawingV2/index",

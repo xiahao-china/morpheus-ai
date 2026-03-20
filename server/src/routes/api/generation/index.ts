@@ -1,6 +1,18 @@
 import Router from "koa-router";
 // 导入生成控制器函数
-import { submitFeedback, optimizePrompt, generateImage, generateFengShui, getGenerationStatus, getTaskDetail, getGenerationHistory } from "@/controllers/generation";
+import {
+  submitFeedback,
+  optimizePrompt,
+  generateImage,
+  generateFengShui,
+  getGenerationStatus,
+  getTaskDetail,
+  getGenerationHistory,
+  likeImage,
+  collectImage,
+  uncollectImage,
+  getMyImageCollections
+} from "@/controllers/generation";
 // 导入认证中间件
 import { authMiddleware } from "@/middleware/auth";
 
@@ -8,7 +20,7 @@ import { authMiddleware } from "@/middleware/auth";
  * 任务生成相关路由（包含图片、文本生成、反馈与优化）
  */
 export default (router: Router) => {
-  // 提交作品反馈（点赞/点踩）（需要登录）
+  // 提交作品反馈（仅点赞/取消点赞）（需要登录）
   router.post('/api/v1/generation/feedback/:id', authMiddleware, submitFeedback);
 
   // AI提示词优化（需要登录）
@@ -28,4 +40,16 @@ export default (router: Router) => {
 
   // 获取生成记录列表 (分页) - 兼容旧路径
   router.get('/api/image/history', authMiddleware, getGenerationHistory);
+
+  // 点赞/取消点赞（需要登录）
+  router.post('/api/image/:id/like', authMiddleware, likeImage);
+
+  // 收藏图片（需要登录）
+  router.post('/api/image/:id/collect', authMiddleware, collectImage);
+
+  // 取消收藏图片（需要登录）
+  router.delete('/api/image/:id/collect', authMiddleware, uncollectImage);
+
+  // 查询我的收藏图片（分页，需要登录）
+  router.get('/api/image/collections', authMiddleware, getMyImageCollections);
 }

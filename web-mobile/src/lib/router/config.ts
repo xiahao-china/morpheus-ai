@@ -71,6 +71,13 @@ export const ROUTER_INFO = {
     needMobileNav: false,
     needBottomBar: false
   },
+  '/pages/MySpace/index': {
+    pageName: '个人空间',
+    needLogin: true,
+    needNavBar: false,
+    needMobileNav: false,
+    needBottomBar: false
+  },
   '/packageSettings/pages/EditProfile/index': {
     pageName: '编辑资料',
     needLogin: true,

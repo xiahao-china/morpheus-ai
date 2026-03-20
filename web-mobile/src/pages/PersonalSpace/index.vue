@@ -26,17 +26,17 @@
       <view :class="styles.menuCard">
         <view :class="styles.cardTitle">内容管理</view>
 
-        <view :class="styles.menuItem" @tap="navigateTo('/packageHistory/pages/History/index')">
+        <view :class="styles.menuItem" @tap="navigateTo('/pages/MySpace/index')">
           <view :class="styles.menuIcon">
             <IconFont font-class-name="iconfont" class-prefix="icon" name="history" size="20" />
           </view>
-          <view :class="styles.menuLabel">我的作品</view>
+          <view :class="styles.menuLabel">个人空间</view>
           <RectRight :class="styles.menuArrow" size="16" />
         </view>
 
         <view :class="styles.menuItem" @tap="navigateTo('/pages/Fengshui/index')">
           <view :class="styles.menuIcon">
-            <IconFont font-class-name="iconfont" class-prefix="icon" name="compass" size="20" />
+            <IconFont font-class-name="iconfont" class-prefix="icon" name="fengshui" size="20" />
           </view>
           <view :class="styles.menuLabel">风水报告</view>
           <RectRight :class="styles.menuArrow" size="16" />

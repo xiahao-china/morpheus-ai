@@ -46,6 +46,13 @@ export const FENG_SHUI_SYSTEM_INSTRUCTION = `你是一位资深住宅风水分�
 6. 若为问题项，type优先用danger或warning，并给出impact与suggestion。
 7. 若为优势项，type用success，并在analysis中说明依据。
 8. 不允许返回null，不要省略items字段。`;
+export const DEFAULT_COMFYUI_WORKFLOW = "1_None";
+export const INSPIRATION_COMFYUI_WORKFLOW = "24_Inspiration_Super";
+export const INSPIRATION_PROMPT_SUFFIX = "No people, no text, no logos, no brand names, no titles, no watermarks, no captions—only spatial structure and material details are presented.";
+
+export enum DrawingTypeEnum {
+  INSPIRATION = "INSPIRATION"
+}
 
 export const getGeneratedTaskPurpose = (baseImages: unknown) => {
   const hasBaseImages = Array.isArray(baseImages) && baseImages.length > 0;
@@ -102,8 +109,7 @@ export const buildFengShuiPromptInput = (input: {
 
 export const parseGenerationAction = (action: string) => {
   if (action === "like") return true;
-  if (action === "dislike") return false;
-  if (action === "cancel") return undefined;
+  if (action === "cancel") return false;
   return null;
 };
 
@@ -113,11 +119,23 @@ export const parsePositiveInt = (value: unknown, fallback: number) => {
   return parsed;
 };
 
+export const appendInspirationPromptSuffix = (prompt: string) => {
+  const normalizedPrompt = prompt.trim();
+  if (!normalizedPrompt) return INSPIRATION_PROMPT_SUFFIX;
+  const normalizedLower = normalizedPrompt.toLowerCase();
+  const suffixLower = INSPIRATION_PROMPT_SUFFIX.toLowerCase();
+  if (normalizedLower.includes(suffixLower)) {
+    return normalizedPrompt;
+  }
+  return `${normalizedPrompt} ${INSPIRATION_PROMPT_SUFFIX}`.trim();
+};
+
 export const createGenerationTaskRecord = (
   userId: string,
   purpose: TaskPurposeEnum,
   params: any,
-  translatedPrompt?: string
+  translatedPrompt?: string,
+  comfyuiExtra: Record<string, any> = {}
 ) => {
   return new GenerationTask({
     userId,
@@ -126,7 +144,8 @@ export const createGenerationTaskRecord = (
     params,
     translatedPrompt,
     comfyui: {
-      seed: params.seed
+      seed: params.seed,
+      ...comfyuiExtra
     },
     createdTime: new Date()
   });

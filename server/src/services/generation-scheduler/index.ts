@@ -18,6 +18,7 @@ import {
   buildSyncCompletionUpdate,
   buildSyncTaskResponse
 } from "./const";
+import { DEFAULT_COMFYUI_WORKFLOW } from "@/controllers/generation/const";
 
 const logger = getLogger("GenerationScheduler");
 
@@ -262,8 +263,17 @@ class GenerationScheduler {
     }
     const clientId = `morpheus_${task.taskId}_${Date.now()}`;
 
+    const configuredWorkflowName = generationTask.comfyui?.workflowName || DEFAULT_COMFYUI_WORKFLOW;
+    const workflowTemplateId = workflowManager.getTemplate(configuredWorkflowName)
+      ? configuredWorkflowName
+      : DEFAULT_COMFYUI_WORKFLOW;
+
+    if (workflowTemplateId !== configuredWorkflowName) {
+      logger.warn(`[任务 ${task.taskId}] 工作流 ${configuredWorkflowName} 不存在，回退到 ${DEFAULT_COMFYUI_WORKFLOW}`);
+    }
+
     // 1. 生成ComfyUI工作流
-    const workflow = workflowManager.generateWorkflow("1_None", params);
+    const workflow = workflowManager.generateWorkflow(workflowTemplateId, params);
 
     // 2. 将prompt提交到ComfyUI队列
     console.log('workflow',workflow);
@@ -276,7 +286,8 @@ class GenerationScheduler {
 
     // 更新图像生成任务的ComfyUI信息
     await GenerationTask.findByIdAndUpdate(task.taskId, {
-      'comfyui.promptId': promptId
+      'comfyui.promptId': promptId,
+      'comfyui.workflowName': workflowTemplateId
     });
 
     await this.pushTaskProgress(task, 1);

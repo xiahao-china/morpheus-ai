@@ -1,25 +1,24 @@
 import { httpGet } from '@/lib/request/http';
-import type {
-  IGetGenerationHistoryParams,
-  ImageInfo
-} from '@/api/images/getGenerationHistoryV2';
+import type { IGetGenerationHistoryParams } from '@/api/images/getGenerationHistoryV2';
 
 export interface IGetImageCollectionsItem {
-  imageEditedId?: number;
-  imageId: number;
-  imageGenerationId?: number;
-  isSatisfied: null;
+  imageId: string;
+  imageGenTaskId: string;
+  imageUrl: string;
+  fileResourceId: string;
+  width: number;
+  height: number;
+  isLiked: boolean;
   isCollected: true;
-  comment: null,
-  generatedImages: ImageInfo
-  editedGeneratedImages: ImageInfo
+  collectedTime: string;
 }
 
 export interface IGetImageCollectionsResponse {
-  records: IGetImageCollectionsItem[]
+  list: IGetImageCollectionsItem[]
+  total: number;
 }
 
 
 export const getImageCollections = (params: IGetGenerationHistoryParams) => {
-  return httpGet<IGetGenerationHistoryParams, IGetImageCollectionsResponse>('/images/interaction/collections', params);
+  return httpGet<IGetGenerationHistoryParams, IGetImageCollectionsResponse>('/image/collections', params);
 };

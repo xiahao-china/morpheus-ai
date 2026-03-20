@@ -1,0 +1,13 @@
+{
+  "id": "24_Inspiration_Super",
+  "raw": "raw/3_1_2_qwen.json",
+  "placeholders": {
+    "seed": "/3/inputs/seed",
+    "prompt": "/6/inputs/text",
+    "width": "/13/inputs/width",
+    "height": "/13/inputs/height",
+    "count": "/13/inputs/batch_size",
+    "filename_prefix": "/28/inputs/filename_prefix",
+    "bucket_name": "/28/inputs/bucket_name"
+  }
+}

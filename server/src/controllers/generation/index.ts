@@ -1,6 +1,7 @@
 import GenerationQueue from "@/models/generationQueue";
 import GenerationTask, { TaskPurposeEnum, TaskStatusEnum } from "@/models/generationTask";
 import ImageGenInfo from "@/models/imageGenInfo";
+import UserImageCollect from "@/models/userImageCollect";
 import FileResource from "@/models/fileResource";
 import { BUCKET_NAME, minioClient } from "@/lib/minio";
 import { sseService } from "@/services/sse-service";
@@ -11,6 +12,7 @@ import { sendResponse } from "@/utils/const";
 import {
   buildOptimizePromptInput,
   buildTranslatePromptInput,
+  appendInspirationPromptSuffix,
   buildFengShuiPromptInput,
   Context,
   createGenerationTaskRecord,
@@ -22,11 +24,13 @@ import {
   generateTaskSeed,
   getDimensionsByPurpose,
   getGeneratedTaskPurpose,
+  INSPIRATION_COMFYUI_WORKFLOW,
   isProcessingTaskStatus,
   logger,
   normalizeOptimizedPrompt,
   parseGenerationAction,
-  parsePositiveInt
+  parsePositiveInt,
+  DrawingTypeEnum
 } from "./const";
 
 interface IFengShuiRequestBody {
@@ -36,9 +40,14 @@ interface IFengShuiRequestBody {
   residentNeeds?: string;
 }
 
+const getCurrentUserId = (ctx: Context) => {
+  const user = ctx.state.user as any;
+  return String(user?.uid || user?._id || "");
+};
+
 /**
- * 提交图片反馈（点赞/点踩）
- * action: 'like' | 'dislike' | 'cancel'
+ * 提交图片反馈（仅点赞/取消点赞）
+ * action: 'like' | 'cancel'
  */
 export const submitFeedback = async (ctx: Context) => {
   const { id } = ctx.params;
@@ -56,7 +65,6 @@ export const submitFeedback = async (ctx: Context) => {
       return;
     }
 
-    // 更新点赞状态
     const feedbackValue = parseGenerationAction(action);
     if (feedbackValue === null) {
       ctx.body = { code: 400, msg: "Invalid action" };
@@ -68,6 +76,153 @@ export const submitFeedback = async (ctx: Context) => {
     sendResponse.success(ctx, { isLiked: image.isLiked });
 
   } catch (error) {
+    sendResponse.error(ctx, "Internal server error");
+  }
+};
+
+export const likeImage = async (ctx: Context) => {
+  const { id } = ctx.params;
+  const { action = "toggle" } = ctx.request.body as any;
+
+  if (!id) {
+    ctx.body = { code: 400, msg: "Image ID is required" };
+    return;
+  }
+
+  try {
+    const image = await ImageGenInfo.findById(id);
+    if (!image) {
+      ctx.body = { code: 404, msg: "Image not found" };
+      return;
+    }
+
+    if (action === "toggle") {
+      image.isLiked = !Boolean(image.isLiked);
+    } else {
+      const feedbackValue = parseGenerationAction(action);
+      if (feedbackValue === null) {
+        ctx.body = { code: 400, msg: "Invalid action" };
+        return;
+      }
+      image.isLiked = feedbackValue;
+    }
+
+    await image.save();
+    sendResponse.success(ctx, { isLiked: Boolean(image.isLiked) });
+  } catch (error) {
+    sendResponse.error(ctx, "Internal server error");
+  }
+};
+
+export const collectImage = async (ctx: Context) => {
+  const { id } = ctx.params;
+  const userId = getCurrentUserId(ctx);
+
+  if (!id) {
+    ctx.body = { code: 400, msg: "Image ID is required" };
+    return;
+  }
+
+  try {
+    const image = await ImageGenInfo.findById(id);
+    if (!image) {
+      ctx.body = { code: 404, msg: "Image not found" };
+      return;
+    }
+
+    if (image.userId && image.userId !== userId) {
+      ctx.body = { code: 403, msg: "You can only collect your own images" };
+      return;
+    }
+
+    await UserImageCollect.findOneAndUpdate(
+      { userId, imageId: image._id.toString() },
+      {
+        userId,
+        imageId: image._id.toString(),
+        imageGenTaskId: image.imageGenTaskId
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    sendResponse.success(ctx, { isCollected: true });
+  } catch (error) {
+    sendResponse.error(ctx, "Internal server error");
+  }
+};
+
+export const uncollectImage = async (ctx: Context) => {
+  const { id } = ctx.params;
+  const userId = getCurrentUserId(ctx);
+
+  if (!id) {
+    ctx.body = { code: 400, msg: "Image ID is required" };
+    return;
+  }
+
+  try {
+    await UserImageCollect.deleteOne({ userId, imageId: id });
+    sendResponse.success(ctx, { isCollected: false });
+  } catch (error) {
+    sendResponse.error(ctx, "Internal server error");
+  }
+};
+
+export const getMyImageCollections = async (ctx: Context) => {
+  try {
+    const userId = getCurrentUserId(ctx);
+    const page = parsePositiveInt(ctx.query.page, DEFAULT_GENERATION_PAGE);
+    const pageSize = parsePositiveInt(ctx.query.pageSize, DEFAULT_GENERATION_PAGE_SIZE);
+    const skip = (page - 1) * pageSize;
+
+    const [collections, total] = await Promise.all([
+      UserImageCollect.find({ userId })
+        .sort({ createdTime: -1 })
+        .skip(skip)
+        .limit(pageSize)
+        .lean(),
+      UserImageCollect.countDocuments({ userId })
+    ]);
+
+    const imageIds = collections.map((item) => item.imageId);
+    const images = imageIds.length
+      ? await ImageGenInfo.find({ _id: { $in: imageIds } }).lean()
+      : [];
+
+    const imageMap = images.reduce((map, image) => {
+      map[String(image._id)] = image;
+      return map;
+    }, {} as Record<string, any>);
+
+    const list = collections.map((item) => {
+      const image = imageMap[item.imageId];
+      return {
+        imageId: item.imageId,
+        imageGenTaskId: item.imageGenTaskId,
+        imageUrl: image?.imageUrl || "",
+        fileResourceId: image?.fileResourceId || "",
+        width: image?.width || 0,
+        height: image?.height || 0,
+        isLiked: Boolean(image?.isLiked),
+        isCollected: true,
+        collectedTime: item.createdTime,
+      };
+    }).filter((item) => item.imageUrl);
+
+    sendResponse.success(ctx, {
+      list,
+      total,
+      page,
+      pageSize,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize)
+      }
+    });
+  } catch (error: any) {
+    logger.error(`Error getting image collections for user:`, error);
     sendResponse.error(ctx, "Internal server error");
   }
 };
@@ -115,7 +270,8 @@ export const generateImage = async (ctx: Context) => {
       prompt,
       ratio,
       count = 1,
-      base_images
+      base_images,
+      type
     } = ctx.request.body as any;
 
     if (!prompt) {
@@ -138,6 +294,10 @@ export const generateImage = async (ctx: Context) => {
       logger.warn(`Translate prompt failed, fallback to original prompt: ${error?.message || error}`);
     }
 
+    if (type === DrawingTypeEnum.INSPIRATION) {
+      translatedPrompt = appendInspirationPromptSuffix(translatedPrompt);
+    }
+
     // 根据是否有底图决定使用 ComfyUI 还是第三方服务
     const purpose = getGeneratedTaskPurpose(base_images);
     const { width, height } = getDimensionsByPurpose(purpose, ratio);
@@ -154,8 +314,16 @@ export const generateImage = async (ctx: Context) => {
       filename_prefix: generateFilenamePrefix(),
       baseImages: base_images
     };
-
-    const generationTask = createGenerationTaskRecord(user.uid, purpose, params, translatedPrompt);
+    const workflowName = purpose === TaskPurposeEnum.TXT2IMG
+      ? INSPIRATION_COMFYUI_WORKFLOW
+      : undefined;
+    const generationTask = createGenerationTaskRecord(
+      user.uid,
+      purpose,
+      params,
+      translatedPrompt,
+      workflowName ? { workflowName } : {}
+    );
 
     await generationTask.save();
     const taskId = generationTask._id.toString();
@@ -427,18 +595,30 @@ export const getGenerationHistory = async (ctx: Context) => {
       ? await ImageGenInfo.find({ imageGenTaskId: { $in: taskIds } }).sort({ createdTime: -1 })
       : [];
 
+    const imageIds = imageList.map((image) => image._id.toString());
+    const collectedImageList = imageIds.length
+      ? await UserImageCollect.find(
+        { userId: user.uid, imageId: { $in: imageIds } },
+        { imageId: 1 }
+      ).lean()
+      : [];
+    const collectedImageSet = new Set(collectedImageList.map((item) => String(item.imageId)));
+
     const imageMap = imageList.reduce((map, image) => {
+      const imageId = image._id.toString();
       const taskId = image.imageGenTaskId;
       if (!map[taskId]) {
         map[taskId] = [];
       }
       map[taskId].push({
-        imageId: image._id.toString(),
+        imageId,
         imageUrl: image.imageUrl,
         fileResourceId: image.fileResourceId,
         width: image.width,
         height: image.height,
         createdTime: image.createdTime,
+        isLiked: Boolean(image.isLiked),
+        isCollected: collectedImageSet.has(imageId),
       });
       return map;
     }, {} as Record<string, Array<{
@@ -448,6 +628,8 @@ export const getGenerationHistory = async (ctx: Context) => {
       width?: number;
       height?: number;
       createdTime: Date;
+      isLiked: boolean;
+      isCollected: boolean;
     }>>);
 
     const list = tasks.map((task) => {

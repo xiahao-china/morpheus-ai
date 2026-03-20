@@ -17,7 +17,6 @@
             v-else
             :message="message"
             @like="emit('like', $event)"
-            @dislike="emit('dislike', $event)"
             @publish="emit('publish', $event)"
             @regenerate="emit('regenerate', $event)"
             @download="emit('download', $event)"
@@ -49,7 +48,6 @@ const props = withDefaults(defineProps<IInfiniteConversationProps>(), {
 const emit = defineEmits<{
   loadMore: [];
   like: [message: IDrawingV2Message];
-  dislike: [message: IDrawingV2Message];
   publish: [message: IDrawingV2Message];
   regenerate: [message: IDrawingV2Message];
   download: [message: IDrawingV2Message];

@@ -8,7 +8,6 @@
           :load-end="historyLoadEnd"
           @load-more="fetchNextHistory"
           @like="handleLike"
-          @dislike="handleDislike"
           @publish="handlePublish"
           @regenerate="handleRegenerate"
           @download="handleDownload"
@@ -41,8 +40,6 @@ import { getImagesTask } from "@/api/generate/workStream";
 import { getGenerateProgress } from "@/api/generate/getGenerateProgress";
 import { getRecentGenerationsV2 } from "@/api/images/getGenerationHistoryV2";
 import {
-  ESourceType,
-  generateImageFeedbackDislike,
   generateImageFeedbackLike,
 } from "@/api/images/generateImageFeedback";
 import { publishToSquare } from "@/api/square/publishToSquare";
@@ -201,25 +198,12 @@ const handleLike = async (message: IDrawingV2Message) => {
     Taro.showToast({ title: "暂无可反馈图片", icon: "none" });
     return;
   }
-  const response = await generateImageFeedbackLike(message.imageId, ESourceType.GENERATION);
+  const response = await generateImageFeedbackLike(message.imageId);
   if (response instanceof Error || response.code !== 200) {
     Taro.showToast({ title: "点赞失败", icon: "error" });
     return;
   }
-  Taro.showToast({ title: "已记录您的点赞", icon: "success" });
-};
-
-const handleDislike = async (message: IDrawingV2Message) => {
-  if (!message.imageId) {
-    Taro.showToast({ title: "暂无可反馈图片", icon: "none" });
-    return;
-  }
-  const response = await generateImageFeedbackDislike(message.imageId, ESourceType.GENERATION);
-  if (response instanceof Error || response.code !== 200) {
-    Taro.showToast({ title: "点踩失败", icon: "error" });
-    return;
-  }
-  Taro.showToast({ title: "反馈已提交", icon: "success" });
+  Taro.showToast({ title: response.data?.isLiked ? "点赞成功" : "已取消点赞", icon: "success" });
 };
 
 const handlePublish = async (message: IDrawingV2Message) => {

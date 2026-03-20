@@ -24,7 +24,7 @@
               @touchstart="onComparePress"
               @touchend="onCompareRelease"
             >
-              <Star :class="pageStyle['topIcon']" />
+              <IconFont font-class-name="iconfont" class-prefix="icon" name="duibifenxi" :class="pageStyle['topIcon']" />
             </view>
             <view :class="[pageStyle['topAction'], pageStyle['downloadAction']]" @click="emit('download', message)">
               <Download :class="pageStyle['topIcon']" />
@@ -40,12 +40,8 @@
           <view :class="pageStyle['actionRow']">
             <view :class="pageStyle['group']">
               <view :class="pageStyle['action']" @click="emit('like', message)">
-                <Star :class="pageStyle['icon']" />
+                <IconFont font-class-name="iconfont" class-prefix="icon" name="icon_love_hover" :class="pageStyle['icon']" />
                 <text>点赞</text>
-              </view>
-              <view :class="pageStyle['action']" @click="emit('dislike', message)">
-                <Close :class="pageStyle['icon']" />
-                <text>点踩</text>
               </view>
             </view>
 
@@ -69,7 +65,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import Taro from "@tarojs/taro";
-import { ArrowRight, Close, Download, Refresh, Star } from "@nutui/icons-vue-taro";
+import { ArrowRight, Download, Refresh, IconFont } from "@nutui/icons-vue-taro";
 import type { IServiceInfoProps } from "./const";
 import type { IDrawingV2Message } from "@/pages/DrawingV2/const";
 import pageStyle from "./index.module.less";
@@ -79,7 +75,6 @@ const showUnderImage = ref(false);
 
 const emit = defineEmits<{
   like: [message: IDrawingV2Message];
-  dislike: [message: IDrawingV2Message];
   publish: [message: IDrawingV2Message];
   regenerate: [message: IDrawingV2Message];
   download: [message: IDrawingV2Message];
