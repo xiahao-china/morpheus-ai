@@ -1,6 +1,6 @@
 import Router from "koa-router";
 // 导入广场控制器函数
-import { getSquareList, publishSquare, likeSquare, deleteSquare } from "@/controllers/square";
+import { getSquareList, getSquareDetail, publishSquare, likeSquare, deleteSquare } from "@/controllers/square";
 // 导入认证中间件
 import { authMiddleware } from "@/middleware/auth";
 
@@ -11,6 +11,8 @@ import { authMiddleware } from "@/middleware/auth";
 export default (router: Router) => {
   // 获取广场作品列表（公开接口，无需登录）
   router.get('/api/square/list', getSquareList);
+  // 获取广场详情（公开接口，无需登录）
+  router.get('/api/square/:id', getSquareDetail);
   // 发布作品到广场（需要登录）
   router.post('/api/square/publish', authMiddleware, publishSquare);
   // 删除作品（需要登录）

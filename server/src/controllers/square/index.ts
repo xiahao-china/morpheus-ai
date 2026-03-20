@@ -1,5 +1,7 @@
 import Square from "@/models/square";
 import ImageGenInfo from "@/models/imageGenInfo";
+import GenerationTask from "@/models/generationTask";
+import User from "@/models/user";
 import { sendResponse } from "@/utils/const";
 import { buildSquareFilter, Context, getNextLikeCount } from "./const";
 
@@ -16,6 +18,80 @@ export const getSquareList = async (ctx: Context) => {
     .limit(Number(pageSize));
   const total = await Square.countDocuments(filter);
   sendResponse.success(ctx, { list, total });
+};
+
+/**
+ * 获取广场详情
+ */
+export const getSquareDetail = async (ctx: Context) => {
+  try {
+    const { id } = ctx.params;
+    if (!id) {
+      ctx.body = { code: 400, msg: "id is required" };
+      return;
+    }
+
+    const square = await Square.findById(id).lean();
+    if (!square) {
+      ctx.body = { code: 404, msg: "Not found" };
+      return;
+    }
+
+    const [userInfo, imageInfo] = await Promise.all([
+      square.userId ? User.findById(square.userId).lean() : null,
+      square.imageId ? ImageGenInfo.findById(square.imageId).lean() : null,
+    ]);
+
+    const imageGenTaskId = imageInfo?.imageGenTaskId;
+    const generationTask = imageGenTaskId
+      ? await GenerationTask.findById(imageGenTaskId).lean()
+      : null;
+
+    const taskDetail = generationTask ? {
+      taskId: generationTask._id?.toString(),
+      status: generationTask.status,
+      createdTime: generationTask.createdTime,
+      completedTime: generationTask.completedTime,
+      progress: generationTask.status === "COMPLETED" ? 100 : 0,
+      imageUrl: imageInfo?.imageUrl || square.imageUrl || "",
+      imageId: imageInfo?._id?.toString() || "",
+      width: imageInfo?.width || generationTask.params?.width || 0,
+      height: imageInfo?.height || generationTask.params?.height || 0,
+      prompt: generationTask.params?.prompt || "",
+      underImageUrl: generationTask.params?.baseImages?.[0] || "",
+      negativePrompt: generationTask.params?.negativePrompt || "",
+      referImageUrl: generationTask.params?.referImage?.url || "",
+      modelOutwardName: generationTask.params?.modelOutwardName || "",
+      styleModelOutwardName: generationTask.params?.styleModelOutwardName || "",
+      magnificationOutward: generationTask.params?.magnificationOutward,
+      scene: generationTask.params?.scene || "",
+    } : null;
+
+    sendResponse.success(ctx, {
+      id: square._id?.toString(),
+      userId: square.userId || null,
+      username: userInfo?.nickname || userInfo?.username || "匿名用户",
+      title: square.title || "",
+      caption: square.caption || "",
+      styleTags: Array.isArray(square.styleTags) ? square.styleTags.join(",") : "",
+      sceneTags: Array.isArray(square.sceneTags) ? square.sceneTags.join(",") : "",
+      drawTaskInfo: taskDetail,
+      editedTaskInfo: null,
+      squareImage: {
+        id: imageInfo?._id?.toString() || square.imageId?.toString() || "",
+        fileResourceId: imageInfo?.fileResourceId || "",
+        imageUrl: imageInfo?.imageUrl || square.imageUrl || "",
+      },
+      publishedTime: square.publishedTime,
+      updateTime: square.publishedTime,
+      auditStatus: "PASS",
+      collectCount: square.collectCount || 0,
+      isCollected: false,
+      avatar: userInfo?.avatar || "",
+    });
+  } catch (error: any) {
+    sendResponse.error(ctx, "Internal server error");
+  }
 };
 
 /**

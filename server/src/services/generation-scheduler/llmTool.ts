@@ -200,6 +200,7 @@ export const callLLMAPI = async (params: any, taskChannel: TaskChannelEnum): Pro
             const imageGenInfo = new ImageGenInfo({
                 userId: params.userId,
                 imageGenTaskId: params.taskId,
+                fileResourceId: filename,
                 prompt: params.prompt,
                 width: params.width,
                 height: params.height,
