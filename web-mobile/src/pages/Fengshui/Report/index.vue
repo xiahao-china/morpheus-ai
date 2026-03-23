@@ -11,7 +11,13 @@
           风水格局：<text :class="styles.level">{{ report.level }}</text>
         </view>
         <view :class="styles.resultDesc">{{ report.summary }}</view>
+
+        <view v-if="underImageUrl" :class="styles.underImageCard">
+          <image :class="styles.underImage" :src="underImageUrl" mode="widthFix" />
+        </view>
       </view>
+
+
 
       <!-- Analysis Section -->
       <view :class="styles.sectionHeader">
@@ -56,9 +62,9 @@
       </view>
 
       <!-- Bottom Action -->
-      <view :class="styles.bottomAction" @tap="handlePurchase">
-        获取完整化解方案 (19.9元)
-      </view>
+<!--      <view :class="styles.bottomAction" @tap="handlePurchase">-->
+<!--        获取完整化解方案 (19.9元)-->
+<!--      </view>-->
     </view>
   </Layouts>
 </template>
@@ -67,16 +73,21 @@
 import { ref, onMounted } from 'vue';
 import Taro, { useRouter } from '@tarojs/taro';
 import Layouts from '@/components/Layouts/index.vue';
-import { getFengshuiReport, IFengshuiReport } from '@/api/fengshui';
+import { getFengshuiReport, getFengshuiTaskStatus, IFengshuiReport } from '@/api/fengshui';
 import styles from './index.module.less';
 
 const router = useRouter();
 const report = ref<IFengshuiReport | null>(null);
+const underImageUrl = ref('');
 
 const fetchReport = async (taskId: string) => {
   try {
-    const res = await getFengshuiReport(taskId);
-    report.value = res;
+    const [reportRes, statusRes] = await Promise.all([
+      getFengshuiReport(taskId),
+      getFengshuiTaskStatus(taskId)
+    ]);
+    report.value = reportRes;
+    underImageUrl.value = statusRes.underImageUrl || '';
   } catch (err) {
     Taro.showToast({ title: '报告生成中，正在跳转', icon: 'none' });
     setTimeout(() => {

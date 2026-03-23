@@ -10,6 +10,7 @@ export interface IFengshuiTaskStatus {
   taskId: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   progress: number;
+  underImageUrl?: string;
 }
 
 export interface IFengshuiReport {
@@ -45,6 +46,7 @@ interface ITaskDetailResponse {
   taskId: string;
   status: 'INITIATED' | 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCEL';
   progress: number;
+  underImageUrl?: string;
   content?: string;
 }
 
@@ -203,7 +205,8 @@ export const getFengshuiTaskStatus = async (taskId: string): Promise<IFengshuiTa
   return {
     taskId: res.data.taskId,
     status: normalizeStatus(res.data.status),
-    progress: Math.max(0, Math.min(100, Number(res.data.progress || 0)))
+    progress: Math.max(0, Math.min(100, Number(res.data.progress || 0))),
+    underImageUrl: res.data.underImageUrl || ''
   };
 };
 

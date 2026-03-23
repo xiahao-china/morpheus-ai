@@ -553,6 +553,7 @@ export const getTaskDetail = async (ctx: Context) => {
     }
 
     let result: any = createTaskDetailBase(task);
+    result.underImageUrl = task.params?.underImage?.url || task.params?.baseImages?.[0] || "";
 
     // 获取队列进度
     if (isProcessingTaskStatus(task.status)) {
