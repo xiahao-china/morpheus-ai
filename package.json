@@ -10,7 +10,7 @@
     "publish:server": "npm run build:server && node tools/publish-server.js",
     "publish:server-test": "npm run build:server-test && node tools/publish-server.js --config=../config.test.json",
     "build:mobile": "cd web-mobile && npm install --legacy-peer-deps && npm run build:h5",
-    "build:mobile-test": "cd web-mobile && npm install --legacy-peer-deps && npm run build:h5-test",
+    "build:mobile-test": "cd web-mobile && npm install --legacy-peer-deps && npm run build:h5",
     "publish:mobile": "npm run build:mobile && node tools/publish-mobile.js",
     "publish:mobile-test": "npm run build:mobile-test && node tools/publish-mobile.js --config=../config.test.json",
     "publish:nginx": "node tools/publish-nginx.js"

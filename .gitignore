@@ -6,6 +6,7 @@ pnpm-lock.yaml
 
 # 环境配置
 config.json
+config.dev.json
 config.test.json
 config.prod.json
 

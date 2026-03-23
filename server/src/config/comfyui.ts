@@ -41,8 +41,7 @@ const PROD_NODES: ComfyUINode[] = [
   // Normal Nodes
   ...createNodes("192.168.2.82", [4000, 4001, 4002, 4003], 'normal'),
   ...createNodes("192.168.2.83", [4000, 4001, 4002, 4003], 'normal'),
-  ...createNodes("192.168.2.85", [4000, 4001, 4002, 4003], 'normal'),
-  
+
   // Super Nodes (4090)
   ...createNodes("192.168.2.55", [4000, 4001, 4002, 4003, 4004, 4005, 4006], 'super'),
 ];

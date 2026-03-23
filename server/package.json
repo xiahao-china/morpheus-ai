@@ -6,8 +6,9 @@
   "scripts": {
     "watch": "cross-env NODE_ENV=development webpack --watch --config config/webpack.config.dev.js --progress",
     "debug": "nodemon --inspect dist/server.bundle.js",
-    "serve": "cross-env APP_ENV=test npm-run-all -p watch debug",
+    "serve": "cross-env APP_ENV=dev npm-run-all -p watch debug",
     "build": "cross-env NODE_ENV=production webpack --config config/webpack.config.prod.js",
+    "build:dev": "cross-env NODE_ENV=production APP_ENV=dev webpack --config config/webpack.config.prod.js",
     "build:test": "cross-env NODE_ENV=production APP_ENV=test webpack --config config/webpack.config.prod.js",
     "build:prod": "cross-env NODE_ENV=production webpack --config config/webpack.config.prod.js",
     "start": "node dist/server.bundle.js"

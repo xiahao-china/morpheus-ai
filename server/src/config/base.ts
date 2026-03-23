@@ -1,10 +1,10 @@
 import { IObject } from "@/utils/const";
 
-// Global server configuration (injected via webpack DefinePlugin from config.json)
-// For testing, provide a default object if process.env.serverConfig is undefined
+// 全局服务器配置（通过 webpack DefinePlugin 从 config.json 注入）
+// 测试时，如果 process.env.serverConfig 未定义，提供一个默认空对象
 export const serverConfig: IObject = ((process.env.serverConfig as unknown) as IObject) || {};
 
-// SMS Service Configuration (from Java project)
+// 短信服务配置（来自 Java 项目）
 export const SMS_CONFIG = {
   baseUrl: "http://api.1cloudsp.com/api/v2/single_send",
   accesskey: "wBxaKP3jV4QN5Vbs",
@@ -12,10 +12,10 @@ export const SMS_CONFIG = {
   sign: "【深圳市星元云创】",
   templateId: "323293",
   // 开发环境下默认开启 mock，生产环境关闭
-  mockSend: process.env.NODE_ENV !== 'production' 
+  mockSend: process.env.NODE_ENV !== 'production'
 };
 
-// Redis Keys Constants
+// Redis 键常量
 export const REDIS_KEYS = {
   SMS_LOGIN_CODE: "verify:phone:",
   EMAIL_LOGIN_CODE: "verify:email:",
@@ -23,17 +23,17 @@ export const REDIS_KEYS = {
   WECHAT_LOGIN_CODE: "wechat:login:code:",      // 微信扫码登录临时 code
 };
 
-// User Constants
+// 用户常量
 export const USER_CONSTANTS = {
-  VERIFY_CODE_EXPIRE_SECONDS: 300, // 5 minutes
+  VERIFY_CODE_EXPIRE_SECONDS: 300, // 5分钟
 };
 
-// MongoDB Configuration
+// MongoDB 配置
 export const MONGO_CONFIG = {
   URL: serverConfig?.mongodb?.url || "mongodb://127.0.0.1:27017/morpheus-ai"
 };
 
-// Redis Configuration
+// Redis 配置
 export const REDIS_CONFIG = {
   host: serverConfig?.redis?.host || "127.0.0.1",
   port: serverConfig?.redis?.port || 6379,
@@ -41,7 +41,7 @@ export const REDIS_CONFIG = {
   db: serverConfig?.redis?.db || 0
 };
 
-// MinIO Configuration
+// MinIO 配置
 export const MINIO_CONFIG = {
   endPoint: serverConfig?.minio?.endPoint || "127.0.0.1",
   port: serverConfig?.minio?.port || 9000,
@@ -53,7 +53,7 @@ export const MINIO_CONFIG = {
 
 export const MINIO_BUCKET_NAME = serverConfig?.minio?.bucket || "morpheus-ai";
 
-// Email Configuration
+// 邮箱配置
 export const EMAIL_CONFIG = {
   service: serverConfig?.email?.service || "qq",
   host: serverConfig?.email?.host || "smtp.qq.com",

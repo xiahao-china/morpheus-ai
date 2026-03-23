@@ -4,6 +4,37 @@ const { execSync } = require('child_process');
 const { NodeSSH } = require('node-ssh');
 const SftpClient = require('ssh2-sftp-client');
 
+// 检查是否是 Windows
+const isWindows = process.platform === 'win32';
+
+// 创建 tar.gz 压缩包的跨平台函数
+async function createTarGz(sourceDir, targetPath) {
+  // 使用 tar 命令
+  try {
+    execSync(`tar -czf "${targetPath}" -C "${path.dirname(sourceDir)}" "${path.basename(sourceDir)}"`, {
+      stdio: 'inherit'
+    });
+  } catch (e) {
+    // Windows 上可能没有 tar，尝试使用 PowerShell
+    if (isWindows) {
+      try {
+        // 注意：使用 .zip 扩展名以便服务器正确识别
+        const zipPath = targetPath.replace('.tar.gz', '.zip');
+        const psCommand = `Compress-Archive -Path "${sourceDir}\\*" -DestinationPath "${zipPath}" -Force`;
+        execSync(`powershell -Command "${psCommand}"`, { stdio: 'inherit' });
+        // 重命名为 .tar.gz 以保持一致性（服务器会检测文件类型）
+        if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
+        fs.renameSync(zipPath, targetPath);
+        return;
+      } catch (psErr) {
+        console.error('压缩失败:', psErr.message);
+        throw new Error('请安装 Git Bash 或 tar 命令以进行压缩');
+      }
+    }
+    throw new Error('压缩失败: ' + e.message);
+  }
+}
+
 const ssh = new NodeSSH();
 const sftp = new SftpClient();
 
@@ -50,23 +81,21 @@ const main = async () => {
       process.exit(1);
     }
 
-    // 清理临时目录
+    // 清理临时目录 (跨平台)
     if (fs.existsSync(tempDir)) {
-      execSync(`rm -rf ${tempDir}`);
+      fs.rmSync(tempDir, { recursive: true, force: true });
     }
 
-    // 复制 dist 目录并重命名为 morpheus-ai-web-mobile
+    // 复制 dist 目录并重命名为 morpheus-ai-web-mobile (跨平台)
     fs.mkdirSync(tempDir, { recursive: true });
-    execSync(`cp -r "${distDir}" "${tempDir}/${APP_DIR_NAME}"`);
+    fs.cpSync(distDir, path.join(tempDir, APP_DIR_NAME), { recursive: true });
 
-    // 打包
-    execSync(`tar -czf "${TAR_FILE_NAME}" -C "${PROJECT_ROOT}" web-mobile-temp`, {
-      cwd: PROJECT_ROOT,
-      stdio: 'inherit'
-    });
+    // 打包 (跨平台)
+    const tarPath = path.join(PROJECT_ROOT, TAR_FILE_NAME);
+    await createTarGz(path.join(tempDir, APP_DIR_NAME), tarPath);
 
-    // 清理临时目录
-    execSync(`rm -rf ${tempDir}`);
+    // 清理临时目录 (跨平台)
+    fs.rmSync(tempDir, { recursive: true, force: true });
     console.log(`打包完成: ${LOCAL_TAR_PATH}`);
 
     // 2. 连接服务器
@@ -109,28 +138,55 @@ const main = async () => {
     await sftp.put(LOCAL_TAR_PATH, REMOTE_TAR_PATH);
     console.log('上传完成。');
 
-    // 4. 解压并配置
+    // 4. 解压并配置 - 使用更可靠的方式
     console.log('正在解压并配置...');
-    const deployCommand = `
-      cd ${REMOTE_DIR} &&
-      rm -rf ${APP_DIR_NAME}.bak || true &&
-      mv ${APP_DIR_NAME} ${APP_DIR_NAME}.bak 2>/dev/null || true &&
-      tar -xzf ${TAR_FILE_NAME} &&
-      mv web-mobile-temp/${APP_DIR_NAME} ${APP_DIR_NAME} &&
-      rm -rf web-mobile-temp ${TAR_FILE_NAME} &&
-      echo '部署完成!'
-    `;
 
-    const result = await ssh.execCommand(deployCommand, {
-      onStdout: (chunk) => process.stdout.write(chunk.toString()),
-      onStderr: (chunk) => process.stderr.write(chunk.toString())
+    // 首先备份旧目录
+    await ssh.execCommand(`cd ${REMOTE_DIR} && rm -rf ${APP_DIR_NAME}.bak && mv ${APP_DIR_NAME} ${APP_DIR_NAME}.bak 2>/dev/null || true`);
+
+    // 尝试 tar 解压
+    const tarResult = await ssh.execCommand(`cd ${REMOTE_DIR} && tar -xzf ${TAR_FILE_NAME} 2>&1`, {
+      onStderr: (chunk) => {}
     });
 
-    if (result.code !== 0) {
-      console.error('\n部署命令执行失败。');
-    } else {
+    let deploySuccess = false;
+    if (tarResult.code === 0) {
+      // tar 解压成功
+      const moveResult = await ssh.execCommand(`cd ${REMOTE_DIR} && mv web-mobile-temp/${APP_DIR_NAME} ${APP_DIR_NAME}`);
+      if (moveResult.code === 0) {
+        deploySuccess = true;
+      }
+    }
+
+    if (!deploySuccess) {
+      // tar 失败，尝试 unzip
+      console.log('tar 解压失败，尝试 unzip...');
+      await ssh.execCommand(`cd ${REMOTE_DIR} && rm -rf web-mobile-temp && unzip -o ${TAR_FILE_NAME} -d . 2>&1`);
+
+      // 查找解压后的目录
+      const listResult = await ssh.execCommand(`cd ${REMOTE_DIR} && ls -la`);
+      const output = listResult.stdout;
+
+      // 尝试多个可能的目录名
+      const possibleDirs = ['morpheus-ai-web-mobile', 'morpheus-ai-web-mobile-test', 'dist'];
+      for (const dir of possibleDirs) {
+        const checkResult = await ssh.execCommand(`cd ${REMOTE_DIR} && test -d ${dir} && echo "exists" || echo "not exists"`);
+        if (checkResult.stdout.includes('exists')) {
+          await ssh.execCommand(`cd ${REMOTE_DIR} && mv ${dir} ${APP_DIR_NAME}`);
+          deploySuccess = true;
+          break;
+        }
+      }
+    }
+
+    // 清理临时文件
+    await ssh.execCommand(`cd ${REMOTE_DIR} && rm -rf web-mobile-temp ${TAR_FILE_NAME}`);
+
+    if (deploySuccess) {
       console.log('\n移动端部署完成!');
       console.log(`访问地址: http://${serverConfig.host}/${APP_DIR_NAME}/`);
+    } else {
+      console.error('\n部署命令执行失败。');
     }
 
   } catch (err) {

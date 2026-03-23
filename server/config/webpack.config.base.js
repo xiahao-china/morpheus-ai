@@ -11,9 +11,13 @@ const lifecycleEvent = (process.env.npm_lifecycle_event || '').toLowerCase();
 let configFileName = 'config.json';
 
 if (
-  appEnv === 'test' ||
+  appEnv === 'dev' ||
   lifecycleEvent === 'serve' ||
-  lifecycleEvent === 'server' ||
+  lifecycleEvent === 'server'
+) {
+  configFileName = 'config.dev.json';
+} else if (
+  appEnv === 'test' ||
   lifecycleEvent === 'build:test'
 ) {
   configFileName = 'config.test.json';
