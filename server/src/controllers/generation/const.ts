@@ -41,7 +41,7 @@ export const FENG_SHUI_SYSTEM_INSTRUCTION = `你是一位资深住宅风水分�
     }
   ]
 }
-4. score取值为0-10的整数，level与score语义一致。
+4. score是打分取值为0-100的整数，level与score语义一致。
 5. items至少返回3条，每条都要有明确问题或优势，title/tag需简洁。
 6. 若为问题项，type优先用danger或warning，并给出impact与suggestion。
 7. 若为优势项，type用success，并在analysis中说明依据。

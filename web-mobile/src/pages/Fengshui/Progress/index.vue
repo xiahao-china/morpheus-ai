@@ -37,8 +37,9 @@ import styles from './index.module.less';
 
 const router = useRouter();
 const progress = ref(0);
-const timer = ref<any>(null);
-const polling = ref<any>(null);
+const targetProgress = ref(0);
+const progressTimer = ref<number | null>(null);
+const polling = ref<number | null>(null);
 
 // SVG 圆环参数
 const radius = 44;
@@ -48,45 +49,74 @@ const dashOffset = computed(() => {
 });
 
 const stopTimers = () => {
-  if (timer.value) {
-    clearInterval(timer.value);
-    timer.value = null;
+  if (progressTimer.value !== null) {
+    clearInterval(progressTimer.value);
+    progressTimer.value = null;
   }
-  if (polling.value) {
+  if (polling.value !== null) {
     clearInterval(polling.value);
     polling.value = null;
   }
 };
 
-const startAnimation = () => {
-  timer.value = setInterval(() => {
-    if (progress.value < 95) {
-      progress.value += progress.value < 70 ? 1 : 0.5;
+const clearProgressTimer = () => {
+  if (progressTimer.value !== null) {
+    clearInterval(progressTimer.value);
+    progressTimer.value = null;
+  }
+};
+
+const animateProgressTo = (target: number, onDone?: () => void) => {
+  const safeTarget = Math.max(0, Math.min(100, Math.round(Number(target) || 0)));
+  targetProgress.value = Math.max(targetProgress.value, safeTarget);
+  const finalTarget = targetProgress.value;
+
+  clearProgressTimer();
+
+  if (finalTarget <= progress.value) {
+    progress.value = finalTarget;
+    onDone?.();
+    return;
+  }
+
+  progressTimer.value = setInterval(() => {
+    if (progress.value >= finalTarget) {
+      clearProgressTimer();
+      onDone?.();
+      return;
     }
-  }, 120);
+    const step = Math.max(1, Math.ceil((finalTarget - progress.value) / 8));
+    progress.value = Math.min(finalTarget, progress.value + step);
+    if (progress.value >= finalTarget) {
+      clearProgressTimer();
+      onDone?.();
+    }
+  }, 30) as unknown as number;
 };
 
 const handleComplete = () => {
-  stopTimers();
-  progress.value = 100;
-  setTimeout(() => {
-    const taskId = router.params.taskId;
-    Taro.redirectTo({
-      url: `/pages/Fengshui/Report/index?taskId=${taskId}`
-    });
-  }, 500);
+  if (polling.value !== null) {
+    clearInterval(polling.value);
+    polling.value = null;
+  }
+  animateProgressTo(100, () => {
+    setTimeout(() => {
+      const taskId = router.params.taskId;
+      Taro.redirectTo({
+        url: `/pages/Fengshui/Report/index?taskId=${taskId}`
+      });
+    }, 300);
+  });
 };
 
 const pollTaskStatus = async (taskId: string) => {
   try {
     const statusRes = await getFengshuiTaskStatus(taskId);
-    if (statusRes.progress > progress.value) {
-      progress.value = statusRes.progress;
-    }
     if (statusRes.status === 'completed') {
       handleComplete();
       return;
     }
+    animateProgressTo(statusRes.progress);
     if (statusRes.status === 'failed') {
       stopTimers();
       Taro.showToast({ title: '任务失败，请重试', icon: 'none' });
@@ -106,7 +136,6 @@ onMounted(() => {
     setTimeout(() => Taro.navigateBack(), 1500);
     return;
   }
-  startAnimation();
   pollTaskStatus(taskId);
   polling.value = setInterval(() => {
     pollTaskStatus(taskId);

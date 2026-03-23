@@ -9,6 +9,9 @@ export interface AIModelConfig {
   baseUrl: string;
   model: string;
   apiKeyHeaderKey?: string;
+  endpointPath?: string;
+  requestProtocol?: "openai" | "anthropic";
+  authMode?: "bearer" | "x-api-key";
 }
 
 // 生图 AI 配置（使用 Gemini）
@@ -17,6 +20,9 @@ export const IMAGE_GENERATION_CONFIG: AIModelConfig = {
   baseUrl: "https://aigc.x-see.cn/v1",
   model: "gemini-3.1-flash-image-preview",
   apiKeyHeaderKey: "Authorization",
+  endpointPath: "/chat/completions",
+  requestProtocol: "openai",
+  authMode: "bearer",
 };
 
 // 视觉大语言模型配置
@@ -25,6 +31,9 @@ export const VISION_LLM_CONFIG: AIModelConfig = {
   baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
   model: "qwen3.5-plus",
   apiKeyHeaderKey: "Authorization",
+  endpointPath: "/chat/completions",
+  requestProtocol: "openai",
+  authMode: "bearer",
 };
 
 // 大语言模型配置（使用 MiniMax）
@@ -32,7 +41,10 @@ export const LLM_CONFIG: AIModelConfig = {
   apiKey: "sk-efi+xXN5HgTJ4U/o+SVbN18o+r/PBgI5LKmPOGa2ilI=",
   baseUrl: "http://113.108.105.54:8188",
   model: "MiniMax-M2.5",
-  apiKeyHeaderKey: "Authorization",
+  apiKeyHeaderKey: "x-api-key",
+  endpointPath: "/v1/messages",
+  requestProtocol: "anthropic",
+  authMode: "x-api-key",
 };
 
 // 导出统一配置对象

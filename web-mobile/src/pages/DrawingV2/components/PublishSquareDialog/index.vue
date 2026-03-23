@@ -1,19 +1,19 @@
 <template>
   <nut-popup
-    :visible="props.visible"
+    :visible="visible"
     position="bottom"
     :lock-scroll="true"
     :close-on-click-overlay="false"
     :safe-area-inset-bottom="false"
     :overlay-style="{ background: 'transparent' }"
-    @click-overlay="emit('close')"
+    @click-overlay="handleClose"
     :class="pageStyle['popupWrap']"
   >
-    <view :class="pageStyle['maskLayer']" @click="emit('close')">
+    <view :class="pageStyle['maskLayer']" @click="handleClose">
       <view :class="pageStyle['panel']" @click.stop>
         <view :class="pageStyle['header']">
           <text :class="pageStyle['title']">发布到广场</text>
-          <view :class="pageStyle['closeBtn']" @click="emit('close')">
+          <view :class="pageStyle['closeBtn']" @click="handleClose">
             <RectDown :class="pageStyle['closeIcon']" />
           </view>
         </view>
@@ -21,8 +21,8 @@
         <scroll-view :scroll-y="true" :class="pageStyle['body']">
           <view :class="pageStyle['preview']">
             <image
-              v-if="props.imageUrl"
-              :src="props.imageUrl"
+              v-if="imageUrl"
+              :src="imageUrl"
               mode="aspectFit"
               :class="pageStyle['previewImage']"
             />
@@ -88,7 +88,7 @@
             ]"
             @click="handleSubmit"
           >
-            {{ props.confirmLoading ? "发布中..." : "立即发布" }}
+            {{ confirmLoading ? "发布中..." : "立即发布" }}
           </view>
         </view>
       </view>
@@ -97,22 +97,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import Taro from "@tarojs/taro";
 import { RectDown } from "@nutui/icons-vue-taro";
-import type { IPublishSquareDialogProps, IPublishSquarePayload } from "./const";
+import { publishToSquare } from "@/api/square/publishToSquare";
+import type { IStartPublishParams, ISubmitPublishPayload } from "./const";
 import { SCENE_TAGS, STYLE_TAGS } from "./const";
 import pageStyle from "./index.module.less";
 
-const props = withDefaults(defineProps<IPublishSquareDialogProps>(), {
-  visible: false,
-  imageUrl: "",
-  confirmLoading: false,
-});
+const visible = ref(false);
+const confirmLoading = ref(false);
+const imageUrl = ref("");
+const messageId = ref("");
+const imageId = ref("");
+const drawTaskId = ref<string | undefined>(undefined);
 
 const emit = defineEmits<{
-  close: [];
-  submit: [payload: IPublishSquarePayload];
+  published: [payload: { messageId: string }];
 }>();
 
 const title = ref("");
@@ -120,13 +121,29 @@ const caption = ref("");
 const selectedStyleTags = ref<string[]>([]);
 const selectedSceneTags = ref<string[]>([]);
 
-const canSubmit = computed(() => title.value.trim() && caption.value.trim() && !props.confirmLoading);
+const canSubmit = computed(() => title.value.trim() && caption.value.trim() && !confirmLoading.value);
 
 const resetForm = () => {
   title.value = "";
   caption.value = "";
   selectedStyleTags.value = [];
   selectedSceneTags.value = [];
+};
+
+const resetContext = () => {
+  imageUrl.value = "";
+  messageId.value = "";
+  imageId.value = "";
+  drawTaskId.value = undefined;
+};
+
+const startPublish = (params: IStartPublishParams) => {
+  messageId.value = params.messageId;
+  imageId.value = params.imageId;
+  drawTaskId.value = params.drawTaskId;
+  imageUrl.value = params.imageUrl || "";
+  resetForm();
+  visible.value = true;
 };
 
 const toggleTag = (tag: string, group: "style" | "scene") => {
@@ -148,20 +165,46 @@ const handleSubmit = () => {
   if (!canSubmit.value) {
     return;
   }
-  emit("submit", {
+  if (!imageId.value) {
+    Taro.showToast({ title: "图片未完成", icon: "none" });
+    return;
+  }
+  const payload: ISubmitPublishPayload = {
     title: title.value.trim(),
     caption: caption.value.trim(),
     styleTags: selectedStyleTags.value.slice(),
     sceneTags: selectedSceneTags.value.slice(),
+  };
+  confirmLoading.value = true;
+  publishToSquare({
+    ...payload,
+    styleTags: payload.styleTags.length ? payload.styleTags : undefined,
+    sceneTags: payload.sceneTags.length ? payload.sceneTags : undefined,
+    imageId: imageId.value,
+    drawTaskId: drawTaskId.value,
+  }).then((response) => {
+    if (response instanceof Error || response.code !== 200) {
+      Taro.showToast({ title: "发布失败", icon: "error" });
+      return;
+    }
+    visible.value = false;
+    emit("published", { messageId: messageId.value });
+    resetContext();
+    Taro.showToast({ title: "已发布到广场", icon: "success" });
+  }).finally(() => {
+    confirmLoading.value = false;
   });
 };
 
-watch(
-  () => props.visible,
-  (visible) => {
-    if (visible) {
-      resetForm();
-    }
-  },
-);
+const handleClose = () => {
+  if (confirmLoading.value) {
+    return;
+  }
+  visible.value = false;
+  resetContext();
+};
+
+defineExpose({
+  startPublish,
+});
 </script>

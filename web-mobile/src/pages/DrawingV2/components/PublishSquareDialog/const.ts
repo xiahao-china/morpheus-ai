@@ -1,10 +1,11 @@
-export interface IPublishSquareDialogProps {
-  visible: boolean;
+export interface IStartPublishParams {
+  messageId: string;
+  imageId: string;
+  drawTaskId?: string;
   imageUrl?: string;
-  confirmLoading?: boolean;
 }
 
-export interface IPublishSquarePayload {
+export interface ISubmitPublishPayload {
   title: string;
   caption: string;
   styleTags: string[];

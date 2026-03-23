@@ -3,7 +3,7 @@ import GenerationTask, { TaskPurposeEnum, TaskStatusEnum } from "@/models/genera
 import ImageGenInfo from "@/models/imageGenInfo";
 import UserImageCollect from "@/models/userImageCollect";
 import FileResource from "@/models/fileResource";
-import { BUCKET_NAME, minioClient } from "@/lib/minio";
+import { BUCKET_NAME, buildObjectPublicUrl } from "@/lib/minio";
 import { sseService } from "@/services/sse-service";
 import { generationScheduler } from "@/services/generation-scheduler";
 import { callLLMAPI } from "@/services/generation-scheduler/llmTool";
@@ -40,6 +40,9 @@ interface IFengShuiRequestBody {
   residentNeeds?: string;
 }
 
+/**
+ * 从上下文获取当前用户ID
+ */
 const getCurrentUserId = (ctx: Context) => {
   const user = ctx.state.user as any;
   return String(user?.uid || user?._id || "");
@@ -80,6 +83,9 @@ export const submitFeedback = async (ctx: Context) => {
   }
 };
 
+/**
+ * 点赞/取消点赞图片
+ */
 export const likeImage = async (ctx: Context) => {
   const { id } = ctx.params;
   const { action = "toggle" } = ctx.request.body as any;
@@ -114,6 +120,9 @@ export const likeImage = async (ctx: Context) => {
   }
 };
 
+/**
+ * 收藏图片到个人收藏夹
+ */
 export const collectImage = async (ctx: Context) => {
   const { id } = ctx.params;
   const userId = getCurrentUserId(ctx);
@@ -151,6 +160,9 @@ export const collectImage = async (ctx: Context) => {
   }
 };
 
+/**
+ * 取消收藏图片
+ */
 export const uncollectImage = async (ctx: Context) => {
   const { id } = ctx.params;
   const userId = getCurrentUserId(ctx);
@@ -168,6 +180,9 @@ export const uncollectImage = async (ctx: Context) => {
   }
 };
 
+/**
+ * 获取用户的图片收藏列表
+ */
 export const getMyImageCollections = async (ctx: Context) => {
   try {
     const userId = getCurrentUserId(ctx);
@@ -194,12 +209,13 @@ export const getMyImageCollections = async (ctx: Context) => {
       return map;
     }, {} as Record<string, any>);
 
-    const list = collections.map((item) => {
+    const mappedList = collections.map((item) => {
       const image = imageMap[item.imageId];
+      const imageUrl = image?.imageUrl || "";
       return {
         imageId: item.imageId,
         imageGenTaskId: item.imageGenTaskId,
-        imageUrl: image?.imageUrl || "",
+        imageUrl,
         fileResourceId: image?.fileResourceId || "",
         width: image?.width || 0,
         height: image?.height || 0,
@@ -207,7 +223,8 @@ export const getMyImageCollections = async (ctx: Context) => {
         isCollected: true,
         collectedTime: item.createdTime,
       };
-    }).filter((item) => item.imageUrl);
+    });
+    const list = mappedList.filter((item) => item.imageUrl);
 
     sendResponse.success(ctx, {
       list,
@@ -294,12 +311,7 @@ export const generateImage = async (ctx: Context) => {
     let translatedPrompt = prompt;
     try {
       const translateInput = buildTranslatePromptInput(prompt);
-      const translationTask = createGenerationTaskRecord(
-        userId,
-        TaskPurposeEnum.TRANSLATION,
-        { prompt: translateInput, width: 1, height: 1 }
-      );
-      const translated = await generationScheduler.executeSyncTask(translationTask);
+      const translated = await callLLMAPI({ prompt: translateInput, width: 1, height: 1 }, TaskChannelEnum.LLM);
       translatedPrompt = normalizeOptimizedPrompt(translated.content) || prompt;
     } catch (error: any) {
       logger.warn(`Translate prompt failed, fallback to original prompt: ${error?.message || error}`);
@@ -369,6 +381,9 @@ export const generateImage = async (ctx: Context) => {
   }
 };
 
+/**
+ * 风水图片生成：根据房屋信息和住户信息生成风水建议图片
+ */
 export const generateFengShui = async (ctx: Context) => {
   try {
     const {
@@ -396,10 +411,9 @@ export const generateFengShui = async (ctx: Context) => {
       return;
     }
 
-    const imageUrl = await minioClient.presignedGetObject(
+    const imageUrl = buildObjectPublicUrl(
       imageResource.bucket || BUCKET_NAME,
-      imageResource.path,
-      24 * 60 * 60
+      imageResource.path
     );
 
     const llmPrompt = buildFengShuiPromptInput({
@@ -498,11 +512,12 @@ export const getGenerationStatus = async (ctx: Context) => {
         });
     } else if (task.status === TaskStatusEnum.COMPLETED) {
         const result = await ImageGenInfo.findOne({ imageGenTaskId: taskId });
+        const imageUrl = result?.imageUrl || "";
         sseService.send(sseId, "complete", {
             taskId,
             status: 'completed',
             progress: 100,
-            imageUrl: result?.imageUrl,
+            imageUrl,
             imageId: result?._id
         });
     } else if (task.status === TaskStatusEnum.FAILED) {
@@ -547,16 +562,19 @@ export const getTaskDetail = async (ctx: Context) => {
       }
     } else if (task.status === TaskStatusEnum.COMPLETED) {
       result.progress = 100;
-      const imageInfo = await ImageGenInfo.findOne({ imageGenTaskId: taskId });
+      const imageInfo = await ImageGenInfo.findOne({ imageGenTaskId: taskId }).lean();
       if (imageInfo) {
-        result.imageUrl = imageInfo.imageUrl;
+        result.imageUrl = imageInfo.imageUrl || "";
         result.imageId = imageInfo._id;
         result.width = imageInfo.width;
         result.height = imageInfo.height;
       }
       // 保留 images 数组以防新版前端使用
-      const images = await ImageGenInfo.find({ imageGenTaskId: taskId });
-      result.images = images;
+      const images = await ImageGenInfo.find({ imageGenTaskId: taskId }).lean();
+      result.images = images.map((image) => ({
+        ...image,
+        imageUrl: image.imageUrl || ""
+      }));
       if (task.textGenText) {
         result.content = task.textGenText;
       }
@@ -587,10 +605,16 @@ export const getGenerationHistory = async (ctx: Context) => {
     const purposeFilterList = queryPurpose
       ? queryPurpose.split(",").map((item: string) => item.trim()).filter((item: string) => purposeWhitelist.has(item))
       : [TaskPurposeEnum.TXT2IMG, TaskPurposeEnum.IMG2IMG];
+    const visibleStatuses = [
+      TaskStatusEnum.INITIATED,
+      TaskStatusEnum.PENDING,
+      TaskStatusEnum.PROCESSING,
+      TaskStatusEnum.COMPLETED
+    ];
 
     const historyFilter = {
       userId: user.uid,
-      status: TaskStatusEnum.COMPLETED,
+      status: { $in: visibleStatuses },
       purpose: { $in: purposeFilterList.length ? purposeFilterList : [TaskPurposeEnum.TXT2IMG, TaskPurposeEnum.IMG2IMG] },
     };
 
@@ -602,6 +626,13 @@ export const getGenerationHistory = async (ctx: Context) => {
     const total = await GenerationTask.countDocuments(historyFilter);
 
     const taskIds = tasks.map((task) => task._id.toString());
+    const queueList = taskIds.length
+      ? await GenerationQueue.find({ taskId: { $in: taskIds } }, { taskId: 1, progress: 1 }).lean()
+      : [];
+    const queueProgressMap = queueList.reduce((map, item) => {
+      map[item.taskId] = Math.max(0, Math.min(100, Number(item.progress || 0)));
+      return map;
+    }, {} as Record<string, number>);
     const imageList = taskIds.length
       ? await ImageGenInfo.find({ imageGenTaskId: { $in: taskIds } }).sort({ createdTime: -1 })
       : [];
@@ -615,7 +646,15 @@ export const getGenerationHistory = async (ctx: Context) => {
       : [];
     const collectedImageSet = new Set(collectedImageList.map((item) => String(item.imageId)));
 
-    const imageMap = imageList.reduce((map, image) => {
+    const imageListWithUrl = imageList.map((image) => ({
+      image,
+      imageUrl: image.fileResourceId
+        ? buildObjectPublicUrl(BUCKET_NAME, image.fileResourceId)
+        : (image.imageUrl || "")
+    }));
+
+    const imageMap = imageListWithUrl.reduce((map, item) => {
+      const image = item.image;
       const imageId = image._id.toString();
       const taskId = image.imageGenTaskId;
       if (!map[taskId]) {
@@ -623,7 +662,7 @@ export const getGenerationHistory = async (ctx: Context) => {
       }
       map[taskId].push({
         imageId,
-        imageUrl: image.imageUrl,
+        imageUrl: item.imageUrl,
         fileResourceId: image.fileResourceId,
         width: image.width,
         height: image.height,
@@ -658,6 +697,9 @@ export const getGenerationHistory = async (ctx: Context) => {
         underImageUrl: task.params?.baseImages?.[0] || "",
         type: task.purpose,
         status: task.status,
+        progress: task.status === TaskStatusEnum.COMPLETED
+          ? 100
+          : (queueProgressMap[taskId] !== undefined ? queueProgressMap[taskId] : 0),
         width: firstImage?.width || task.params?.width || 0,
         height: firstImage?.height || task.params?.height || 0,
         imageUrl: taskImageUrl,

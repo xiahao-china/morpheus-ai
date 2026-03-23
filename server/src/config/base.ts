@@ -47,7 +47,8 @@ export const MINIO_CONFIG = {
   port: serverConfig?.minio?.port || 9000,
   useSSL: serverConfig?.minio?.useSSL || false,
   accessKey: serverConfig?.minio?.accessKey || "minio_admin",
-  secretKey: serverConfig?.minio?.secretKey || "minio_secret_key"
+  secretKey: serverConfig?.minio?.secretKey || "minio_secret_key",
+  publicBaseUrl: serverConfig?.minio?.publicBaseUrl || "",
 };
 
 export const MINIO_BUCKET_NAME = serverConfig?.minio?.bucket || "morpheus-ai";

@@ -8,7 +8,7 @@ export interface IDrawingModeOption {
   type: EDrawingType;
 }
 
-export type MessageStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+export type MessageStatus = "INITIATED" | "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
 export type MessageRole = "user" | "service";
 
 export interface IDrawingV2Message {
@@ -29,6 +29,15 @@ export interface IDrawingV2Message {
 }
 
 export const PAGE_SIZE = 10;
+
+const normalizeMessageStatus = (status?: string): MessageStatus => {
+  const upperStatus = String(status || "").toUpperCase();
+  if (upperStatus === "FAILED") return "FAILED";
+  if (upperStatus === "COMPLETED") return "COMPLETED";
+  if (upperStatus === "PROCESSING") return "PROCESSING";
+  if (upperStatus === "INITIATED") return "INITIATED";
+  return "PENDING";
+};
 
 export const DRAWING_MODE_OPTIONS: IDrawingModeOption[] = [
   { id: "inspiration", label: "灵感生图", type: EDrawingType.INSPIRATION },
@@ -84,6 +93,7 @@ export const mapHistoryToServiceMessages = (
     const taskId = item.imageGenTaskId || item._id;
     const prompt = item.prompt || "历史生成记录";
     const firstImage = item.images?.[0];
+    const status = normalizeMessageStatus(item.status);
 
     const userMessage: IDrawingV2Message = {
       id: `history-user-${taskId}-${index}`,
@@ -100,14 +110,15 @@ export const mapHistoryToServiceMessages = (
       role: "service",
       prompt,
       mode,
-      status: "COMPLETED",
-      progress: 100,
+      status,
+      progress: status === "COMPLETED" ? 100 : Number(item.progress || 0),
       createdTime: timeText,
       taskId,
       imageUrl: item.imageUrl || firstImage?.imageUrl || "",
       imageId: item.imageId || firstImage?.imageId,
       isLiked: Boolean(firstImage?.isLiked),
       isPublished: Boolean(firstImage?.isPublishedToSquare),
+      underImageId: item.underImageId,
       underImageUrl: item.underImageUrl,
     };
 

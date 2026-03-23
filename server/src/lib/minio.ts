@@ -18,6 +18,25 @@ export const minioClient = new Minio.Client(MINIO_CONFIG);
  */
 export const BUCKET_NAME = MINIO_BUCKET_NAME;
 
+export const buildObjectPublicUrl = (bucket: string, objectPath: string) => {
+  const endpoint = String(MINIO_CONFIG.publicBaseUrl || MINIO_CONFIG.endPoint || "")
+    .trim()
+    .replace(/^https?:\/\//, "")
+    .replace(/\/+$/g, "");
+  const useSSL = Boolean(MINIO_CONFIG.useSSL);
+  const protocol = useSSL ? "https" : "http";
+  const port = Number(MINIO_CONFIG.port);
+  const defaultPort = useSSL ? 443 : 80;
+  const host = port && port !== defaultPort ? `${endpoint}:${port}` : endpoint;
+  const normalizedPath = objectPath
+    .replace(/^\/+/, "")
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+  return `${protocol}://${host}/${encodeURIComponent(bucket)}/${normalizedPath}`;
+};
+
 /**
  * 初始化 MinIO 存储桶
  * 检查存储桶是否存在，不存在则创建
@@ -38,6 +57,20 @@ export const initMinio = async () => {
     } else {
       logger.info(`********** MinIO Bucket Exists: ${BUCKET_NAME} **********`);
     }
+    await minioClient.setBucketPolicy(
+      BUCKET_NAME,
+      JSON.stringify({
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Effect: "Allow",
+            Principal: { AWS: ["*"] },
+            Action: ["s3:GetObject"],
+            Resource: [`arn:aws:s3:::${BUCKET_NAME}/*`],
+          },
+        ],
+      }),
+    );
   } catch (err) {
     logger.error("********** MinIO Error **********\n" + err);
   }

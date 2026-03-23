@@ -2,6 +2,7 @@ import Square from "@/models/square";
 import ImageGenInfo from "@/models/imageGenInfo";
 import GenerationTask from "@/models/generationTask";
 import User from "@/models/user";
+import { BUCKET_NAME, buildObjectPublicUrl } from "@/lib/minio";
 import { sendResponse } from "@/utils/const";
 import { buildSquareFilter, Context, getNextLikeCount } from "./const";
 
@@ -12,11 +13,31 @@ export const getSquareList = async (ctx: Context) => {
   const { page = 1, pageSize = 20, styleTags, sceneTags } = ctx.query;
   const filter = buildSquareFilter(styleTags, sceneTags);
 
-  const list = await Square.find(filter)
+  const rawList = await Square.find(filter)
     .sort({ publishedTime: -1 })
     .skip((Number(page) - 1) * Number(pageSize))
-    .limit(Number(pageSize));
+    .limit(Number(pageSize))
+    .lean();
   const total = await Square.countDocuments(filter);
+  const imageIds = rawList.map((item) => String(item.imageId || "")).filter(Boolean);
+  const imageList = imageIds.length
+    ? await ImageGenInfo.find({ _id: { $in: imageIds } }, { _id: 1, fileResourceId: 1, imageUrl: 1 }).lean()
+    : [];
+  const imageMap = imageList.reduce((map, image) => {
+    map[String(image._id)] = image;
+    return map;
+  }, {} as Record<string, { _id: any; fileResourceId?: string; imageUrl?: string }>);
+
+  const list = rawList.map((item) => {
+    const image = imageMap[String(item.imageId || "")];
+    const imageUrl = image?.fileResourceId
+      ? buildObjectPublicUrl(BUCKET_NAME, image.fileResourceId)
+      : (image?.imageUrl || item.imageUrl || "");
+    return {
+      ...item,
+      imageUrl
+    };
+  });
   sendResponse.success(ctx, { list, total });
 };
 
@@ -46,6 +67,9 @@ export const getSquareDetail = async (ctx: Context) => {
     const generationTask = imageGenTaskId
       ? await GenerationTask.findById(imageGenTaskId).lean()
       : null;
+    const currentImageUrl = imageInfo?.fileResourceId
+      ? buildObjectPublicUrl(BUCKET_NAME, imageInfo.fileResourceId)
+      : (imageInfo?.imageUrl || square.imageUrl || "");
 
     const taskDetail = generationTask ? {
       taskId: generationTask._id?.toString(),
@@ -53,7 +77,7 @@ export const getSquareDetail = async (ctx: Context) => {
       createdTime: generationTask.createdTime,
       completedTime: generationTask.completedTime,
       progress: generationTask.status === "COMPLETED" ? 100 : 0,
-      imageUrl: imageInfo?.imageUrl || square.imageUrl || "",
+      imageUrl: currentImageUrl,
       imageId: imageInfo?._id?.toString() || "",
       width: imageInfo?.width || generationTask.params?.width || 0,
       height: imageInfo?.height || generationTask.params?.height || 0,
@@ -80,7 +104,7 @@ export const getSquareDetail = async (ctx: Context) => {
       squareImage: {
         id: imageInfo?._id?.toString() || square.imageId?.toString() || "",
         fileResourceId: imageInfo?.fileResourceId || "",
-        imageUrl: imageInfo?.imageUrl || square.imageUrl || "",
+        imageUrl: currentImageUrl,
       },
       publishedTime: square.publishedTime,
       updateTime: square.publishedTime,
@@ -129,7 +153,9 @@ export const publishSquare = async (ctx: Context) => {
   const square = new Square({
     userId: user.uid,
     imageId: imageInfo._id,
-    imageUrl: imageInfo.imageUrl,
+    imageUrl: imageInfo.fileResourceId
+      ? buildObjectPublicUrl(BUCKET_NAME, imageInfo.fileResourceId)
+      : imageInfo.imageUrl,
     title,
     caption,
     styleTags,

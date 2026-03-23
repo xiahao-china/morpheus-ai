@@ -1,12 +1,36 @@
-import { minioClient, BUCKET_NAME } from "@/lib/minio";
+import { minioClient, BUCKET_NAME, buildObjectPublicUrl } from "@/lib/minio";
+import { MINIO_CONFIG } from "@/config";
 import FileResource from "@/models/fileResource";
 import { sendResponse } from "@/utils/const";
-import { buildFilename, buildObjectPath, Context, FILE_URL_EXPIRE_SECONDS } from "./const";
+import { buildFilename, buildObjectPath, Context } from "./const";
+
+const buildAccessibleUrl = (ctx: Context, objectPath: string) => {
+  const rawUrl = buildObjectPublicUrl(BUCKET_NAME, objectPath);
+  if (MINIO_CONFIG.publicBaseUrl) {
+    return rawUrl;
+  }
+  const endpoint = String(MINIO_CONFIG.endPoint || "").toLowerCase();
+  const isLoopbackEndpoint = endpoint === "127.0.0.1" || endpoint === "localhost" || endpoint === "::1";
+  if (!isLoopbackEndpoint) {
+    return rawUrl;
+  }
+  try {
+    const parsed = new URL(rawUrl);
+    const requestHost = String(ctx.request?.header?.host || "").trim();
+    const requestHostname = requestHost.includes(":") ? requestHost.split(":")[0] : requestHost;
+    if (requestHostname && requestHostname !== "127.0.0.1" && requestHostname !== "localhost") {
+      parsed.hostname = requestHostname;
+    }
+    return parsed.toString();
+  } catch {
+    return rawUrl;
+  }
+};
 
 /**
  * 上传文件到 MinIO
  * 1. 接收文件并存储到 MinIO
- * 2. 生成预签名访问 URL
+ * 2. 生成可直接访问的文件 URL
  * 3. 保存文件信息到数据库
  */
 export const uploadFile = async (ctx: Context) => {
@@ -19,8 +43,7 @@ export const uploadFile = async (ctx: Context) => {
   const filename = buildFilename(file.originalname);
   await minioClient.putObject(BUCKET_NAME, filename, file.buffer);
 
-  // 生成预签名 URL，有效期 24 小时
-  const url = await minioClient.presignedGetObject(BUCKET_NAME, filename, FILE_URL_EXPIRE_SECONDS);
+  const url = buildAccessibleUrl(ctx, filename);
 
   // 保存到数据库
   const fileResource = new FileResource({
@@ -43,7 +66,7 @@ export const uploadFile = async (ctx: Context) => {
  */
 export const getFileUrl = async (ctx: Context) => {
     const { filename } = ctx.params;
-    const url = await minioClient.presignedGetObject(BUCKET_NAME, filename, FILE_URL_EXPIRE_SECONDS);
+    const url = buildAccessibleUrl(ctx, filename);
     sendResponse.success(ctx, { url });
 }
 
@@ -68,8 +91,7 @@ export const uploadGeneralFile = async (ctx: Context) => {
 
   await minioClient.putObject(BUCKET_NAME, objectPath, file.buffer);
 
-  // 生成预签名 URL
-  const url = await minioClient.presignedGetObject(BUCKET_NAME, objectPath, FILE_URL_EXPIRE_SECONDS);
+  const url = buildAccessibleUrl(ctx, objectPath);
 
   // 保存到数据库
   const fileResource = new FileResource({

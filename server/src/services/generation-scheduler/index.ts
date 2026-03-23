@@ -1,6 +1,6 @@
 import { comfyUIPool, ComfyUIClient, ComfyUINodeStatus } from "@/lib/comfyui-client";
 import { workflowManager } from "@/lib/workflow-manager";
-import { minioClient, BUCKET_NAME } from "@/lib/minio";
+import { minioClient, BUCKET_NAME, buildObjectPublicUrl } from "@/lib/minio";
 import { sseService } from "@/services/sse-service";
 import GenerationQueue, { IGenerationQueue } from "@/models/generationQueue";
 import GenerationTask, { IGenerationTask, TaskStatusEnum, TaskChannelEnum } from "@/models/generationTask";
@@ -330,8 +330,7 @@ class GenerationScheduler {
     logger.info(`[任务 ${task.taskId}] 上传到MinIO，文件名 ${minioFilename}...`);
     await minioClient.putObject(BUCKET_NAME, minioFilename, imageBuffer);
 
-    // 生成预签名访问URL
-    const imageUrl = await minioClient.presignedGetObject(BUCKET_NAME, minioFilename, 24*60*60);
+    const imageUrl = buildObjectPublicUrl(BUCKET_NAME, minioFilename);
 
     // 6. 保存生成的图像信息到数据库
     const imageGenInfo = new ImageGenInfo({

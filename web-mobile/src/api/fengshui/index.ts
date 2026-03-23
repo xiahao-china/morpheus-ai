@@ -94,7 +94,7 @@ const parseJsonReport = (content: string): IFengshuiReport | null => {
     if (!parsed || typeof parsed !== 'object') return null;
     const rawItems = Array.isArray((parsed as any).items) ? (parsed as any).items : [];
     if (!rawItems.length) return null;
-    const score = Math.max(0, Math.min(10, Math.round(Number((parsed as any).score || 0))));
+    const score = Math.max(0, Math.min(100, Math.round(Number((parsed as any).score || 0))));
     const level = typeof (parsed as any).level === 'string' ? (parsed as any).level : parseLevel(score);
     const summary = typeof (parsed as any).summary === 'string' ? (parsed as any).summary : '风水分析已完成，请查看下方详细结果。';
     const items: IFengshuiReport['items'] = rawItems.map((item: any) => ({

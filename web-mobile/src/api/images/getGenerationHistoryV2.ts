@@ -35,8 +35,10 @@ export interface IGetGenerationHistoryItem {
   completedTime?: string | Date;
   prompt?: string;
   underImageUrl?: string;
+  underImageId?: string;
   type?: string;
   status?: string;
+  progress?: number;
   images?: Array<{
     imageId: string;
     imageUrl: string;

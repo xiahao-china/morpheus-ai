@@ -20,9 +20,9 @@
       </view>
 
       <view :class="styles.analysisList">
-        <view 
-          v-for="(item, index) in report.items" 
-          :key="index" 
+        <view
+          v-for="(item, index) in report.items"
+          :key="index"
           :class="styles.analysisCard"
         >
           <view :class="[styles.iconWrapper, styles[item.type]]">
@@ -30,19 +30,19 @@
             <template v-else-if="item.type === 'warning'">?</template>
             <template v-else>✓</template>
           </view>
-          
+
           <view :class="styles.content">
             <view :class="styles.header">
               <view :class="styles.title">{{ item.title }}</view>
               <view :class="[styles.tag, styles[item.type]]">{{ item.tag }}</view>
             </view>
-            
+
             <template v-if="item.analysis">
               <view :class="styles.row">
                 <text :class="styles.label">解析：</text>{{ item.analysis }}
               </view>
             </template>
-            
+
             <template v-else>
               <view :class="styles.row" v-if="item.impact">
                 <text :class="styles.label">影响：</text>{{ item.impact }}

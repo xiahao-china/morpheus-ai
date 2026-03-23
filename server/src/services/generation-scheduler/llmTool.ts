@@ -1,5 +1,5 @@
 import axios from "axios";
-import { minioClient, BUCKET_NAME } from "@/lib/minio";
+import { minioClient, BUCKET_NAME, buildObjectPublicUrl } from "@/lib/minio";
 import { sseService } from "@/services/sse-service";
 import GenerationQueue, { IGenerationQueue } from "@/models/generationQueue";
 import GenerationTask, { IGenerationTask, TaskStatusEnum, TaskChannelEnum, TaskPurposeChannelMapping } from "@/models/generationTask";
@@ -42,8 +42,62 @@ const normalizeBaseUrl = (baseUrl: string): string => {
         .replace(/\/+$/g, "");
 };
 
-const buildChatCompletionsUrl = (baseUrl: string): string => {
-    return `${normalizeBaseUrl(baseUrl)}/chat/completions`;
+const buildRequestUrl = (baseUrl: string, endpointPath: string): string => {
+    const normalizedBase = normalizeBaseUrl(baseUrl);
+    const normalizedPath = endpointPath
+        .trim()
+        .replace(/^['"`\s]+|['"`\s]+$/g, "")
+        .replace(/^\/+/, "/");
+    return `${normalizedBase}${normalizedPath}`;
+};
+
+const extractContentFromAnthropic = (data: any): string => {
+    const contentList = Array.isArray(data?.content) ? data.content : [];
+    return contentList
+        .map((item: any) => {
+            if (item?.type === "text" && typeof item?.text === "string") {
+                return item.text;
+            }
+            return "";
+        })
+        .filter(Boolean)
+        .join("\n");
+};
+
+const buildAnthropicPayload = (config: AIModelConfig, messages: any[], params: any) => {
+    const normalizedMessages = (messages || []).map((message: any) => ({
+        role: message.role,
+        content: (message.content || []).map((item: any) => {
+            if (item?.type === "text") {
+                return { type: "text", text: item.text };
+            }
+            if (item?.type === "image_url") {
+                const imageUrl = typeof item?.image_url === "string"
+                    ? item.image_url
+                    : item?.image_url?.url;
+                if (typeof imageUrl === "string" && imageUrl.startsWith("data:")) {
+                    const matched = imageUrl.match(/^data:(.*?);base64,(.*)$/);
+                    if (matched && matched[2]) {
+                        return {
+                            type: "image",
+                            source: {
+                                type: "base64",
+                                media_type: matched[1] || "image/jpeg",
+                                data: matched[2]
+                            }
+                        };
+                    }
+                }
+            }
+            return item;
+        })
+    }));
+
+    return {
+        model: config.model,
+        messages: normalizedMessages,
+        max_tokens: params.maxTokens || 1024
+    };
 };
 
 /**
@@ -114,7 +168,9 @@ export const callLLMAPI = async (params: any, taskChannel: TaskChannelEnum): Pro
         });
     });
 
-    const completionUrl = buildChatCompletionsUrl(config.baseUrl);
+    const requestProtocol = config.requestProtocol || "openai";
+    const endpointPath = config.endpointPath || (requestProtocol === "anthropic" ? "/v1/messages" : "/chat/completions");
+    const completionUrl = buildRequestUrl(config.baseUrl, endpointPath);
     const requestTimeoutMs = taskChannel === TaskChannelEnum.THIRD_PARTY_GENERATION_IMAGE
         ? 300000
         : taskChannel === TaskChannelEnum.VLLM
@@ -123,42 +179,63 @@ export const callLLMAPI = async (params: any, taskChannel: TaskChannelEnum): Pro
 
     logger.info(`[callLLMAPI] 调用 ${config.model}, url=${completionUrl}, timeout=${requestTimeoutMs}ms`);
 
-    const requestConfig = {
-        headers: {
-            [config.apiKeyHeaderKey || 'Authorization']: `Bearer ${config.apiKey}`,
-            'Content-Type': 'application/json'
-        },
-        timeout: requestTimeoutMs
+    const authMode = config.authMode || "bearer";
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
     };
-    let response: any;
-    try {
-        response = await axios.post(completionUrl, {
-            model: config.model,
-            messages: messages,
-            max_tokens: params.maxTokens || 1024
-        }, requestConfig);
-    } catch (error: any) {
-        if (taskChannel !== TaskChannelEnum.VLLM) {
-            throw error;
-        }
-        const fallbackMessages = JSON.parse(JSON.stringify(messages));
-        fallbackMessages[0].content = fallbackMessages[0].content.map((item: any) => {
-            if (item?.type === "image_url" && item?.image_url?.url) {
-                return {
-                    type: "image_url",
-                    image_url: item.image_url.url
-                };
-            }
-            return item;
-        });
-        response = await axios.post(completionUrl, {
-            model: config.model,
-            messages: fallbackMessages,
-            max_tokens: params.maxTokens || 1024
-        }, requestConfig);
+    if (authMode === "x-api-key") {
+        headers[config.apiKeyHeaderKey || "x-api-key"] = config.apiKey;
+    } else {
+        headers[config.apiKeyHeaderKey || 'Authorization'] = `Bearer ${config.apiKey}`;
+    }
+    if (requestProtocol === "anthropic") {
+        headers["anthropic-version"] = "2023-06-01";
     }
 
-    const content = response.data.choices[0]?.message?.content;
+    const requestConfig = {
+        headers,
+        timeout: requestTimeoutMs
+    };
+    const fallbackMessages = JSON.parse(JSON.stringify(messages));
+    fallbackMessages[0].content = fallbackMessages[0].content.map((item: any) => {
+        if (item?.type === "image_url" && item?.image_url?.url) {
+            return {
+                type: "image_url",
+                image_url: item.image_url.url
+            };
+        }
+        return item;
+    });
+
+    let response: any;
+    if (requestProtocol === "anthropic") {
+        response = await axios.post(
+            completionUrl,
+            buildAnthropicPayload(config, fallbackMessages, params),
+            requestConfig
+        );
+    } else {
+        try {
+            response = await axios.post(completionUrl, {
+                model: config.model,
+                messages,
+                max_tokens: params.maxTokens || 1024
+            }, requestConfig);
+        } catch (error: any) {
+            if (taskChannel !== TaskChannelEnum.VLLM) {
+                throw error;
+            }
+            response = await axios.post(completionUrl, {
+                model: config.model,
+                messages: fallbackMessages,
+                max_tokens: params.maxTokens || 1024
+            }, requestConfig);
+        }
+    }
+
+    const content = requestProtocol === "anthropic"
+        ? extractContentFromAnthropic(response.data)
+        : response.data.choices[0]?.message?.content;
     if (!content) throw new Error("No content in response");
 
     let imageUrl: string | undefined = undefined;
@@ -192,8 +269,7 @@ export const callLLMAPI = async (params: any, taskChannel: TaskChannelEnum): Pro
         logger.info(`结果上传到MinIO as ${filename}...`);
         await minioClient.putObject(BUCKET_NAME, filename, imageBuffer);
 
-        // 生成访问URL
-        imageUrl = await minioClient.presignedGetObject(BUCKET_NAME, filename, 24*60*60);
+        imageUrl = buildObjectPublicUrl(BUCKET_NAME, filename);
 
          // 保存信息
         if (params.userId && params.taskId) {

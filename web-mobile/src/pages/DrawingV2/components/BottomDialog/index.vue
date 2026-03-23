@@ -54,22 +54,20 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import Taro from "@tarojs/taro";
-import { Close, Photograph, RectRight } from "@nutui/icons-vue-taro";
+import { Close, Photograph } from "@nutui/icons-vue-taro";
 import { uploadImageByTaroUrl } from "@/api/files/uploadFileByTaroUrl";
 import type { UploadImageResponse } from "@/api/files/uploadFile";
 import { EDrawingType } from "@/api/generate/workStream";
+import { useDrawingV2ConversationStore } from "@/store";
 import type { IDrawingModeOption } from "@/pages/DrawingV2/const";
 import type { IBottomDialogProps } from "./const";
 import pageStyle from "./index.module.less";
 
 const props = withDefaults(defineProps<IBottomDialogProps>(), {
   modeOptions: () => [],
-  generating: false,
 });
 
-const emit = defineEmits<{
-  submit: [payload: { prompt: string; mode: IDrawingModeOption; underImageId?: string; underImageUrl?: string }];
-}>();
+const drawingV2ConversationStore = useDrawingV2ConversationStore();
 
 const prompt = ref("");
 const showModePopup = ref(false);
@@ -86,7 +84,7 @@ const uploading = ref(false);
 const uploadProgress = ref(0);
 
 const sendDisabled = computed(() => {
-  return !prompt.value.trim() || props.generating;
+  return !prompt.value.trim() || drawingV2ConversationStore.hasActiveTask;
 });
 
 const handlePickImage = async () => {
@@ -138,17 +136,20 @@ const selectMode = (mode: IDrawingModeOption) => {
   showModePopup.value = false;
 };
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
   if (sendDisabled.value) {
     return;
   }
-  emit("submit", {
+  const response = await drawingV2ConversationStore.submitTask({
     prompt: prompt.value.trim(),
     mode: selectedMode.value,
     underImageId: uploadImageId.value || undefined,
     underImageUrl: uploadImageUrl.value || undefined,
   });
-  prompt.value = "";
+  if (response.ok) {
+    prompt.value = "";
+    clearImage();
+  }
 };
 
 const reset = () => {

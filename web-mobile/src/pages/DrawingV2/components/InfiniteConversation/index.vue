@@ -4,10 +4,10 @@
       :class="pageStyle['scroll']"
       :scroll-y="true"
       :show-scrollbar="false"
-      @scrolltolower="emit('loadMore')"
+      @scrolltolower="handleLoadMore"
     >
       <view :class="pageStyle['content']">
-        <template v-for="message in props.messages" :key="message.id">
+        <template v-for="message in drawingV2ConversationStore.messages" :key="message.id">
           <MyInfo
             v-if="message.role === 'user'"
             :content="message.prompt"
@@ -16,16 +16,16 @@
           <ServiceInfo
             v-else
             :message="message"
-            @like="emit('like', $event)"
+            @like="handleLike"
             @publish="emit('publish', $event)"
-            @regenerate="emit('regenerate', $event)"
-            @download="emit('download', $event)"
+            @regenerate="handleRegenerate"
+            @download="handleDownload"
           />
         </template>
 
         <view :class="pageStyle['status']">
-          <text v-if="props.loading">加载中...</text>
-          <text v-else-if="props.loadEnd">没有更多历史任务了</text>
+          <text v-if="drawingV2ConversationStore.historyLoading">加载中...</text>
+          <text v-else-if="drawingV2ConversationStore.historyLoadEnd">没有更多历史任务了</text>
         </view>
       </view>
     </scroll-view>
@@ -33,23 +33,31 @@
 </template>
 
 <script setup lang="ts">
+import { useDrawingV2ConversationStore } from "@/store";
 import type { IDrawingV2Message } from "@/pages/DrawingV2/const";
 import MyInfo from "@/pages/DrawingV2/components/MyInfo/index.vue";
 import ServiceInfo from "@/pages/DrawingV2/components/ServiceInfo/index.vue";
-import type { IInfiniteConversationProps } from "./const";
 import pageStyle from "./index.module.less";
 
-const props = withDefaults(defineProps<IInfiniteConversationProps>(), {
-  messages: () => [],
-  loading: false,
-  loadEnd: false,
-});
+const drawingV2ConversationStore = useDrawingV2ConversationStore();
 
 const emit = defineEmits<{
-  loadMore: [];
-  like: [message: IDrawingV2Message];
   publish: [message: IDrawingV2Message];
-  regenerate: [message: IDrawingV2Message];
-  download: [message: IDrawingV2Message];
 }>();
+
+const handleLoadMore = () => {
+  drawingV2ConversationStore.loadNextPage();
+};
+
+const handleLike = (message: IDrawingV2Message) => {
+  drawingV2ConversationStore.likeMessage(message);
+};
+
+const handleRegenerate = (message: IDrawingV2Message) => {
+  drawingV2ConversationStore.regenerateMessage(message);
+};
+
+const handleDownload = (message: IDrawingV2Message) => {
+  drawingV2ConversationStore.downloadMessage(message);
+};
 </script>
