@@ -1,6 +1,6 @@
 import Router from "koa-router";
 // 导入微信登录控制器函数
-import { miniProgramLogin, getQrCode, wechatCallback, checkLoginStatus, bindPhone } from "@/controllers/weixin";
+import { miniProgramLogin, getQrCode, wechatCallback, checkLoginStatus, bindPhone, wechatTemporaryLogin } from "@/controllers/weixin";
 import { authMiddleware } from "@/middleware/auth";
 
 /**
@@ -8,6 +8,9 @@ import { authMiddleware } from "@/middleware/auth";
  * 包含小程序登录、公众号网页登录二维码、扫码回调
  */
 export default (router: Router) => {
+  // 微信小程序一键登录（仅获取 openid/unionid）
+  router.post('/api/users/wechat/mini/login', wechatTemporaryLogin);
+
   // 微信小程序一键登录（手机号绑定）
   router.post('/api/users/wechat/mini/bind-phone', miniProgramLogin);
 

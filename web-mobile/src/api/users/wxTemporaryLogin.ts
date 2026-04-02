@@ -1,7 +1,7 @@
 import { httpPostWithHeaders } from "@/lib/request/http";
 
 interface LoginRequest {
-  code: number;
+  code: string;
 }
 
 export interface IWxTemporaryLoginResponse {

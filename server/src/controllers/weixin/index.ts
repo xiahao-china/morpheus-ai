@@ -139,9 +139,11 @@ export const miniProgramLogin = async (ctx: Context) => {
       return;
     }
 
-    // 2. 解密获取手机号（如有）
+    // 2. 获取手机号 (如果提供)
     let phone = null;
     if (encryptedData && iv) {
+      // 这里的逻辑需要根据微信小程序官方流程：使用 code 换取手机号
+      // 如果前端直接传了 phoneNumber (通常是解密后的)，则直接使用
       phone = (ctx.request.body as any).phoneNumber || null;
     }
 
@@ -194,7 +196,13 @@ export const miniProgramLogin = async (ctx: Context) => {
     // 4. 生成 token
     const token = signToken(user);
 
-    sendResponse.success(ctx, { token, user });
+    sendResponse.success(ctx, { 
+      token, 
+      user,
+      isPhone: !!user.phone,
+      userId: user._id,
+      username: user.username
+    });
   } catch (error) {
     logger.error(`[Wechat Mini Login] Error:`, error);
     sendResponse.error(ctx, "Internal server error");
@@ -202,7 +210,71 @@ export const miniProgramLogin = async (ctx: Context) => {
 };
 
 /**
- * 获取微信公众号网页登录二维码
+ * 微信小程序一键登录 (仅获取 openid/unionid，不强制绑定手机号)
+ */
+export const wechatTemporaryLogin = async (ctx: Context) => {
+  const { code } = ctx.request.body as any;
+
+  if (!code) {
+    ctx.body = { code: 400, msg: "Missing code parameter" };
+    return;
+  }
+
+  try {
+    const wxResponse = await axios.get(MINI_PROGRAM_CONFIG.loginUrl, {
+      params: {
+        appid: MINI_PROGRAM_CONFIG.appId,
+        secret: MINI_PROGRAM_CONFIG.appSecret,
+        js_code: code,
+        grant_type: "authorization_code"
+      }
+    });
+
+    const { openid, session_key, unionid, errcode, errmsg } = wxResponse.data;
+
+    if (errcode) {
+      logger.error(`[Wechat Mini Temporary Login] Wechat API error: ${errcode}, ${errmsg}`);
+      ctx.body = { code: 500, msg: "Wechat API error", data: wxResponse.data };
+      return;
+    }
+
+    // 查找或创建用户
+    let user: IUser | null = null;
+    if (unionid) {
+      user = await User.findOne({ unionId: unionid });
+    }
+    if (!user && openid) {
+      user = await User.findOne({ appOpenid: openid });
+    }
+
+    if (!user) {
+      user = new User({
+        username: `Mini_${Date.now()}`,
+        appOpenid: openid,
+        unionId: unionid,
+        status: UserStatusEnum.ACTIVE,
+        role: UserRoleEnum.USER
+      });
+      await user.save();
+    }
+
+    const token = signToken(user);
+    sendResponse.success(ctx, { 
+      token, 
+      user, 
+      session_key,
+      isPhone: !!user.phone,
+      userId: user._id,
+      username: user.username
+    });
+  } catch (error) {
+    logger.error(`[Wechat Mini Temporary Login] Error:`, error);
+    sendResponse.error(ctx, "Internal server error");
+  }
+};
+
+/**
+ * 微信公众号网页登录二维码
  * 生成唯一的 state 并构造授权 URL
  */
 export const getQrCode = async (ctx: Context) => {
@@ -244,8 +316,17 @@ export const checkLoginStatus = async (ctx: Context) => {
       return;
     }
 
+    // 检查 state 是否已使用
+    const isUsed = await redis.get(`${buildWechatLoginCodeRedisKey(state)}:used`);
+    if (isUsed) {
+      ctx.body = { code: 400, msg: "Login code already used" };
+      return;
+    }
+
     const loginData = JSON.parse(result);
-    await redis.del(buildWechatLoginCodeRedisKey(state));
+    // 标记为已使用，不再物理删除以防轮询重试，但设置极短过期时间
+    await redis.set(`${buildWechatLoginCodeRedisKey(state)}:used`, "1", "EX", 10);
+    // await redis.del(buildWechatLoginCodeRedisKey(state)); // 暂时不删，让轮询完成
 
     ctx.body = loginData;
   } catch (error) {

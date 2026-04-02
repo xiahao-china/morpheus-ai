@@ -23,9 +23,9 @@ export const MINI_PROGRAM_CONFIG = {
   baseUrl: WECHAT_BASE_URL,
   loginUrl: `${WECHAT_BASE_URL}/sns/jscode2session`,
   // 对应 ai-design-backend 中的 wechat.appidkey
-  appId: "wxeb187f5a4ea1e1a1",
+  appId: "wx9dff8a1fc0fbd92f",
   // 对应 ai-design-backend 中的 wechat.appidsecretkey
-  appSecret: "2f0fddd20fe76ed645f2fd4e9f6660de",
+    appSecret: "3fa54a8cdd3924bbd93097b4483494cc",
 };
 
 // 微信服务号配置（用于 JSAPI/H5）

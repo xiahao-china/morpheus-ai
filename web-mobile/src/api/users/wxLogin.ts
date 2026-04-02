@@ -14,9 +14,8 @@ export const wxLoginQrCode = async () => {
 }
 
 // 轮询
-export const checkWxLoginRes = async (code: string, state: string) => {
-  return httpGet<object, IWxLoginResponse>('/users/wechat/callback', {
-    code,
+export const checkWxLoginRes = async (state: string) => {
+  return httpGet<object, any>('/users/wechat/check-status', {
     state,
   })
 }
