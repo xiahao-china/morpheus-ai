@@ -10,8 +10,8 @@ import { authMiddleware } from "@/middleware/auth";
  */
 export default (router: Router) => {
   // 获取当前用户积分余额（需要登录）
-  router.get('/api/v1/points/balance', authMiddleware, getPointsBalance);
+  router.get('/api/points/balance', authMiddleware, getPointsBalance);
 
   // 获取积分变动历史记录（需要登录）
-  router.get('/api/v1/points/history', authMiddleware, getPointsHistory);
+  router.get('/api/points/history', authMiddleware, getPointsHistory);
 }

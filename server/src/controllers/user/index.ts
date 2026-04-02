@@ -53,17 +53,9 @@ export const sendVerifyCode = async (ctx: Context) => {
 export const login = async (ctx: Context) => {
   const { type, target, code, password } = ctx.request.body as any;
 
-  // 用户名密码登录
+  // 用户名密码登录（已禁用，因为 username 不再唯一。如需使用，请使用 email/phone）
   if (type === VERIFY_CODE_TYPE_USERNAME) {
-      const user = await User.findOne({ username: target });
-      if (!user || user.password !== password) {
-          ctx.body = { code: 401, msg: 'Invalid username or password' };
-          return;
-      }
-      const token = signToken(user);
-      ctx.cookies.set(LOGIN_COOKIE_KEY, token, getLoginCookieOptions());
-
-      sendResponse.success(ctx, { user });
+      ctx.body = { code: 400, msg: 'Username login is no longer supported. Please use phone/email.' };
       return;
   }
 
@@ -113,17 +105,21 @@ export const getUserInfo = async (ctx: Context) => {
 
 /**
  * 更新用户信息
- * 可更新：昵称、头像、个性签名
+ * 可更新：昵称、头像、个性签名、用户名
  */
 export const updateUserInfo = async (ctx: Context) => {
   const user = ctx.state.user;
-  const { nickname, avatar, personalSignature } = ctx.request.body as any;
+  const { nickname, avatar, personalSignature, username } = ctx.request.body as any;
 
   try {
     const updateData: any = {};
     if (nickname) updateData.nickname = nickname;
     if (avatar) updateData.avatar = avatar;
     if (personalSignature) updateData.personalSignature = personalSignature;
+    
+    if (username) {
+      updateData.username = username;
+    }
 
     const updatedUser = await User.findByIdAndUpdate(
       user._id,
@@ -133,6 +129,7 @@ export const updateUserInfo = async (ctx: Context) => {
 
     sendResponse.success(ctx, updatedUser as any);
   } catch (error) {
+    logger.error(`Update user info error: ${error}`);
     sendResponse.error(ctx, "Internal server error");
   }
 };

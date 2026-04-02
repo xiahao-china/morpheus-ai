@@ -47,10 +47,11 @@ export class ComfyUIClient {
     this.status = ComfyUINodeStatus.IDLE;
     // 构建 ComfyUI 服务地址
     this.baseUrl = `http://${node.host}:${node.port}`;
-    // 创建 axios 实例，配置60秒超时
+    // 创建 axios 实例，配置60秒超时，禁用全局代理以防干扰局域网请求
     this.client = axios.create({
       baseURL: this.baseUrl,
       timeout: 60000, // 60s timeout
+      proxy: false,   // 禁用环境变量中的 HTTP_PROXY/HTTPS_PROXY
     });
   }
 
@@ -226,6 +227,7 @@ export class ComfyUIClient {
           return true;
       }
     } catch (error: any) {
+      logger.error(`[${this.baseUrl}] Failed to get queue status:`, error.message, error.code || '');
       this.status = ComfyUINodeStatus.OFFLINE;
       throw error;
     }

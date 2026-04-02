@@ -19,6 +19,7 @@ import {
   buildSyncTaskResponse
 } from "./const";
 import { DEFAULT_COMFYUI_WORKFLOW } from "@/controllers/generation/const";
+import { COMFYUI_NODES } from "@/config/comfyui";
 
 const logger = getLogger("GenerationScheduler");
 
@@ -145,6 +146,10 @@ class GenerationScheduler {
     let idleNodes: ComfyUIClient[] = [];
     try {
       idleNodes = await comfyUIPool.getAvailableNodes(2000);
+      logger.info(`检查ComfyUI节点完成，可用节点数: ${idleNodes.length}/${COMFYUI_NODES.length}`);
+      if (idleNodes.length === 0 && COMFYUI_NODES.length > 0) {
+        logger.warn(`[任务调度] 没有可用的ComfyUI节点，当前已配置节点: ${COMFYUI_NODES.map(n => `${n.host}:${n.port}`).join(', ')}`);
+      }
     } catch (error) {
       logger.error("检查ComfyUI节点错误:", error);
       return;

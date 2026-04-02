@@ -176,7 +176,7 @@ async function buildAndRunDocker(config, REMOTE_DIR, TAR_FILE_NAME) {
     (echo "缺少 Docker 网络 ${dockerNetworkName}，请先执行 publish:env" && exit 1) &&
     DOCKER_BUILDKIT=1 docker build --network=host -t morpheus-server:${serverPort} . --build-arg APP_ENV=${projectName} --build-arg SERVER_PORT=${serverPort} &&
     (${cleanByNameCmd}) &&
-    docker run -d --name morpheus-server-${serverPort} -p ${serverPort}:3000 --network ${dockerNetworkName} morpheus-server:${serverPort} &&
+    docker run -d --name morpheus-server-${serverPort} -e PORT=3000 -p ${serverPort}:3000 --network ${dockerNetworkName} morpheus-server:${serverPort} &&
     rm -rf server-dist-temp
   `;
 

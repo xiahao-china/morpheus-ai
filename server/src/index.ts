@@ -17,8 +17,8 @@ const router = new RouterClass();
 // Middlewares
 app.use(bodyParser({
   enableTypes: ['json', 'form', 'text'],
-  formLimit: '10mb',
-  jsonLimit: '10mb',
+  formLimit: '50mb',
+  jsonLimit: '50mb',
   encoding: undefined
 }));
 
@@ -36,7 +36,7 @@ export const bootstrapServer = () => {
 
 if (process.env.NODE_ENV !== "test") {
   bootstrapServer();
-  const PORT = serverConfig.server?.port || 3000;
+  const PORT = process.env.PORT || serverConfig.server?.port || 3000;
   app.listen(PORT, () => {
     logger.info(`Server running on port ${PORT}`);
   });

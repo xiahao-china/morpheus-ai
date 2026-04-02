@@ -11,8 +11,8 @@ export const SMS_CONFIG = {
   secret: "0IN2ey7XS0O4eBkB3Kqg7lXF0sFoClWm",
   sign: "【深圳市星元云创】",
   templateId: "323293",
-  // 开发环境下默认开启 mock，生产环境关闭
-  mockSend: process.env.NODE_ENV !== 'production'
+  // 开发环境或测试环境默认开启 mock
+  mockSend: process.env.NODE_ENV !== 'production' || serverConfig?.server?.port === 3001
 };
 
 // Redis 键常量

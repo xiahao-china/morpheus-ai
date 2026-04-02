@@ -10,8 +10,8 @@ import { authMiddleware } from "@/middleware/auth";
  */
 export default (router: Router) => {
   // 获取会员套餐列表（公开接口）
-  router.get('/api/v1/membership/packages', getPackages);
+  router.get('/api/membership/packages', getPackages);
 
   // 创建会员订单（需要登录）
-  router.post('/api/v1/membership/order', authMiddleware, createOrder);
+  router.post('/api/membership/order', authMiddleware, createOrder);
 }

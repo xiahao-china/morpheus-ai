@@ -10,11 +10,11 @@ import { authMiddleware } from "@/middleware/auth";
  */
 export default (router: Router) => {
   // 获取任务列表（需要登录）
-  router.get('/api/v1/tasks', authMiddleware, getTasks);
+  router.get('/api/tasks', authMiddleware, getTasks);
 
   // 领取任务奖励（需要登录）
-  router.post('/api/v1/tasks/claim', authMiddleware, claimReward);
+  router.post('/api/tasks/claim', authMiddleware, claimReward);
 
   // 手动触发任务（例如：签到）
-  router.post('/api/v1/tasks/perform', authMiddleware, performTask);
+  router.post('/api/tasks/perform', authMiddleware, performTask);
 }

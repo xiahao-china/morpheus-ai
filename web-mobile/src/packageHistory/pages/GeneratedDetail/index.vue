@@ -64,13 +64,18 @@ const startStream = () => {
       return
     }
     progress.value = Math.round(response.data.progress)
-    if (progress.value === 100 && response.data.status === 'COMPLETED') {
+    if (response.data.status === 'COMPLETED') {
       clearInterval(timeout);
       timeout = undefined;
       progress.value = 100;
       currentImageUrl.value = response.data.imageUrl || '';
       generating.value = false;
       // prefetchDetail();
+    } else if (response.data.status === 'FAILED' || response.data.status === 'CANCEL') {
+      clearInterval(timeout);
+      timeout = undefined;
+      generating.value = false;
+      Taro.showToast({ title: '图片生成失败', icon: 'error' });
     }
   }, 1000 * 3);
 }
@@ -97,6 +102,10 @@ const prefetchDetail = async () => {
     currentImageUrl.value = d.imageUrl || (d.images && d.images.length > 0 ? d.images[0].imageUrl : '')
     generating.value = false
     progress.value = 100
+  } else if (d.status === 'FAILED' || d.status === 'CANCEL') {
+    generating.value = false
+    progress.value = 0
+    Taro.showToast({ title: '图片生成失败', icon: 'error' })
   } else {
     startStream()
   }

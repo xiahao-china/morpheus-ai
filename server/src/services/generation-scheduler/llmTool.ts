@@ -136,7 +136,11 @@ export const callLLMAPI = async (params: any, taskChannel: TaskChannelEnum): Pro
         }
         try {
             if (/^https?:\/\//i.test(baseImage)) {
-                const imgRes = await axios.get(baseImage, { responseType: "arraybuffer", timeout: 30000 });
+                const imgRes = await axios.get(baseImage, { 
+                    responseType: "arraybuffer", 
+                    timeout: 30000,
+                    proxy: false
+                });
                 const mimeType = (imgRes.headers?.["content-type"] || "image/jpeg").split(";")[0];
                 const base64 = Buffer.from(imgRes.data).toString("base64");
                 return `data:${mimeType};base64,${base64}`;
@@ -192,9 +196,10 @@ export const callLLMAPI = async (params: any, taskChannel: TaskChannelEnum): Pro
         headers["anthropic-version"] = "2023-06-01";
     }
 
-    const requestConfig = {
+    const requestConfig: any = {
         headers,
-        timeout: requestTimeoutMs
+        timeout: requestTimeoutMs,
+        proxy: false
     };
     const fallbackMessages = JSON.parse(JSON.stringify(messages));
     fallbackMessages[0].content = fallbackMessages[0].content.map((item: any) => {
@@ -254,7 +259,10 @@ export const callLLMAPI = async (params: any, taskChannel: TaskChannelEnum): Pro
             if (urlMatch && urlMatch[1]) {
                 const imgUrl = urlMatch[1];
                 logger.info(`从URL下载图像: ${imgUrl}`);
-                const imgRes = await axios.get(imgUrl, { responseType: 'arraybuffer' });
+                const imgRes = await axios.get(imgUrl, { 
+                    responseType: 'arraybuffer',
+                    proxy: false
+                });
                 imageBuffer = Buffer.from(imgRes.data);
             }
         }

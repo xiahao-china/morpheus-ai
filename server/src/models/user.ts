@@ -33,8 +33,8 @@ export interface IUser extends Document {
 }
 
 const UserSchema: Schema = new Schema({
-  username: { type: String, required: true, unique: true }, // 用户名
-  nickname: { type: String }, // 昵称
+  username: { type: String, required: true }, // 用户名（非唯一，仅展示）
+  nickname: { type: String }, // 昵称（微信同步）
   outwardId: { type: String }, // 外部ID
   password: { type: String }, // 密码
   email: { type: String }, // 邮箱

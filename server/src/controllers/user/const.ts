@@ -2,7 +2,7 @@ import { Context as KoaContext } from "koa";
 import axios from "axios";
 import qs from "qs";
 import { logger } from "@/lib/log4js";
-import { REDIS_KEYS, SMS_CONFIG, USER_CONSTANTS } from "@/config/index";
+import { REDIS_KEYS, SMS_CONFIG, USER_CONSTANTS, serverConfig } from "@/config/index";
 import { sendEmail as sendEmailUtil } from "@/utils/email";
 import verificationCodeTemplate from "@/static/verificationCodeTemplate";
 
@@ -32,7 +32,8 @@ export const shouldSendVerificationMessage = () => !SMS_CONFIG.mockSend;
 export const getLoginCookieOptions = () => ({
   maxAge: LOGIN_COOKIE_MAX_AGE,
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
+  // 生产环境且非测试端口下使用 secure
+  secure: process.env.NODE_ENV === "production" && serverConfig?.server?.port !== 3001,
   path: "/",
   sameSite: "lax" as const
 });

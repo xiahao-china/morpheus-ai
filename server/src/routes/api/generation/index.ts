@@ -21,10 +21,10 @@ import { authMiddleware } from "@/middleware/auth";
  */
 export default (router: Router) => {
   // 提交作品反馈（仅点赞/取消点赞）（需要登录）
-  router.post('/api/v1/generation/feedback/:id', authMiddleware, submitFeedback);
+  router.post('/api/generation/feedback/:id', authMiddleware, submitFeedback);
 
   // AI提示词优化（需要登录）
-  router.post('/api/v1/generation/prompt/optimize', authMiddleware, optimizePrompt);
+  router.post('/api/generation/prompt/optimize', authMiddleware, optimizePrompt);
 
   // AI任务生成接口（需要登录）- 兼容旧的图片生成路径
   router.post('/api/image/generate', authMiddleware, generateImage);

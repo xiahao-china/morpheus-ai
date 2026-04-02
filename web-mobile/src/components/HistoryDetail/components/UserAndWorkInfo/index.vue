@@ -4,7 +4,7 @@
     <view :class="pageStyle['user-info']">
       <image :class="pageStyle['avatar']" :src="user.avatar" mode="aspectFill" />
       <view :class="pageStyle['user-meta']">
-        <text :class="pageStyle['nickname']">{{ user.nickname }}</text>
+        <text :class="pageStyle['nickname']">{{ user.username || user.nickname }}</text>
       </view>
     </view>
 

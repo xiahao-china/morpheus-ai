@@ -196,8 +196,9 @@ const initSquareDetail = async (squareId: string) => {
     publishInfo.value.isCollected = response.data.isCollected;
 
     userInfo.value = {
-      nickname: response.data.username || DEFAULT_USER_INFO.nickname,
+      username: response.data.username || DEFAULT_USER_INFO.username,
       avatar: response.data.avatar || DEFAULT_USER_INFO.avatar,
+      nickname: response.data.nickname,
     };
 
     workInfo.value = {

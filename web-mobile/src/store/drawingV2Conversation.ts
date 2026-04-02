@@ -38,7 +38,7 @@ export const useDrawingV2ConversationStore = defineStore("drawingV2Conversation"
 
   const normalizeStatus = (status?: string): IDrawingV2Message["status"] => {
     const upperStatus = String(status || "").toUpperCase();
-    if (upperStatus === "FAILED") return "FAILED";
+    if (upperStatus === "FAILED" || upperStatus === "CANCEL") return "FAILED";
     if (upperStatus === "COMPLETED") return "COMPLETED";
     if (upperStatus === "PROCESSING") return "PROCESSING";
     if (upperStatus === "INITIATED") return "INITIATED";

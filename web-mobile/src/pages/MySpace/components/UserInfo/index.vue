@@ -9,7 +9,7 @@
 
     <!-- 用户名 -->
     <view :class="styles.nickname">
-      {{ userInfo.username }}
+      {{ userInfo.username || "未设置昵称" }}
     </view>
 
     <!-- 个人签名 -->

@@ -431,7 +431,7 @@ export const generateFengShui = async (ctx: Context) => {
       seed: generateTaskSeed(),
       bucket_name: BUCKET_NAME,
       filename_prefix: generateFilenamePrefix(),
-      baseImages: [imageUrl]
+      baseImages: [imageId]
     };
 
     const generationTask = createGenerationTaskRecord(user.uid, TaskPurposeEnum.FENG_SHUI, params);
@@ -553,7 +553,13 @@ export const getTaskDetail = async (ctx: Context) => {
     }
 
     let result: any = createTaskDetailBase(task);
-    result.underImageUrl = task.params?.underImage?.url || task.params?.baseImages?.[0] || "";
+    const rawUrl = task.params?.underImage?.url || task.params?.baseImages?.[0] || "";
+    result.underImageUrl = rawUrl;
+    // 如果是 ID (24位十六进制)，尝试解析为真实 URL
+    if (rawUrl && /^[0-9a-fA-F]{24}$/.test(rawUrl)) {
+      const file = await FileResource.findById(rawUrl).lean();
+      if (file) result.underImageUrl = buildObjectPublicUrl(file.bucket || BUCKET_NAME, file.path);
+    }
 
     // 获取队列进度
     if (isProcessingTaskStatus(task.status)) {
@@ -685,17 +691,24 @@ export const getGenerationHistory = async (ctx: Context) => {
       isPublishedToSquare: boolean;
     }>>);
 
-    const list = tasks.map((task) => {
+    const list = await Promise.all(tasks.map(async (task) => {
       const taskId = task._id.toString();
       const images = imageMap[taskId] || [];
       const firstImage = images[0];
-      const taskImageUrl = firstImage?.imageUrl || task.params?.baseImages?.[0] || "";
+      const rawUrl = task.params?.baseImages?.[0] || "";
+      let underImageUrl = rawUrl;
+      if (rawUrl && /^[0-9a-fA-F]{24}$/.test(rawUrl)) {
+        const file = await FileResource.findById(rawUrl).lean();
+        if (file) underImageUrl = buildObjectPublicUrl(file.bucket || BUCKET_NAME, file.path);
+      }
+
+      const taskImageUrl = firstImage?.imageUrl || underImageUrl || "";
       return {
         _id: taskId,
         userId: task.userId,
         imageGenTaskId: taskId,
         prompt: task.params?.prompt || "",
-        underImageUrl: task.params?.baseImages?.[0] || "",
+        underImageUrl: underImageUrl,
         type: task.purpose,
         status: task.status,
         progress: task.status === TaskStatusEnum.COMPLETED
@@ -710,7 +723,7 @@ export const getGenerationHistory = async (ctx: Context) => {
         completedTime: task.completedTime,
         images,
       };
-    });
+    }));
 
     sendResponse.success(ctx, {
       list,

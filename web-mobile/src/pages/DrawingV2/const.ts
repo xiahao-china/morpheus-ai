@@ -32,7 +32,7 @@ export const PAGE_SIZE = 10;
 
 const normalizeMessageStatus = (status?: string): MessageStatus => {
   const upperStatus = String(status || "").toUpperCase();
-  if (upperStatus === "FAILED") return "FAILED";
+  if (upperStatus === "FAILED" || upperStatus === "CANCEL") return "FAILED";
   if (upperStatus === "COMPLETED") return "COMPLETED";
   if (upperStatus === "PROCESSING") return "PROCESSING";
   if (upperStatus === "INITIATED") return "INITIATED";

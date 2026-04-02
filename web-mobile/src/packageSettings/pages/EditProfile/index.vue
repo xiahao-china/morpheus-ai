@@ -21,7 +21,7 @@
             <text :class="styles.label">昵称</text>
             <input
               :class="styles.input"
-              v-model="form.nickname"
+              v-model="form.username"
               placeholder="请输入昵称"
               placeholder-class="input-placeholder"
               maxlength="12"

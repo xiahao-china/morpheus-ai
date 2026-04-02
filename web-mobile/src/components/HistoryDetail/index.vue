@@ -256,8 +256,9 @@ const showSquareDetail = (params: ISquareDetailResponse, showPublish: boolean) =
   publishInfo.value.isCollected = params.isCollected;
 
   userInfo.value = {
-    nickname: params.username || DEFAULT_USER_INFO.nickname,
+    username: params.username || DEFAULT_USER_INFO.username,
     avatar: params.avatar || DEFAULT_USER_INFO.avatar,
+    nickname: params.nickname,
   };
   workInfo.value = {
     title: params.title || DEFAULT_WORK_INFO.title,
