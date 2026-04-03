@@ -10,6 +10,7 @@ interface IWxLoginResponse {
 
 export interface IWxMiniProgramLoginProps {
   code: string;
+  loginCode?: string;
   encryptedData: string;
   iv: string;
   userId: string;

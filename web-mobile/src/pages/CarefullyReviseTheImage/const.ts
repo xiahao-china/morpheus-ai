@@ -11,6 +11,7 @@ import type { SSEReader } from '@/lib/request/sse.ts';
 import { CHANGE_IMAGE_MODE_LIST, EFunctionGroupMode } from './components/FunctionGroup/const.ts';
 import { EEnlargeMode } from '@/pages/CarefullyReviseTheImage/components/ResolutionSetting/const.ts';
 import type { IObject } from '@/constants/types.ts';
+import { makeUrlAbsolute } from '@/util/url';
 
 export enum EReDrawStyle {
   // 原有风格
@@ -59,7 +60,7 @@ export const getPageInitParams = () => {
     if (pages.length > 0) {
       const currentPage = pages[pages.length - 1];
       const options = currentPage.options || {};
-      
+
       if (!options.initData) return;
       info = JSON.parse(decodeURIComponent(options.initData as string)) as IChangeImageGenerationInfo;
     }
@@ -199,9 +200,9 @@ export const handleGenerationInfoByChangeImageTask = (
       type: taskInfo.type,
       concreteSceneId: taskInfo.concreteSceneId,
       isChangeImage: true,
-      uploadImageUrl: taskInfo.underImageUrl || '',
+      uploadImageUrl: makeUrlAbsolute(taskInfo.underImageUrl || ''),
       uploadImageId: '',
-      maskImageUrl: taskInfo.maskImageUrl || '',
+      maskImageUrl: makeUrlAbsolute(taskInfo.maskImageUrl || ''),
       maskImageId: taskInfo.maskImageId || '',
       originTaskId: '',
       scale: taskInfo.magnificationOutward as EEnlargeMode,
@@ -210,7 +211,7 @@ export const handleGenerationInfoByChangeImageTask = (
   return {
     ...handleGenerationInfoByTask(taskInfo as unknown as IHandleGenerationInfoByTaskParams),
     isChangeImage: false,
-    uploadImageUrl: taskInfo.images[orderIndex ?? 0].imageUrl,
+    uploadImageUrl: makeUrlAbsolute(taskInfo.images[orderIndex ?? 0].imageUrl),
     uploadImageId: taskInfo.images[orderIndex ?? 0].fileResourceId.toString(),
     type: EFunctionGroupMode.ONE_KEY_RENDER,
     originTaskId: taskInfo.id.toString(),

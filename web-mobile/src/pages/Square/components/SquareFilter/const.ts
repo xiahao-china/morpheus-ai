@@ -4,6 +4,7 @@ import { DEFAULT_USER_INFO } from '@/components/HistoryDetail/components/UserAnd
 import {ActionSheetMenuItems} from "@nutui/nutui-taro/dist/types/__VUE/actionsheet/index.taro.vue";
 import Taro from "@tarojs/taro";
 import {ACTIVE_COLOR} from "@/constants";
+import { makeUrlAbsolute } from '@/util/url';
 
 export interface ISortItem extends ActionSheetMenuItems{
   label: string;
@@ -49,8 +50,8 @@ export const DEFAULT_SPACE_OPTIONS: ISortItem[] = [
 export const mergeWorks = (currentWorksList: IWorkBaseInfo[], newWorksList: ISquareItem[]): IWorkBaseInfo[] => {
   const handleResList = newWorksList.map((item) => ({
     workId: item._id,
-    workImg: item.imageUrl || '',
-    avatar: item.avatar || DEFAULT_USER_INFO.avatar,
+    workImg: makeUrlAbsolute(item.imageUrl || ''),
+    avatar: makeUrlAbsolute(item.avatar || DEFAULT_USER_INFO.avatar),
     name: item.username || '匿名用户',
     likeCount: item.likeCount || item.collectCount || 0,
     hasLike: false,

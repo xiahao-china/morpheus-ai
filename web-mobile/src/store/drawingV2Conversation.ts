@@ -14,6 +14,7 @@ import {
   type IDrawingModeOption,
   type IDrawingV2Message,
 } from "@/pages/DrawingV2/const";
+import { makeUrlAbsolute } from "@/util/url";
 
 const activeStatusList = ["INITIATED", "PENDING", "PROCESSING"] as const;
 
@@ -83,7 +84,7 @@ export const useDrawingV2ConversationStore = defineStore("drawingV2Conversation"
         updateTaskInfo(messageId, {
           status: "COMPLETED",
           progress: 100,
-          imageUrl: data.imageUrl || "",
+          imageUrl: makeUrlAbsolute(data.imageUrl || ""),
           imageId: data.imageId || "",
         });
         clearPolling(messageId);

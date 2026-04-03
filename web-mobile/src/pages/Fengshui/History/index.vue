@@ -29,6 +29,7 @@ import Taro from '@tarojs/taro';
 import dayjs from 'dayjs';
 import Layouts from '@/components/Layouts/index.vue';
 import { getFengshuiHistory, IFengshuiHistoryItem } from '@/api/fengshui';
+import { makeUrlAbsolute } from '@/util/url';
 import styles from './index.module.less';
 
 const loading = ref(false);
@@ -51,7 +52,11 @@ const openReport = (taskId: string) => {
 const fetchHistory = async () => {
   loading.value = true;
   try {
-    list.value = await getFengshuiHistory({ page: 1, pageSize: 50 });
+    const data = await getFengshuiHistory({ page: 1, pageSize: 50 });
+    list.value = data.map(item => ({
+      ...item,
+      imageUrl: makeUrlAbsolute(item.imageUrl)
+    }));
   } catch (error) {
     Taro.showToast({ title: '获取历史失败', icon: 'none' });
   } finally {

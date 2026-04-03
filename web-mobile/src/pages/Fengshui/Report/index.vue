@@ -74,6 +74,7 @@ import { ref, onMounted } from 'vue';
 import Taro, { useRouter } from '@tarojs/taro';
 import Layouts from '@/components/Layouts/index.vue';
 import { getFengshuiReport, getFengshuiTaskStatus, IFengshuiReport } from '@/api/fengshui';
+import { makeUrlAbsolute } from '@/util/url';
 import styles from './index.module.less';
 
 const router = useRouter();
@@ -87,7 +88,7 @@ const fetchReport = async (taskId: string) => {
       getFengshuiTaskStatus(taskId)
     ]);
     report.value = reportRes;
-    underImageUrl.value = statusRes.underImageUrl || '';
+    underImageUrl.value = makeUrlAbsolute(statusRes.underImageUrl || '');
   } catch (err) {
     Taro.showToast({ title: '报告生成中，正在跳转', icon: 'none' });
     setTimeout(() => {

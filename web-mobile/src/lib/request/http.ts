@@ -1,3 +1,4 @@
+import Taro from "@tarojs/taro";
 import { TaroAdapter } from "axios-taro-adapter";
 import { API_URL } from "@/constants";
 import axios, { type AxiosInstance, type AxiosRequestConfig } from "axios";
@@ -24,6 +25,18 @@ const customTaroAdapter = (config: RequestCustomOptions) => {
       config.headers = { ...config.headers };
     }
   }
+
+  // 小程序环境下，手动拼接 baseURL 和 url，防止某些环境下自动补全失效
+  const env = Taro.getEnv();
+  console.log('env',env);
+  if (env !== Taro.ENV_TYPE.WEB && config.baseURL && config.url && !/^https?:\/\//i.test(config.url)) {
+    const base = config.baseURL.replace(/\/+$/, '');
+    const path = config.url.replace(/^\/+/, '');
+    config.url = `${base}/${path}`;
+    // 既然已经拼接到了 url 中，就清空 baseURL，防止适配器重复拼接
+    config.baseURL = '';
+  }
+
   // 调用原始的 TaroAdapter
   return TaroAdapter(config);
 };

@@ -23,6 +23,7 @@ import {getGenerateProgress} from "@/api/generate/getGenerateProgress";
 import TopSection from './components/TopSection/index.vue'
 import BottomSection from './components/BottomSection/index.vue'
 import { DEFAULT_DETAILS } from './const'
+import { makeUrlAbsolute } from '@/util/url'
 import pageStyle from './index.module.less'
 
 const generating = ref(false)
@@ -68,7 +69,7 @@ const startStream = () => {
       clearInterval(timeout);
       timeout = undefined;
       progress.value = 100;
-      currentImageUrl.value = response.data.imageUrl || '';
+      currentImageUrl.value = makeUrlAbsolute(response.data.imageUrl || '');
       generating.value = false;
       // prefetchDetail();
     } else if (response.data.status === 'FAILED' || response.data.status === 'CANCEL') {
@@ -90,7 +91,7 @@ const prefetchDetail = async () => {
   }
   const d = resp.data
   // 预填充基础信息
-  underImageUrl.value = d.underImageUrl || underImageUrl.value
+  underImageUrl.value = makeUrlAbsolute(d.underImageUrl || underImageUrl.value)
   details.value.prompt = d.prompt || details.value.prompt
   details.value.count = d.count || details.value.count
   details.value.ratio = d.ratio || details.value.ratio
@@ -99,7 +100,7 @@ const prefetchDetail = async () => {
   details.value.mode = (d.type as any) || details.value.mode
 
   if (d.status === 'COMPLETED') {
-    currentImageUrl.value = d.imageUrl || (d.images && d.images.length > 0 ? d.images[0].imageUrl : '')
+    currentImageUrl.value = makeUrlAbsolute(d.imageUrl || (d.images && d.images.length > 0 ? d.images[0].imageUrl : ''))
     generating.value = false
     progress.value = 100
   } else if (d.status === 'FAILED' || d.status === 'CANCEL') {

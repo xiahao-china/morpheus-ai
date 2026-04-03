@@ -16,7 +16,7 @@
             {{ userStore.personalSignature || '追求极致美学的家装爱好者' }}
           </view>
           <view :class="styles.tagsRow">
-            <view :class="styles.memberTag">PRO 会员</view>
+            <view :class="styles.memberTag">普通会员</view>
             <view :class="styles.pointsTag">积分: {{ userStore.points || 0 }}</view>
           </view>
         </view>
@@ -61,13 +61,13 @@
           <RectRight :class="styles.menuArrow" size="16" />
         </view>
 
-        <view :class="styles.menuItem" @tap="handleContact">
-          <view :class="styles.menuIcon">
-            <Service size="20" />
-          </view>
-          <view :class="styles.menuLabel">联系客服</view>
-          <RectRight :class="styles.menuArrow" size="16" />
-        </view>
+<!--        <view :class="styles.menuItem" @tap="handleContact">-->
+<!--          <view :class="styles.menuIcon">-->
+<!--            <Service size="20" />-->
+<!--          </view>-->
+<!--          <view :class="styles.menuLabel">联系客服</view>-->
+<!--          <RectRight :class="styles.menuArrow" size="16" />-->
+<!--        </view>-->
 
         <view :class="styles.menuItem" @tap="showToast('功能开发中')">
           <view :class="styles.menuIcon">

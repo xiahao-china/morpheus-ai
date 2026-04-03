@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import { EDrawingType } from "@/api/generate/workStream";
 import type { IGetGenerationHistoryItem } from "@/api/images/getGenerationHistoryV2";
+import { makeUrlAbsolute } from "@/util/url";
 
 export interface IDrawingModeOption {
   id: string;
@@ -102,7 +103,7 @@ export const mapHistoryToServiceMessages = (
       mode,
       status: "COMPLETED",
       createdTime: timeText,
-      underImageUrl: item.underImageUrl,
+      underImageUrl: makeUrlAbsolute(item.underImageUrl),
     };
 
     const serviceMessage: IDrawingV2Message = {
@@ -114,12 +115,12 @@ export const mapHistoryToServiceMessages = (
       progress: status === "COMPLETED" ? 100 : Number(item.progress || 0),
       createdTime: timeText,
       taskId,
-      imageUrl: item.imageUrl || firstImage?.imageUrl || "",
+      imageUrl: makeUrlAbsolute(item.imageUrl || firstImage?.imageUrl || ""),
       imageId: item.imageId || firstImage?.imageId,
       isLiked: Boolean(firstImage?.isLiked),
       isPublished: Boolean(firstImage?.isPublishedToSquare),
       underImageId: item.underImageId,
-      underImageUrl: item.underImageUrl,
+      underImageUrl: makeUrlAbsolute(item.underImageUrl),
     };
 
     return [userMessage, serviceMessage];

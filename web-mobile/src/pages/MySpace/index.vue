@@ -37,6 +37,7 @@ import { ref, onMounted } from "vue";
 import { getUserInfo, type getUserInfoResponse } from "@/api/users/getUserInfo";
 import Taro, { useReachBottom, useDidShow } from "@tarojs/taro";
 import { STATIC_ASSETS_URL } from "@/constants";
+import { makeUrlAbsolute } from "@/util/url";
 
 const userInfo = ref<getUserInfoResponse>({
   username: "",
@@ -63,7 +64,11 @@ const fetchUserInfo = async () => {
     console.error("获取用户信息失败:", res);
     return;
   }
-  userInfo.value = res.data || {};
+  const data = res.data || {};
+  if (data.avatar) {
+    data.avatar = makeUrlAbsolute(data.avatar);
+  }
+  userInfo.value = data;
 };
 
 // 处理编辑资料事件

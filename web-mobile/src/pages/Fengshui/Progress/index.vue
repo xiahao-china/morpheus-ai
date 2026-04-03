@@ -1,6 +1,6 @@
 <template>
   <Layouts>
-    <view :class="styles.container">
+    <view :class="styles.container" :style="{ height: `${containerHeight}px`}">
       <view :class="styles.progressCircle">
         <svg :class="styles.circleSvg" viewBox="0 0 100 100">
           <circle :class="styles.bg" cx="50" cy="50" r="44" />
@@ -34,12 +34,14 @@ import Taro, { useRouter } from '@tarojs/taro';
 import Layouts from '@/components/Layouts/index.vue';
 import { getFengshuiTaskStatus } from '@/api/fengshui';
 import styles from './index.module.less';
+import {getRemainingHeight} from "@/util/layout.ts";
 
 const router = useRouter();
 const progress = ref(0);
 const targetProgress = ref(0);
 const progressTimer = ref<number | null>(null);
 const polling = ref<number | null>(null);
+const containerHeight = ref(getRemainingHeight());
 
 // SVG 圆环参数
 const radius = 44;

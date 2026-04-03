@@ -5,6 +5,7 @@ import { logger } from "@/lib/log4js";
 import { MINI_PROGRAM_CONFIG, MP_CONFIG, SMS_CONFIG } from "@/config/index";
 import axios from "axios";
 import { sendResponse } from "@/utils/const";
+import { WXBizDataCrypt } from "@/utils/wechat-decrypt";
 import {
   buildSmsLoginRedisKey,
   buildWechatAuthorizeUrl,
@@ -16,8 +17,47 @@ import {
   WECHAT_LOGIN_CODE_EXPIRE_SECONDS,
   WECHAT_STATE_EXPIRE_SECONDS,
   WECHAT_TOKEN_API_URL,
-  WECHAT_USER_INFO_API_URL
+  WECHAT_USER_INFO_API_URL,
+  WECHAT_ACCESS_TOKEN_API_URL,
+  WECHAT_GET_PHONE_NUMBER_URL
 } from "./const";
+import { LOGIN_COOKIE_KEY, getLoginCookieOptions } from "../user/const";
+
+/**
+ * 获取微信接口调用凭证 (Client Credential Access Token)
+ * 优先从 Redis 获取，没有则向微信请求并缓存
+ */
+const getWechatAccessToken = async (config: { appId: string, appSecret: string }) => {
+  const redisKey = `wechat_access_token:${config.appId}`;
+  
+  // 1. 尝试从 Redis 获取
+  const cachedToken = await redis.get(redisKey);
+  if (cachedToken) {
+    return cachedToken;
+  }
+
+  // 2. 向微信请求新 Token
+  const response = await axios.get(WECHAT_ACCESS_TOKEN_API_URL, {
+    params: {
+      grant_type: "client_credential",
+      appid: config.appId,
+      secret: config.appSecret
+    },
+    proxy: false
+  });
+
+  const { access_token, expires_in, errcode, errmsg } = response.data;
+
+  if (errcode) {
+    throw new Error(`[Wechat Access Token] API error: ${errcode}, ${errmsg}`);
+  }
+
+  // 3. 存入 Redis，提前 10 分钟过期
+  const expireSeconds = Math.max((expires_in || 7200) - 600, 60);
+  await redis.set(redisKey, access_token, "EX", expireSeconds);
+
+  return access_token;
+};
 
 /**
  * 绑定手机号 - Web端微信登录后绑定手机号
@@ -107,80 +147,144 @@ export const bindPhone = async (ctx: Context) => {
 };
 
 /**
- * 微信小程序手机号一键登录
- * 1. 通过 code 获取 session_key 和 openid
- * 2. 解密获取手机号
- * 3. 查找或创建用户
+ * 微信小程序手机号一键登录 / 绑定手机号
+ * 1. 尝试使用新 API (getuserphonenumber) 通过 code 获取手机号
+ * 2. 如果失败，尝试使用 loginCode 换取 session_key 并结合 encryptedData 解密
+ * 3. 根据 userId 绑定或查找/创建用户
  */
 export const miniProgramLogin = async (ctx: Context) => {
-  const { code, encryptedData, iv } = ctx.request.body as any;
+  let { code, loginCode, encryptedData, iv, userId } = ctx.request.body as any;
 
-  if (!code) {
-    ctx.body = { code: 400, msg: "Missing code parameter" };
+  // 容错：如果前端没传 loginCode 但传了 code，且 encryptedData 存在，说明 code 可能是被误传的 loginCode
+  if (!loginCode && code && encryptedData) {
+    logger.info(`[Wechat Mini Login] No loginCode provided but encryptedData exists, treating code as loginCode`);
+    loginCode = code;
+    code = undefined; // 避免 code 被当作 phone code 调用报错
+  }
+
+  if (!code && !loginCode) {
+    ctx.body = { code: 400, msg: "Missing code or loginCode parameter" };
     return;
   }
 
   try {
-    // 1. 通过 code 获取 session_key 和 openid
-    const wxResponse = await axios.get(MINI_PROGRAM_CONFIG.loginUrl, {
-      params: {
-        appid: MINI_PROGRAM_CONFIG.appId,
-        secret: MINI_PROGRAM_CONFIG.appSecret,
-        js_code: code,
-        grant_type: "authorization_code"
-      }
-    });
-
-    const { openid, session_key, unionid, errcode, errmsg } = wxResponse.data;
-
-    if (errcode) {
-      logger.error(`[Wechat Mini Login] Wechat API error: ${errcode}, ${errmsg}`);
-      ctx.body = { code: 500, msg: "Wechat API error", data: wxResponse.data };
-      return;
-    }
-
-    // 2. 获取手机号 (如果提供)
     let phone = null;
-    if (encryptedData && iv) {
-      // 这里的逻辑需要根据微信小程序官方流程：使用 code 换取手机号
-      // 如果前端直接传了 phoneNumber (通常是解密后的)，则直接使用
-      phone = (ctx.request.body as any).phoneNumber || null;
+    let openid = null;
+    let unionid = null;
+    let sessionKey = null;
+
+    // --- 步骤 1: 尝试获取手机号 ---
+    
+    // A. 优先尝试新 API (使用专门的 phone code)
+    if (code) {
+      try {
+        const accessToken = await getWechatAccessToken(MINI_PROGRAM_CONFIG);
+        const phoneResponse = await axios.post(`${WECHAT_GET_PHONE_NUMBER_URL}?access_token=${accessToken}`, {
+          code
+        }, {
+          proxy: false
+        });
+
+        if (phoneResponse.data?.errcode === 0 && phoneResponse.data?.phone_info?.phoneNumber) {
+          phone = phoneResponse.data.phone_info.phoneNumber;
+          logger.info(`[Wechat Mini Login] Successfully got phone number via new API: ${phone}`);
+        } else {
+          logger.warn(`[Wechat Mini Login] New API failed (errcode: ${phoneResponse.data?.errcode}):`, phoneResponse.data?.errmsg);
+        }
+      } catch (e: any) {
+        logger.error(`[Wechat Mini Login] New API exception:`, e.message);
+      }
     }
 
-    // 3. 查找或创建用户
-    let user: IUser | null = null;
+    // B. 如果新 API 失败或未提供 code，且提供了 loginCode + encryptedData，尝试解密
+    if (!phone && loginCode) {
+      const wxResponse = await axios.get(MINI_PROGRAM_CONFIG.loginUrl, {
+        params: {
+          appid: MINI_PROGRAM_CONFIG.appId,
+          secret: MINI_PROGRAM_CONFIG.appSecret,
+          js_code: loginCode,
+          grant_type: "authorization_code"
+        },
+        proxy: false
+      });
 
-    // 优先使用 unionid 查找
-    if (unionid) {
-      user = await User.findOne({ unionId: unionid });
-      if (user) {
-        if (user.appOpenid !== openid) {
-          user.appOpenid = openid;
-          await user.save();
+      const { openid: _openid, session_key, unionid: _unionid, errcode, errmsg } = wxResponse.data;
+      openid = _openid;
+      unionid = _unionid;
+      sessionKey = session_key;
+
+      if (errcode) {
+        logger.error(`[Wechat Mini Login] jscode2session error: ${errcode}, ${errmsg}`);
+      } else if (encryptedData && iv && sessionKey) {
+        try {
+          const pc = new WXBizDataCrypt(MINI_PROGRAM_CONFIG.appId, sessionKey);
+          const data = pc.decryptData(encryptedData, iv);
+          phone = data.phoneNumber || data.purePhoneNumber;
+          logger.info(`[Wechat Mini Login] Successfully decrypted phone number via old API: ${phone}`);
+        } catch (e: any) {
+          logger.error(`[Wechat Mini Login] Decryption failed:`, e.message);
         }
       }
     }
 
-    // 尝试使用 appOpenid 查找
-    if (!user && openid) {
-      user = await User.findOne({ appOpenid: openid });
-      if (user && unionid) {
-        user.unionId = unionid;
-        await user.save();
-      }
+    // --- 步骤 2: 验证必要信息 ---
+    // 如果既没拿到手机号，也没拿到 openid (jscode2session 失败)，则无法继续
+    if (!phone && !openid) {
+      ctx.body = { 
+        code: 500, 
+        msg: "Failed to obtain user info from Wechat", 
+        data: { phoneObtained: !!phone, openidObtained: !!openid } 
+      };
+      return;
     }
 
-    // 尝试使用手机号查找
-    if (!user && phone) {
-      user = await User.findOne({ phone });
-      if (user) {
-        user.appOpenid = openid;
-        if (unionid) user.unionId = unionid;
-        await user.save();
-      }
+    // --- 步骤 3: 用户绑定/创建逻辑 ---
+    let user: IUser | null = null;
+
+    // 1. 如果提供了 userId，则直接绑定到该用户
+    if (userId && userId.length === 24) { // 检查是否为有效的 MongoDB ObjectId 长度
+        user = await User.findById(userId);
+        if (user) {
+            if (phone) user.phone = phone;
+            if (openid) user.appOpenid = openid;
+            if (unionid) user.unionId = unionid;
+            await user.save();
+            logger.info(`[Wechat Mini Login] Bound phone/openid to existing user: ${userId}`);
+        }
     }
 
-    // 创建新用户
+    // 2. 如果没有 userId 或没找到，则通过 openid/unionid/phone 查找
+    if (!user) {
+        if (unionid) {
+            user = await User.findOne({ unionId: unionid });
+        }
+        if (!user && openid) {
+            user = await User.findOne({ appOpenid: openid });
+        }
+        if (!user && phone) {
+            user = await User.findOne({ phone });
+        }
+    }
+
+    // 3. 更新现有用户信息
+    if (user) {
+        let changed = false;
+        if (openid && user.appOpenid !== openid) {
+            user.appOpenid = openid;
+            changed = true;
+        }
+        if (unionid && user.unionId !== unionid) {
+            user.unionId = unionid;
+            changed = true;
+        }
+        if (phone && user.phone !== phone) {
+            user.phone = phone;
+            changed = true;
+        }
+        if (changed) await user.save();
+    }
+
+    // 4. 创建新用户
     if (!user) {
       user = new User({
         username: `Mini_${Date.now()}`,
@@ -191,10 +295,12 @@ export const miniProgramLogin = async (ctx: Context) => {
         role: UserRoleEnum.USER
       });
       await user.save();
+      logger.info(`[Wechat Mini Login] Created new user: ${user._id}`);
     }
 
-    // 4. 生成 token
+    // 5. 生成 token
     const token = signToken(user);
+    ctx.cookies.set(LOGIN_COOKIE_KEY, token, getLoginCookieOptions());
 
     sendResponse.success(ctx, { 
       token, 
@@ -203,8 +309,11 @@ export const miniProgramLogin = async (ctx: Context) => {
       userId: user._id,
       username: user.username
     });
-  } catch (error) {
-    logger.error(`[Wechat Mini Login] Error:`, error);
+  } catch (error: any) {
+    logger.error(`[Wechat Mini Login] Error details:`, error.message, error.stack);
+    if (error.response) {
+        logger.error(`[Wechat Mini Login] Axios response error:`, error.response.status, error.response.data);
+    }
     sendResponse.error(ctx, "Internal server error");
   }
 };
@@ -227,7 +336,8 @@ export const wechatTemporaryLogin = async (ctx: Context) => {
         secret: MINI_PROGRAM_CONFIG.appSecret,
         js_code: code,
         grant_type: "authorization_code"
-      }
+      },
+      proxy: false
     });
 
     const { openid, session_key, unionid, errcode, errmsg } = wxResponse.data;
@@ -259,6 +369,8 @@ export const wechatTemporaryLogin = async (ctx: Context) => {
     }
 
     const token = signToken(user);
+    ctx.cookies.set(LOGIN_COOKIE_KEY, token, getLoginCookieOptions());
+    
     sendResponse.success(ctx, { 
       token, 
       user, 
@@ -366,7 +478,8 @@ export const wechatCallback = async (ctx: Context) => {
         secret: MP_CONFIG.appSecret,
         code,
         grant_type: "authorization_code"
-      }
+      },
+      proxy: false
     });
 
     const { access_token, openid, unionid, errcode, errmsg } = tokenResponse.data;
@@ -383,7 +496,8 @@ export const wechatCallback = async (ctx: Context) => {
         access_token,
         openid,
         lang: "zh_CN"
-      }
+      },
+      proxy: false
     });
 
     const { nickname, headimgurl } = userInfoResponse.data;

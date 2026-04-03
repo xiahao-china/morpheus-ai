@@ -1,6 +1,7 @@
 import type { IGetGenerationHistoryItem } from "@/api/images/getGenerationHistoryV2";
 import type { IHistoryCardInfo } from "../HistoryCard/const";
 import dayjs from "dayjs";
+import { makeUrlAbsolute } from "@/util/url";
 
 const calcTaskRatio = (width: number, height: number): string => {
   const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
@@ -22,7 +23,7 @@ export const mapToCards = (
 ): IHistoryCardInfo[] => {
   return records.map((item) => {
     const firstImage = item.images?.[0];
-    const imageUrl = item.imageUrl || firstImage?.imageUrl || "";
+    const imageUrl = makeUrlAbsolute(item.imageUrl || firstImage?.imageUrl || "");
     const width = item.width || firstImage?.width || 1024;
     const height = item.height || firstImage?.height || 1024;
     return {

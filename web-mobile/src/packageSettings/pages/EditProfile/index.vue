@@ -63,6 +63,7 @@ import { updateUserInfo } from "@/api/users/updateUserInfo";
 import { compressImageByDimension } from "@/util/imageCompress";
 import Layouts from "@/components/Layouts/index.vue";
 import { useUserStore } from "@/store/user";
+import { makeUrlAbsolute } from "@/util/url";
 
 const userStore = useUserStore();
 const form = ref<Partial<getUserInfoResponse>>({});
@@ -74,6 +75,9 @@ const fetchUserInfo = async () => {
     return;
   }
   form.value = res.data || {};
+  if (form.value.avatar) {
+    form.value.avatar = makeUrlAbsolute(form.value.avatar);
+  }
 };
 
 const handleAvatarClick = async () => {
@@ -95,7 +99,7 @@ const handleAvatarClick = async () => {
         onSuccess: (uploadRes) => {
           Taro.hideLoading();
           if (uploadRes.data && (uploadRes.data.fileUrl || uploadRes.data.url)) {
-            form.value.avatar = uploadRes.data.fileUrl || uploadRes.data.url;
+            form.value.avatar = makeUrlAbsolute(uploadRes.data.fileUrl || uploadRes.data.url);
           }
         },
         onFail: (err) => {

@@ -43,6 +43,13 @@ export const ROUTER_INFO = {
     needMobileNav: false,
     needBottomBar: true
   },
+  '/pages/Fengshui/History/index': {
+    pageName: 'AI风水-历史记录',
+    needLogin: true,
+    needNavBar: false,
+    needMobileNav: false,
+    needBottomBar: false
+  },
   '/pages/Fengshui/Progress/index': {
     pageName: 'AI风水-生成进度',
     needLogin: true,

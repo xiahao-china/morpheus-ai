@@ -167,6 +167,7 @@ import {
   type IUploadImageInfo
 } from './components/UploadBaseImages/const'
 import type { IReDrawStyleExposed } from './components/ReDrawStyle/const.ts';
+import { makeUrlAbsolute } from '@/util/url';
 
 import {
   DEFAULT_CHANGE_IMAGE_TASK_STATUS_INFO,
@@ -330,11 +331,11 @@ const createChangeImageTask = async (outputConfig: IEmitGenerationParams) => {
       if (taskData.images && taskData.images.length > 0) {
         const validImages = taskData.images.filter((img) => img.imageUrl);
         if (validImages.length > 0) {
-          generatedUnderImages.value = taskData.underImageUrl || uploadImageInfo.url || '';
+          generatedUnderImages.value = makeUrlAbsolute(taskData.underImageUrl || uploadImageInfo.url || '');
           generatedImages.value = validImages.map((img) => ({
             id: img.id.toString(),
-            url: img.imageUrl,
-            thumbnail: img.thumbnailUrl,
+            url: makeUrlAbsolute(img.imageUrl),
+            thumbnail: makeUrlAbsolute(img.thumbnailUrl),
             fileResourceId: img.fileResourceId,
             alt: `生成图片_${img.id}`,
             isFavorited: false,

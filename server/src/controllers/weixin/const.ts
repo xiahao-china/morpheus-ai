@@ -8,6 +8,8 @@ export const WECHAT_STATE_EXPIRE_SECONDS = 300;
 export const WECHAT_LOGIN_CODE_EXPIRE_SECONDS = 300;
 export const WECHAT_TOKEN_API_URL = "https://api.weixin.qq.com/sns/oauth2/access_token";
 export const WECHAT_USER_INFO_API_URL = "https://api.weixin.qq.com/sns/userinfo";
+export const WECHAT_ACCESS_TOKEN_API_URL = "https://api.weixin.qq.com/cgi-bin/token";
+export const WECHAT_GET_PHONE_NUMBER_URL = "https://api.weixin.qq.com/wxa/business/getuserphonenumber";
 
 export const buildSmsLoginRedisKey = (phone: string) => `${REDIS_KEYS.SMS_LOGIN_CODE}${phone}`;
 export const buildWechatLoginStateRedisKey = (state: string) => `${REDIS_KEYS.WECHAT_LOGIN_STATE}${state}`;

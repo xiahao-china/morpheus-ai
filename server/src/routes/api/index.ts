@@ -10,6 +10,7 @@ import pointsRoutes from "./points/index";       // 积分相关路由
 import taskRewardRoutes from "./task-reward/index"; // 任务奖励相关路由
 import weixinRoutes from "./weixin/index";       // 微信登录相关路由
 import paymentRoutes from "./payment/index";     // 支付相关路由
+import systemRoutes from "./system/index";      // 系统配置相关路由
 
 /**
  * API 路由聚合中心
@@ -20,9 +21,10 @@ export default (router: Router) => {
   squareRoutes(router);         // 广场模块
   fileRoutes(router);           // 文件模块
   generationRoutes(router);     // 生成任务模块
-  membershipRoutes(router);     // 会员模块
+  membershipRoutes(router);     // 会员套餐模块
   pointsRoutes(router);         // 积分模块
   taskRewardRoutes(router);     // 任务奖励模块
   weixinRoutes(router);         // 微信登录模块
   paymentRoutes(router);        // 支付模块
+  systemRoutes(router);         // 系统配置模块
 }

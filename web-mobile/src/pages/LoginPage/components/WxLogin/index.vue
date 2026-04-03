@@ -57,8 +57,10 @@ const wxOneClickLogin = async (phoneInfo: IGetphonenumberData) => {
     return;
   }
 
+  const loginRes = await Taro.login();
   const response = await wxMiniProgramLogin({
     ...phoneInfo.detail,
+    loginCode: loginRes.code,
     userId: userStore.id?.toString() || '',
   })
   if (response instanceof Error || response.data.code !== 200) {

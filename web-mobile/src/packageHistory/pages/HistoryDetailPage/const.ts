@@ -4,6 +4,7 @@ import type { UserInfo, WorkInfo } from './components/UserAndWorkInfo/const';
 import type { IGetGenerationHistoryItem } from '@/api/images/getGenerationHistoryDetail';
 import { EScaleType } from '@/pages/CarefullyReviseTheImage/components/ScaleType/const';
 import type { IGetChangeGenerationHistoryItem } from '@/api/images/getGenerationChangeImageHistoryDetail';
+import { makeUrlAbsolute } from '@/util/url';
 
 export interface IHistoryDetailInitProps {
   taskId: string;
@@ -59,13 +60,13 @@ export const handleToHistoryTaskInfo = (
       id: squareInfo.id,
       squareId: squareInfo.id.toString(),
       type: squareTaskInfo.type ?? EFunctionGroupMode.DRAWING,
-      underImageUrl: squareTaskInfo.underImageUrl,
+      underImageUrl: makeUrlAbsolute(squareTaskInfo.underImageUrl),
       completedTime: squareTaskInfo.completedTime,
       images: [
         {
           id: squareInfo.squareImage.id,
           fileResourceId: squareInfo.squareImage.fileResourceId,
-          imageUrl: squareInfo.squareImage.imageUrl,
+          imageUrl: makeUrlAbsolute(squareInfo.squareImage.imageUrl),
           isPublishedSquare: true,
         },
       ],
@@ -76,7 +77,7 @@ export const handleToHistoryTaskInfo = (
       height: squareTaskInfo.height,
       magnificationOutward: squareTaskInfo.magnificationOutward,
       enlargeTyped: squareTaskInfo.enlargeTyped,
-      referImageUrl: squareTaskInfo.referImageUrl,
+      referImageUrl: makeUrlAbsolute(squareTaskInfo.referImageUrl),
       negativePrompt: squareTaskInfo.negativePrompt,
       modelOutwardName: squareTaskInfo.modelOutwardName,
       originTaskInfo: squareTaskInfo,
@@ -89,10 +90,10 @@ export const handleToHistoryTaskInfo = (
     images: normalTaskInfo.images.map((item) => ({
       id: item.id,
       fileResourceId: item.fileResourceId,
-      imageUrl: item.imageUrl,
+      imageUrl: makeUrlAbsolute(item.imageUrl),
       isPublishedSquare: item.isPublishedSquare,
     })),
-    underImageUrl: normalTaskInfo.underImageUrl,
+    underImageUrl: makeUrlAbsolute(normalTaskInfo.underImageUrl),
     completedTime: normalTaskInfo.completedTime,
     scene: normalTaskInfo.scene,
     styleModelOutwardName: normalTaskInfo.styleModelOutwardName,
@@ -101,7 +102,7 @@ export const handleToHistoryTaskInfo = (
     height: normalTaskInfo.height,
     magnificationOutward: normalTaskInfo.magnificationOutward,
     enlargeTyped: normalTaskInfo.enlargeTyped,
-    referImageUrl: normalTaskInfo.referImageUrl,
+    referImageUrl: makeUrlAbsolute(normalTaskInfo.referImageUrl),
     negativePrompt: normalTaskInfo.negativePrompt,
     modelOutwardName: normalTaskInfo.modelOutwardName,
     originTaskInfo: normalTaskInfo,

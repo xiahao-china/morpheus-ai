@@ -9,7 +9,7 @@
           <text>最近更新日期：2025年08月05日</text>
         </view>
         <view :class="pageStyle['policy-body']">
-          <text :class="pageStyle['policy-intro']">深圳市星元云创有限公司（以下简称"我们"或"本公司"）是"暖界AI"网页端（https://tuiqiao.art/）、客户端、小程序及所有相关软硬件产品（以下简称"本平台"）的运营者。我们深知个人信息对您的重要性，并承诺严格按照《中华人民共和国个人信息保护法》《网络安全法》《数据安全法》及相关法规处理您的个人信息。请您在注册或使用本平台前，务必仔细阅读并充分理解本隐私政策，特别是加粗提示的条款。您点击"同意"或继续使用本平台，即视为已阅读并接受本政策的全部内容。</text>
+          <text :class="pageStyle['policy-intro']">深圳市星元云创有限公司（以下简称"我们"或"本公司"）是"暖界AI"网页端（https://libuli.top/）、客户端、小程序及所有相关软硬件产品（以下简称"本平台"）的运营者。我们深知个人信息对您的重要性，并承诺严格按照《中华人民共和国个人信息保护法》《网络安全法》《数据安全法》及相关法规处理您的个人信息。请您在注册或使用本平台前，务必仔细阅读并充分理解本隐私政策，特别是加粗提示的条款。您点击"同意"或继续使用本平台，即视为已阅读并接受本政策的全部内容。</text>
 
           <text :class="pageStyle['policy-text']">本政策将帮助您了解：</text>
           <view :class="pageStyle['policy-list']">
@@ -118,16 +118,16 @@
           <view :class="pageStyle['policy-chapter']">五、您如何管理您的个人信息</view>
           <text :class="pageStyle['policy-text']">您可通过"我的-设置-隐私与安全"路径或以下方式行使权利：</text>
           <view>
-            <text>1.查询、复制：发送邮件至business@tuiqiao.art，我们将在15个工作日内提供数据副本。</text>
+            <text>1.查询、复制：发送邮件至business@libuli.top，我们将在15个工作日内提供数据副本。</text>
             <text>2.更正/补充：在"个人中心"自行修改或联系客服。</text>
             <text>3.删除：除法律法规另有要求外，您可删除作品、注销账号，我们将同步删除或匿名化。</text>
             <text>4.撤回授权：在设备设置关闭权限，或邮件撤回营销授权。</text>
             <text>5.注销账号：在"设置-账号安全-注销账号"提交申请，核验身份后立即生效；账号注销后，所有数据不可恢复。</text>
-            <text>6.投诉与举报：发送邮件至 business@tuiqiao.art，我们将在15个工作日内答复。</text>
+            <text>6.投诉与举报：发送邮件至 business@libuli.top，我们将在15个工作日内答复。</text>
           </view>
           <text :class="pageStyle['policy-text']">我们非常重视您对个人信息的关注，并尽力保护您对于您个人信息访问、更正、删除的权利，以使您拥有充分的能力保障您的隐私和安全。您的权利包括：</text>
           <view>（一）访问、更正</view>
-          <text :class="pageStyle['policy-text']">我们鼓励您更新和修改您的信息以使其更准确有效。您可以查询、访问、管理您的个人账号信息。您可以点击账号的【编辑个人信息】管理您的个人信息，并根据对应信息的管理方式自行完成或要求我们进行修改、补充。您可以在编辑个人信息-设置界面更改您的密码，您也可以联系我们的人工客服或发送电子邮件至：business@tuiqiao.art，申请更正您的信息，我们承诺在15个工作日内完成核查和处理。</text>
+          <text :class="pageStyle['policy-text']">我们鼓励您更新和修改您的信息以使其更准确有效。您可以查询、访问、管理您的个人账号信息。您可以点击账号的【编辑个人信息】管理您的个人信息，并根据对应信息的管理方式自行完成或要求我们进行修改、补充。您可以在编辑个人信息-设置界面更改您的密码，您也可以联系我们的人工客服或发送电子邮件至：business@libuli.top，申请更正您的信息，我们承诺在15个工作日内完成核查和处理。</text>
           <text :class="pageStyle['policy-text']">在访问、更正和删除前述信息时，我们可能会要求您进行身份验证，以保障您的账户安全。</text>
           <view>（二）删除</view>
           <text :class="pageStyle['policy-text']">在以下情形中，您可以向我们提出删除个人信息的请求，但已做数据匿名化处理或法律法规另有规定的除外。</text>
@@ -147,7 +147,7 @@
           <text :class="pageStyle['policy-text']">您也可以通过本政策文末提供的方式联系我们，收回您的授权同意。当您收回同意后，我们将不再处理相应的个人信息。但您收回同意决定，不会影响此前基于您的授权而开展的个人信息处理。您也可以通过注销账号的方式，永久撤回我们继续收集您个人信息的全部授权。</text>
           <text :class="pageStyle['policy-text']">请您理解，每个业务功能需要一些基本的个人信息才能得以完成，当您撤回同意或授权后，我们无法继续为您提供撤回同意或授权所对应的服务，也不再处理您相应的个人信息。但您撤回同意或授权的决定，不会影响此前基于您的授权而开展的个人信息处理。</text>
           <view>（五）提出异议</view>
-          <text :class="pageStyle['policy-text']">若您认为我们对您个人信息的处理违反了本政策或相关法律法规的要求，您可以发送邮件方式（邮件地址：business@tuiqiao.art）提出您的异议。您的每一条宝贵建议我们承诺在15个工作日内完成回复和处理。</text>
+          <text :class="pageStyle['policy-text']">若您认为我们对您个人信息的处理违反了本政策或相关法律法规的要求，您可以发送邮件方式（邮件地址：business@libuli.top）提出您的异议。您的每一条宝贵建议我们承诺在15个工作日内完成回复和处理。</text>
 
           <view :class="pageStyle['policy-chapter']">六、未成年人个人信息保护</view>
           <text :class="pageStyle['policy-text']">我们非常重视未成年人的个人信息保护。本平台主要面向18周岁以上成年人。如您是未成年人，您应当在征得您的监护人同意的前提下或由您的监护人代理您使用暖界AI平台。对于经监护人同意使用暖界AI平台而收集未成年人个人信息的情况，我们只会在法律法规允许且监护人同意的前提下，按照本政策所述规则处理该等个人信息。</text>
@@ -176,7 +176,7 @@
 
           <view :class="pageStyle['policy-chapter']">八、如何联系我们</view>
           <text :class="pageStyle['policy-text']">如果您对本政策内容或对本公司如何处理个人信息存有疑问，您可以随时通过以下方式联系我们。</text>
-          <text :class="pageStyle['policy-text']">邮箱：businesstuiqiao.art</text>
+          <text :class="pageStyle['policy-text']">邮箱：business@libuli.top</text>
           <text :class="pageStyle['policy-text']">电话：15323475311（工作日 9:30-18:30）</text>
           <text :class="pageStyle['policy-text']">公司名称：深圳市星元云创科技有限公司</text>
           <text :class="pageStyle['policy-text']">地址：深圳市宝安区流塘产业园A栋6楼</text>

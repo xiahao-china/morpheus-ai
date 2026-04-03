@@ -2,12 +2,14 @@
   <Layouts>
     <view :class="styles.container">
       <!-- Header Banner -->
-      <view :class="styles.banner">
+      <view :class="styles.bannerShell">
+        <view :class="styles.banner"></view>
         <view :class="styles.bannerContent">
           <view :class="styles.title">AI 深度风水解析</view>
           <view :class="styles.subtitle">融合传统智慧与现代AI技术</view>
         </view>
       </view>
+
 
       <!-- Mode Switcher -->
       <view :class="styles.modeSwitcher">
@@ -35,7 +37,7 @@
       <view :class="styles.actionGroup">
         <view :class="styles.historyBtn" @tap="handleOpenHistory">查看记录</view>
         <view :class="[styles.startBtn, imageId ? styles.active : '']" @tap="handleStart">
-          {{ loading ? '处理中...' : '立即开始 (4积分)' }}
+          {{ loading ? '处理中...' : '立即开始' }}
         </view>
       </view>
     </view>
@@ -50,6 +52,7 @@ import { IconFont } from '@nutui/icons-vue-taro';
 import { createFengshuiTask } from '@/api/fengshui';
 import { uploadImageByTaroUrl } from '@/api/files/uploadFileByTaroUrl';
 import type { UploadImageResponse } from '@/api/files/uploadFile';
+import { makeUrlAbsolute } from '@/util/url';
 import styles from './index.module.less';
 
 const imageUrl = ref('');
@@ -71,7 +74,7 @@ const uploadFengshuiImage = (filePath: string) => {
         }
         resolve({
           imageId: uploadedImageId,
-          imageUrl: uploadedImageUrl
+          imageUrl: makeUrlAbsolute(uploadedImageUrl)
         });
       },
       onFail: (err) => {

@@ -41,8 +41,8 @@ export const useResponseErrorHandle: useResponseInterceptorsCallback = (axios) =
       return response;
     },
     (error) => {
-      const url = new URL(error.config.url);
-      console.log('url.toString()',url.toString());
+      // const url = new URL(error.config.url);
+      // console.log('url.toString()',url.toString());
       // reportApiStatus({
       //   tags: {
       //     event_type: 'status_code',

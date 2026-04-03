@@ -4,6 +4,7 @@ import { Toast } from '@nutui/nutui-taro';
 import {getUserInfo as getUserInfoApi} from '@/api/users/getUserInfo'
 import * as Sentry from '@sentry/vue'
 import Taro from "@tarojs/taro";
+import { makeUrlAbsolute } from '@/util/url';
 
 // 用户信息接口定义
 export interface UserInfo {
@@ -60,11 +61,11 @@ export const useUserStore = defineStore('user', () => {
       return false;
     }
 
-    const { _id, username, avatar, phone, nickname: nick, personalSignature: sig, points: pts } = response.data;
+    const { _id, username, avatar: avatarPath, phone, nickname: nick, personalSignature: sig, points: pts } = response.data;
     setUserInfo({
       id: _id,
       name: username,
-      avatar: avatar || '',
+      avatar: makeUrlAbsolute(avatarPath || ''),
       isLogin: Boolean(username),
       isPhone: Boolean(phone),
       nickname: nick,

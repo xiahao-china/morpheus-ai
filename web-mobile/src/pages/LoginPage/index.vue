@@ -1,71 +1,69 @@
 <template>
   <Layouts>
-    <RootPortalEl>
-      <view :class="pageStyle['login-container']">
-        <view :class="pageStyle['login-card']">
-          <template v-if="loginMainStep === ELoginMainStepType.login">
-            <view :class="pageStyle['login-card-content']">
-              <view :class="pageStyle['card-header']">
-                <view :class="pageStyle['logo']">
-                  <image :class="pageStyle['logo-icon']" :src="logoImg" />
-                  <text :class="pageStyle['logo-text']">暖界AI</text>
-                </view>
-                <view :class="pageStyle['title']">
-                  <text :class="pageStyle['main-title']">登录账号</text>
-                  <text :class="pageStyle['sub-title']">未注册手机号验证通过后将自动创建账号</text>
-                </view>
+    <view :class="pageStyle['login-container']" :style="{ height: `${containerHeight}px`}">
+      <view :class="pageStyle['login-card']">
+        <template v-if="loginMainStep === ELoginMainStepType.login">
+          <view :class="pageStyle['login-card-content']">
+            <view :class="pageStyle['card-header']">
+              <view :class="pageStyle['logo']">
+                <image :class="pageStyle['logo-icon']" :src="logoImg" />
+                <text :class="pageStyle['logo-text']">暖界AI</text>
               </view>
-
-              <view :class="pageStyle['custom-tabs']">
-                <view
-                  :class="[pageStyle['tab-item'], { [pageStyle['active']]: activeTab === 'wxQrCode' }]"
-                  @click="()=>changeActiveTab('wxQrCode')"
-                >
-                  <IconFont :class="pageStyle['tab-icon']" font-class-name="iconfont" class-prefix="icon" name="weixin" />
-                  <text>微信登录</text>
-                </view>
-                <view
-                  :class="[pageStyle['tab-item'], { [pageStyle['active']]: activeTab === 'phone' }]"
-                  @click="activeTab = 'phone'"
-                >
-                  <IconFont :class="pageStyle['tab-icon']" font-class-name="iconfont" class-prefix="icon" name="shouji" />
-                  <text>手机号</text>
-                </view>
-              </view>
-
-              <view :class="pageStyle['tab-content']">
-                <view v-if="activeTab === 'wxQrCode' && isMiniProgramEnv">
-                  <WxLogin @bind-phone="handleWxLoginBindPhone" />
-                </view>
-                <view v-if="activeTab === 'phone'">
-                  <PhoneLogin />
-                </view>
+              <view :class="pageStyle['title']">
+                <text :class="pageStyle['main-title']">登录账号</text>
+                <text :class="pageStyle['sub-title']">未注册手机号验证通过后将自动创建账号</text>
               </view>
             </view>
-          </template>
 
-          <template v-if="loginMainStep === ELoginMainStepType.bindPhone">
-            <view :class="pageStyle['login-card-content']">
-              <view :class="pageStyle['card-header']">
-                <view :class="pageStyle['logo']">
-                  <image :class="pageStyle['logo-icon']" :src="logoImg" />
-                  <text :class="pageStyle['logo-text']">暖界AI</text>
-                </view>
-                <view :class="pageStyle['title']">
-                  <text :class="pageStyle['main-title']">绑定手机号</text>
-                  <text :class="pageStyle['sub-title']">未注册的微信号登录时，将自动创建暖界AI账号</text>
-                </view>
+            <view :class="pageStyle['custom-tabs']">
+              <view
+                :class="[pageStyle['tab-item'], { [pageStyle['active']]: activeTab === 'wxQrCode' }]"
+                @click="()=>changeActiveTab('wxQrCode')"
+              >
+                <IconFont :class="pageStyle['tab-icon']" font-class-name="iconfont" class-prefix="icon" name="weixin" />
+                <text>微信登录</text>
               </view>
-              <PhoneLogin :is-bind-phone="true" />
+              <view
+                :class="[pageStyle['tab-item'], { [pageStyle['active']]: activeTab === 'phone' }]"
+                @click="activeTab = 'phone'"
+              >
+                <IconFont :class="pageStyle['tab-icon']" font-class-name="iconfont" class-prefix="icon" name="shouji" />
+                <text>手机号</text>
+              </view>
             </view>
-          </template>
 
-          <view :class="pageStyle['footer-disclaimer']">
-            AI 生成内容具有随机性，请仔细甄别 • 暖界AI
+            <view :class="pageStyle['tab-content']">
+              <view v-if="activeTab === 'wxQrCode' && isMiniProgramEnv">
+                <WxLogin @bind-phone="handleWxLoginBindPhone" />
+              </view>
+              <view v-if="activeTab === 'phone'">
+                <PhoneLogin />
+              </view>
+            </view>
           </view>
+        </template>
+
+        <template v-if="loginMainStep === ELoginMainStepType.bindPhone">
+          <view :class="pageStyle['login-card-content']">
+            <view :class="pageStyle['card-header']">
+              <view :class="pageStyle['logo']">
+                <image :class="pageStyle['logo-icon']" :src="logoImg" />
+                <text :class="pageStyle['logo-text']">暖界AI</text>
+              </view>
+              <view :class="pageStyle['title']">
+                <text :class="pageStyle['main-title']">绑定手机号</text>
+                <text :class="pageStyle['sub-title']">未注册的微信号登录时，将自动创建暖界AI账号</text>
+              </view>
+            </view>
+            <PhoneLogin :is-bind-phone="true" />
+          </view>
+        </template>
+
+        <view :class="pageStyle['footer-disclaimer']">
+          AI 生成内容具有随机性，请仔细甄别 • 暖界AI
         </view>
       </view>
-    </RootPortalEl>
+    </view>
   </Layouts>
 </template>
 
@@ -76,7 +74,8 @@ import Taro from '@tarojs/taro';
 import { useUserStore } from '@/store';
 import {getIsWeb, isMiniProgram} from "@/util/envCheck";
 import Layouts from "@/components/Layouts/index.vue";
-import RootPortalEl from '@/components/RootPortalEl/index.vue'
+import {getRemainingHeight} from "@/util/layout.ts";
+// import RootPortalEl from '@/components/RootPortalEl/index.vue'
 
 import WxLogin from './components/WxLogin/index.vue';
 import type { IWxLoginBindPhoneData } from './components/WxLogin/const';
@@ -89,6 +88,7 @@ import logoImg from '@/assest/image/logo.png';
 import pageStyle from './index.module.less'
 
 const userStore = useUserStore()
+const containerHeight = ref(getRemainingHeight());
 const isMiniProgramEnv = isMiniProgram();
 
 const isWeb = getIsWeb();

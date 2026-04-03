@@ -60,7 +60,9 @@ import { compressImageByDimension } from "@/util/imageCompress";
 import type { UploadImageResponse } from "@/api/files/uploadFile";
 import { EDrawingType } from "@/api/generate/workStream";
 import { useDrawingV2ConversationStore } from "@/store";
-import type { IDrawingModeOption } from "@/pages/DrawingV2/const";
+import { type IDrawingModeOption } from "@/pages/DrawingV2/const";
+import { makeUrlAbsolute } from "@/util/url";
+
 import type { IBottomDialogProps } from "./const";
 import pageStyle from "./index.module.less";
 
@@ -114,7 +116,7 @@ const handlePickImage = async () => {
       onSuccess: (result) => {
         uploading.value = false;
         const data = result.data as UploadImageResponse | undefined;
-        uploadImageUrl.value = data?.fileUrl || data?.url || "";
+        uploadImageUrl.value = makeUrlAbsolute(data?.fileUrl || data?.url || "");
         uploadImageId.value = data?.fileId || String(data?.id || "");
       },
       onFail: () => {

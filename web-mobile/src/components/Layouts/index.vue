@@ -6,7 +6,7 @@
       :show-logo-and-title="showNavigationBar"
       :background-color="navBackgroundColor"
     />
-    <view :class="pageStyle['app-layout-content']">
+    <view :class="pageStyle['app-layout-content']" >
       <slot />
     </view>
     <!-- 根据配置控制BottomNavigation显示 -->
@@ -92,17 +92,17 @@ onMounted(async ()=>{
     await onceGetTemporaryLoginInfo();
     return;
   }
-  const config = getCurrentPageConfig();
-  reportPage({
-    tags:{
-      event_type: 'page_browse'
-    },
-    fields:{
-      user_id: userStore.id || '',
-      path: config.route,
-    },
-    timestamp: Date.now() * 1e6,
-  })
+  // const config = getCurrentPageConfig();
+  // reportPage({
+  //   tags:{
+  //     event_type: 'page_browse'
+  //   },
+  //   fields:{
+  //     user_id: userStore.id || '',
+  //     path: config.route,
+  //   },
+  //   timestamp: Date.now() * 1e6,
+  // })
 })
 </script>
 

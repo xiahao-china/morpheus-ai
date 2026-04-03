@@ -186,7 +186,11 @@ import {
   SCROLL_THRESHOLD
 } from "./const";
 import { getMyHistory, EHistoryFilterTime } from "@/api/images/getMyHistory";
-import { getImageCollections } from "@/api/images/getImageCollections";
+import {
+  getImageCollections,
+  type IGetImageCollectionsItem,
+} from "@/api/images/getImageCollections";
+import { makeUrlAbsolute } from "@/util/url";
 import { onMounted, ref, computed } from "vue";
 import {
   Clock,
@@ -361,7 +365,7 @@ const loadData = async () => {
                 newItems.push({
                   id: img.id.toString(),
                   fileResourceId: img.fileResourceId,
-                  url: img.recordThumbnailUrl,
+                  url: makeUrlAbsolute(img.recordThumbnailUrl),
                   recordId: record.id,
                   type: record.type,
                 });
@@ -396,7 +400,7 @@ const loadData = async () => {
         const newItems = res.data.list
           .map((record) => ({
             id: record.imageId,
-            url: record.imageUrl || "",
+            url: makeUrlAbsolute(record.imageUrl || ""),
             recordId: record.imageGenTaskId,
             fileResourceId: record.fileResourceId,
           }))
