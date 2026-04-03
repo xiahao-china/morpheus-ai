@@ -1,4 +1,4 @@
-import { streamGet, streamPost } from '@/lib/request/http'
+import { streamGet } from '@/lib/request/http'
 import { EFunctionGroupMode } from '@/pages/CarefullyReviseTheImage/components/FunctionGroup/const';
 
 interface GeneratedImageInfo {

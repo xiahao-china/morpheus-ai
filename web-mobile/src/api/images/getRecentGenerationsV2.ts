@@ -1,7 +1,4 @@
 import { httpGet } from '@/lib/request/http';
-import {
-  EFunctionGroupMode
-} from '@/pages/CarefullyReviseTheImage/components/FunctionGroup/const'
 
 interface RecentGenerationImage {
   id: number;

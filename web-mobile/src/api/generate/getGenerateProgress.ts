@@ -1,5 +1,4 @@
 import { httpGet } from '@/lib/request/http'
-import type { GeneratedImageResponse } from '@/api/images/createGenerateTaskStream'
 
 export type GenerateStatus = 'INITIATED' | 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED'
 

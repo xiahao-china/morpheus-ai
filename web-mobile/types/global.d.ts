@@ -29,3 +29,44 @@ declare namespace NodeJS {
 declare module '@tarojs/components' {
   export * from '@tarojs/components/types/index.vue3'
 }
+
+declare module 'element-plus' {
+  export type FormItemRule = Record<string, unknown>
+  export const ElButton: any
+  export const ElCollapse: any
+  export const ElCollapseItem: any
+  export const ElIcon: any
+  export const ElImage: any
+  export const ElInfiniteScroll: any
+  export const ElMessage: any
+  export const ElOption: any
+  export const ElPopover: any
+  export const ElProgress: any
+  export const ElRadioButton: any
+  export const ElRadioGroup: any
+  export const ElSelect: any
+  export const ElSlider: any
+  export const ElTag: any
+  export const ElTooltip: any
+  export const ElTree: any
+}
+
+declare module '@vueuse/core' {
+  export type Arrayable<T> = T | T[]
+}
+
+declare module 'fabric' {
+  export const fabric: any
+}
+
+declare module 'fabric/fabric-impl' {
+  export type Point = any
+}
+
+declare module 'react' {
+  const React: any
+  export = React
+}
+
+declare module '@tarojs/plugin-platform-weapp/types/shims-weapp' {}
+declare module '@tarojs/taro-rn/types/overlay' {}

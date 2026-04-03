@@ -49,4 +49,4 @@ export const getGenerateTaskStatus = async (taskId: string) => {
 
 export type GetTaskStatusResponse = ImageGenerationResponse;
 
-export type { ImageGenerationResponse, GeneratedImageResponse };
+export type { GeneratedImageResponse };

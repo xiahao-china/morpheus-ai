@@ -3,7 +3,7 @@
     <!-- 头像部分 -->
     <view :class="styles.avatar">
       <view :class="styles.avatarWrapper">
-        <image :src="userInfo.avatar || ''" :class="styles.avatarImage" />
+        <image :src="userInfo.avatar || defaultAvatar" :class="styles.avatarImage" />
       </view>
     </view>
 
@@ -37,6 +37,7 @@
 import styles from "./index.module.less";
 import type { getUserInfoResponse } from "@/api/users/getUserInfo";
 import { Edit, Service } from '@nutui/icons-vue-taro';
+import defaultAvatar from '@/assest/image/logo.png';
 
 defineOptions({
   name: "UserInfo",

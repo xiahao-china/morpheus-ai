@@ -12,15 +12,15 @@ export enum ESourceType{
 }
 
 export const generateImageFeedbackLike = async (id: string) => {
-  return httpPost(`/image/${id}/like`, {
+  return httpPost<{ action: string }, IFeedbackInfo>(`/image/${id}/like`, {
     action: 'toggle',
   });
 };
 
 export const generateImageCollect = async (id: string) => {
-  return httpPost(`/image/${id}/collect`, {});
+  return httpPost<object, IFeedbackInfo>(`/image/${id}/collect`, {});
 };
 
 export const cancelGenerateImageCollect = async (id: string) => {
-  return httpDelete(`/image/${id}/collect`, {});
+  return httpDelete<object, IFeedbackInfo>(`/image/${id}/collect`, {});
 };

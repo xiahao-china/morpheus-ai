@@ -12,6 +12,9 @@ export interface UserInfo {
   avatar: string
   isLogin: boolean
   isPhone?: boolean;
+  nickname?: string;
+  personalSignature?: string;
+  points?: number;
 }
 
 const testStorageCanUse = () => {
@@ -40,6 +43,9 @@ export const useUserStore = defineStore('user', () => {
   const avatar = ref<string>('')
   const isLogin = ref<boolean>(false);
   const isPhone = ref<boolean>(false);
+  const nickname = ref<string>('');
+  const personalSignature = ref<string>('');
+  const points = ref<number>(0);
 
   const hasInitLoginInfo = ref<boolean>(false);
 
@@ -54,13 +60,16 @@ export const useUserStore = defineStore('user', () => {
       return false;
     }
 
-    const { _id, username, avatar, phone } = response.data;
+    const { _id, username, avatar, phone, nickname: nick, personalSignature: sig, points: pts } = response.data;
     setUserInfo({
       id: _id,
       name: username,
       avatar: avatar || '',
       isLogin: Boolean(username),
       isPhone: Boolean(phone),
+      nickname: nick,
+      personalSignature: sig,
+      points: pts,
     })
     hasInitLoginInfo.value = true;
     return true;
@@ -78,6 +87,9 @@ export const useUserStore = defineStore('user', () => {
     avatar.value = userInfo.avatar
     isLogin.value = userInfo.isLogin
     isPhone.value = userInfo.isPhone || false;
+    nickname.value = userInfo.nickname || '';
+    personalSignature.value = userInfo.personalSignature || '';
+    points.value = userInfo.points || 0;
   }
 
   // 清除用户信息
@@ -87,6 +99,9 @@ export const useUserStore = defineStore('user', () => {
     avatar.value = ''
     isLogin.value = false;
     isPhone.value = false;
+    nickname.value = '';
+    personalSignature.value = '';
+    points.value = 0;
   }
 
   // 获取用户信息
@@ -97,6 +112,9 @@ export const useUserStore = defineStore('user', () => {
       avatar: avatar.value,
       isLogin: isLogin.value,
       isPhone: isPhone.value,
+      nickname: nickname.value,
+      personalSignature: personalSignature.value,
+      points: points.value,
     }
   }
 
@@ -108,6 +126,9 @@ export const useUserStore = defineStore('user', () => {
     isLogin,
     hasInitLoginInfo,
     isPhone,
+    nickname,
+    personalSignature,
+    points,
 
     // 方法
     setUserInfo,

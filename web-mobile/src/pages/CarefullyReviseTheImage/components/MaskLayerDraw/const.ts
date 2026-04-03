@@ -216,8 +216,12 @@ export const turnCanvasToImageAndUpload = async (maskCanvas: IObject, uploadInfo
     return;
   }
 
-  uploadInfo.value.id = res.data.id.toString();
-  return res.data.id.toString();
+  const uploadedId = res.data.id?.toString() || res.data.fileId;
+  if (!uploadedId) {
+    return;
+  }
+  uploadInfo.value.id = uploadedId;
+  return uploadedId;
 };
 
 

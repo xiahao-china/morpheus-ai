@@ -7,6 +7,11 @@ export enum EHistoryFilterTime {
   'all' = 'all',
 }
 
+export interface IGetGenerationHistoryParams {
+  page: number
+  pageSize: number
+}
+
 export interface ImageInfo {
   id: number
   userId: number
@@ -24,6 +29,7 @@ export interface ImageInfo {
 }
 
 export interface IGetGenerationHistoryItem {
+  id: number;
   _id: string;
   userId: string;
   imageGenTaskId: string;
@@ -39,19 +45,19 @@ export interface IGetGenerationHistoryItem {
   type?: string;
   status?: string;
   progress?: number;
+  generatedImages?: ImageInfo[];
+  editedGeneratedImages?: ImageInfo[];
   images?: Array<{
+    id?: number;
     imageId: string;
     imageUrl: string;
-    fileResourceId?: string;
+    fileResourceId?: string | number;
     width?: number;
     height?: number;
     createdTime: string | Date;
     isLiked?: boolean;
     isPublishedToSquare?: boolean;
   }>;
-
-  // 兼容旧字段
-  generatedImages?: { imageUrl: string }[];
 }
 
 export interface IGetGenerationHistoryResponse {

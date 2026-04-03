@@ -56,6 +56,7 @@ import { computed, ref } from "vue";
 import Taro from "@tarojs/taro";
 import { Close, Photograph } from "@nutui/icons-vue-taro";
 import { uploadImageByTaroUrl } from "@/api/files/uploadFileByTaroUrl";
+import { compressImageByDimension } from "@/util/imageCompress";
 import type { UploadImageResponse } from "@/api/files/uploadFile";
 import { EDrawingType } from "@/api/generate/workStream";
 import { useDrawingV2ConversationStore } from "@/store";
@@ -84,7 +85,7 @@ const uploading = ref(false);
 const uploadProgress = ref(0);
 
 const sendDisabled = computed(() => {
-  return !prompt.value.trim() || drawingV2ConversationStore.hasActiveTask;
+  return !prompt.value.trim() || drawingV2ConversationStore.hasActiveTask || uploading.value;
 });
 
 const handlePickImage = async () => {
@@ -102,16 +103,22 @@ const handlePickImage = async () => {
   }
   uploading.value = true;
   uploadProgress.value = 0;
+
+  // 比例压缩至 1080px 内
+  const compressedPath = await compressImageByDimension(filePath);
+
   uploadImageByTaroUrl(
     {
-      filePath,
+      filePath: compressedPath,
       fileType: "UNDER_IMAGE",
       onSuccess: (result) => {
+        uploading.value = false;
         const data = result.data as UploadImageResponse | undefined;
         uploadImageUrl.value = data?.fileUrl || data?.url || "";
         uploadImageId.value = data?.fileId || String(data?.id || "");
       },
       onFail: () => {
+        uploading.value = false;
         Taro.showToast({ title: "上传失败", icon: "error" });
       },
     },
@@ -137,6 +144,13 @@ const selectMode = (mode: IDrawingModeOption) => {
 };
 
 const handleSubmit = async () => {
+  if (uploading.value) {
+    Taro.showToast({
+      title: "图片上传中，请稍后~",
+      icon: "none",
+    });
+    return;
+  }
   if (sendDisabled.value) {
     return;
   }

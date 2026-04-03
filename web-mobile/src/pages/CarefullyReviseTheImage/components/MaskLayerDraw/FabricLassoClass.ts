@@ -8,7 +8,7 @@ export enum ELassoType {
 }
 
 export interface IFabricLassoClassProps {
-  canvas: fabric.Canvas
+  canvas: IObject
   canvasShellEl: HTMLElement
   scale: number
 }
@@ -28,7 +28,7 @@ export const LASSO_ERASER_BASE_CONFIG = {
   stroke: 'rgb(253,223,196)',
 }
 
-function polygonToErasePath(polygon: fabric.Polygon, originCanvas: fabric.Canvas, width:number, height:number) {
+function polygonToErasePath(polygon: IObject, originCanvas: IObject, width:number, height:number) {
   // 1. 创建离屏 canvas
   const offCanvas = document.createElement('canvas');
   offCanvas.width = width;
@@ -72,7 +72,7 @@ export default class FabricLassoClass {
   // 最小结束距离，用于判断是否结束绘制，即在距离最开始点位小于这个距离时结束绘制
   private static MIN_END_DISTANCE = 5
   // 定义画布和画布元素
-  private canvas: fabric.Canvas
+  private canvas: IObject
   private canvasShellEl: HTMLElement
   // 定义绘制状态
   private isActive = false
@@ -80,7 +80,7 @@ export default class FabricLassoClass {
   // 获取放大倍率
   private scale = 1
 
-  private currentPolygon: fabric.Polygon | null = null
+  private currentPolygon: IObject | null = null
   // 已绘制的点
   private drawedPoints: Point[] = []
   // 正在绘制的点

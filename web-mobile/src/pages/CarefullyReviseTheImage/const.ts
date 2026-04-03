@@ -8,8 +8,6 @@ import {
 } from '@/pages/app/const.ts';
 import { createGenerateTaskStream, type GeneratedImageResponse, type IGenerateTaskData } from '@/api/images/createImagesEditedTaskStream.ts';
 import type { SSEReader } from '@/lib/request/sse.ts';
-import type { ImageGenerationResponse } from '@/api/images/getGenerateTaskStatus.ts';
-import type { IGetGenerationHistoryItem } from '@/api/images/getGenerationHistoryDetail.ts';
 import { CHANGE_IMAGE_MODE_LIST, EFunctionGroupMode } from './components/FunctionGroup/const.ts';
 import { EEnlargeMode } from '@/pages/CarefullyReviseTheImage/components/ResolutionSetting/const.ts';
 import type { IObject } from '@/constants/types.ts';
@@ -197,7 +195,7 @@ export const handleGenerationInfoByChangeImageTask = (
   console.log('changeImageTaskInfo', taskInfo);
   if (taskInfo.type && CHANGE_IMAGE_MODE_LIST.includes(taskInfo.type)){
     return {
-      ...handleGenerationInfoByTask(taskInfo as ImageGenerationResponse | IGetGenerationHistoryItem),
+      ...handleGenerationInfoByTask(taskInfo as unknown as IHandleGenerationInfoByTaskParams),
       type: taskInfo.type,
       concreteSceneId: taskInfo.concreteSceneId,
       isChangeImage: true,
@@ -210,7 +208,7 @@ export const handleGenerationInfoByChangeImageTask = (
     }
   }
   return {
-    ...handleGenerationInfoByTask(taskInfo as ImageGenerationResponse | IGetGenerationHistoryItem),
+    ...handleGenerationInfoByTask(taskInfo as unknown as IHandleGenerationInfoByTaskParams),
     isChangeImage: false,
     uploadImageUrl: taskInfo.images[orderIndex ?? 0].imageUrl,
     uploadImageId: taskInfo.images[orderIndex ?? 0].fileResourceId.toString(),

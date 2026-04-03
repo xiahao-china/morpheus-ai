@@ -64,19 +64,22 @@ export const mergeHistory = (
 ) => {
   const cloneHistory: IHistoryImage[] = [...curHistory]
   newHistory.forEach((item) => {
-    (item.generatedImages.length ? item.generatedImages : item.editedGeneratedImages)
-      .forEach((imgItem, index) => {
-        const handleImgItem = {
-          id: imgItem.fileResourceId.toString(),
-          url: imgItem.imageUrl,
-          functionType: item.type as EFunctionGroupMode,
-          extra: {
-            taskId: item.id.toString(),
-            imageIndex: index,
-          },
-        }
-        cloneHistory.push(handleImgItem)
-      })
+    const historyImages = item.generatedImages?.length
+      ? item.generatedImages
+      : (item.editedGeneratedImages ?? [])
+
+    historyImages.forEach((imgItem, index) => {
+      const handleImgItem = {
+        id: imgItem.fileResourceId.toString(),
+        url: imgItem.imageUrl,
+        functionType: item.type as EFunctionGroupMode,
+        extra: {
+          taskId: item.id.toString(),
+          imageIndex: index,
+        },
+      }
+      cloneHistory.push(handleImgItem)
+    })
   })
   return cloneHistory
 }

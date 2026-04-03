@@ -21,19 +21,38 @@ export interface ImageInfo {
 }
 
 export interface IGetGenerationHistoryItem {
+  id: number;
   taskId: string;
+  type: EFunctionGroupMode;
   status: string;
+  prompt: string;
+  negativePrompt: string;
+  modelId: number;
+  styleModelId?: number;
+  count: number;
+  scene?: string;
+  underImageUrl: string;
+  styleModelOutwardName: string;
+  magnificationOutward?: number;
+  enlargeTyped?: EScaleType;
+  referImageUrl: string;
+  modelOutwardName: string;
+  styleExtractionLevelOutward?: number;
+  underImageExtractionLevelOutward?: number;
+  referImageExtractionLevelOutward?: number;
+  underImageId?: number;
+  referImageId?: number;
   createdTime: string;
   startedTime?: string;
   completedTime?: string;
   progress: number;
   imageUrl?: string;
   imageId?: string;
-  width?: number;
-  height?: number;
-
-  // 兼容旧字段
-  images?: { imageUrl: string, id: number }[];
+  width: number;
+  height: number;
+  images: ImageInfo[];
+  generatedImages?: ImageInfo[];
+  editedGeneratedImages?: ImageInfo[];
 }
 
 export const getGenerationsDetail = async (taskId: string) => {

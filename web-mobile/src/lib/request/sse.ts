@@ -46,7 +46,7 @@ export function JsonTransformer<T = object>(message: string): Array<[undefined, 
 
 export class SSEReader<T = object> {
   private _stream: ReadableStream<Uint8Array>;
-  private _reader?: ReadableStreamDefaultReader<string>;
+  private _reader?: ReadableStreamDefaultReader<any>;
   private _transformer: TransformerFunction<T>;
   private _onProgress?: (data: T) => void;
   private _onEnd?: () => void;
@@ -61,10 +61,16 @@ export class SSEReader<T = object> {
   }
 
   async pip() {
-    this._reader = this._stream.pipeThrough(new TextDecoderStream()).getReader();
+    this._reader = (this._stream as unknown as ReadableStream<any>)
+      .pipeThrough(new TextDecoderStream() as any)
+      .getReader();
+    const reader = this._reader;
+    if (!reader) {
+      return;
+    }
 
     while (true) {
-      const { done, value } = await this._reader.read();
+      const { done, value } = await reader.read();
       console.log('value', done, value);
       if (done) {
         console.log('done-------');

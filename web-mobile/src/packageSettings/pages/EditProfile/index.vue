@@ -5,7 +5,7 @@
         <view :class="styles.avatarSection" @click="handleAvatarClick">
           <view :class="styles.avatarWrapper">
             <image
-              :src="form.avatar || ''"
+              :src="form.avatar || defaultAvatar"
               mode="aspectFill"
               :class="styles.avatar"
             />
@@ -24,7 +24,7 @@
               v-model="form.username"
               placeholder="请输入昵称"
               placeholder-class="input-placeholder"
-              maxlength="12"
+              maxlength="20"
             />
           </view>
 
@@ -54,13 +54,17 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { Photograph } from "@nutui/icons-vue-taro";
+import defaultAvatar from '@/assest/image/logo.png';
 import styles from "./index.module.less";
 import Taro from "@tarojs/taro";
 import { uploadImageByTaroUrl } from "@/api/files/uploadFileByTaroUrl";
 import { getUserInfo, type getUserInfoResponse } from "@/api/users/getUserInfo";
 import { updateUserInfo } from "@/api/users/updateUserInfo";
+import { compressImageByDimension } from "@/util/imageCompress";
 import Layouts from "@/components/Layouts/index.vue";
+import { useUserStore } from "@/store/user";
 
+const userStore = useUserStore();
 const form = ref<Partial<getUserInfoResponse>>({});
 
 const fetchUserInfo = async () => {
@@ -81,7 +85,8 @@ const handleAvatarClick = async () => {
     });
 
     if (res.tempFilePaths.length > 0) {
-      const tempFilePath = res.tempFilePaths[0];
+      Taro.showLoading({ title: "压缩中..." });
+      const tempFilePath = await compressImageByDimension(res.tempFilePaths[0], 1080, 1080);
       Taro.showLoading({ title: "上传中..." });
 
       uploadImageByTaroUrl({
@@ -113,6 +118,18 @@ const handleSave = async () => {
       console.log(res);
       return;
     }
+
+    // 更新 store
+    userStore.setUserInfo({
+      id: form.value._id || userStore.id,
+      name: form.value.username || userStore.name,
+      avatar: form.value.avatar || userStore.avatar,
+      isLogin: userStore.isLogin,
+      isPhone: userStore.isPhone,
+      nickname: form.value.nickname || userStore.nickname,
+      personalSignature: form.value.personalSignature || userStore.personalSignature,
+      points: form.value.points || userStore.points,
+    });
 
     Taro.hideLoading();
     Taro.showToast({ title: "保存成功", icon: "success" });

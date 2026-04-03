@@ -5,19 +5,19 @@
       <view :class="styles.userInfoCard" @tap="handleEditProfile">
         <view :class="styles.avatarWrapper">
           <image
-            :src="userInfo.avatar || defaultAvatar"
+            :src="userStore.avatar || defaultAvatar"
             mode="aspectFill"
             :class="styles.avatar"
           />
         </view>
         <view :class="styles.infoContent">
-          <view :class="styles.nickname">{{ userInfo.nickname || userInfo.username || '未登录用户' }}</view>
+          <view :class="styles.nickname">{{ userStore.name || '未登录用户' }}</view>
           <view :class="styles.signature">
-            {{ userInfo.personalSignature || '追求极致美学的家装爱好者' }}
+            {{ userStore.personalSignature || '追求极致美学的家装爱好者' }}
           </view>
           <view :class="styles.tagsRow">
             <view :class="styles.memberTag">PRO 会员</view>
-            <view :class="styles.pointsTag">积分: {{ userInfo.points || 0 }}</view>
+            <view :class="styles.pointsTag">积分: {{ userStore.points || 0 }}</view>
           </view>
         </view>
       </view>
@@ -118,8 +118,10 @@
 import { ref, onMounted } from "vue";
 import Taro, { useDidShow } from "@tarojs/taro";
 import Layouts from "@/components/Layouts/index.vue";
-import { getUserInfo, type getUserInfoResponse } from "@/api/users/getUserInfo";
+import { getUserInfo } from "@/api/users/getUserInfo";
 import { STATIC_ASSETS_URL } from "@/constants";
+import defaultAvatar from '@/assest/image/logo.png';
+import { useUserStore } from "@/store/user";
 import {
   Heart,
   Order,
@@ -132,30 +134,12 @@ import {
 } from '@nutui/icons-vue-taro';
 import styles from "./index.module.less";
 
-const defaultAvatar = 'https://img12.360buyimg.com/imagetools/jfs/t1/196430/38/8105/14329/60c806a4Ed506298a/e6de9fb7b8490f38.png';
-const userInfo = ref<getUserInfoResponse>({
-  _id: "",
-  username: "",
-  email: "",
-  phone: "",
-  avatar: undefined,
-  role: "",
-  personalSignature: undefined,
-  nickname: undefined,
-  outwardId: undefined,
-  isPhone: false,
-  status: 1,
-  points: 0
-});
-
+const userStore = useUserStore();
 const showContactModal = ref(false);
 
 const fetchUserInfo = async () => {
   try {
-    const res = await getUserInfo();
-    if (res && res.code === 200 && res.data) {
-      userInfo.value = res.data;
-    }
+    await userStore.initLoginInfo();
   } catch (error) {
     console.error("获取用户信息失败:", error);
   }

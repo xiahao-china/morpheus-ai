@@ -1,6 +1,5 @@
 import type { IGetGenerationHistoryItem } from "@/api/images/getGenerationHistoryV2";
 import type { IHistoryCardInfo } from "../HistoryCard/const";
-import { MODE_LABEL_MAP } from "@/packageHistory/pages/GeneratedDetail/const";
 import dayjs from "dayjs";
 
 const calcTaskRatio = (width: number, height: number): string => {
