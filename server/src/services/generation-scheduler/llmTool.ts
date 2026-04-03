@@ -212,6 +212,17 @@ export const callLLMAPI = async (params: any, taskChannel: TaskChannelEnum): Pro
         return item;
     });
 
+    const isImageGen = taskChannel === TaskChannelEnum.THIRD_PARTY_GENERATION_IMAGE;
+    const defaultMaxTokens = isImageGen ? 16384 : 4096; // Image generation needs more tokens for base64
+
+    const payload: any = {
+        model: config.model,
+        messages
+    };
+    if (params.maxTokens) {
+        payload.max_tokens = params.maxTokens;
+    }
+
     let response: any;
     if (requestProtocol === "anthropic") {
         response = await axios.post(
@@ -221,19 +232,14 @@ export const callLLMAPI = async (params: any, taskChannel: TaskChannelEnum): Pro
         );
     } else {
         try {
-            response = await axios.post(completionUrl, {
-                model: config.model,
-                messages,
-                max_tokens: params.maxTokens || 1024
-            }, requestConfig);
+            response = await axios.post(completionUrl, payload, requestConfig);
         } catch (error: any) {
             if (taskChannel !== TaskChannelEnum.VLLM) {
                 throw error;
             }
             response = await axios.post(completionUrl, {
-                model: config.model,
-                messages: fallbackMessages,
-                max_tokens: params.maxTokens || 1024
+                ...payload,
+                messages: fallbackMessages
             }, requestConfig);
         }
     }

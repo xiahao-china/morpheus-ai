@@ -11,7 +11,7 @@ export const API_URL = (()=>{
     // 小程序环境下，必须使用完整的域名路径，根据环境区分开发/测试域名
     url = process.env.NODE_ENV === 'development'
       ? 'https://dev.libuli.top/api/v1'
-      : 'https://libuli.top/api/v1';
+      : 'https://dev.libuli.top/api/v1';
   }
   return url.trim();
 })()
