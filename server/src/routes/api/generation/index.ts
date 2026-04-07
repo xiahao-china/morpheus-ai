@@ -41,6 +41,10 @@ export default (router: Router) => {
   // 获取生成记录列表 (分页) - 兼容旧路径
   router.get('/api/image/history', authMiddleware, getGenerationHistory);
 
+  // 获取生成记录列表 (分页) - 新路径
+  router.get('/api/images/records', authMiddleware, getGenerationHistory);
+  router.get('/api/images/generates', authMiddleware, getGenerationHistory);
+
   // 点赞/取消点赞（需要登录）
   router.post('/api/image/:id/like', authMiddleware, likeImage);
 

@@ -10,18 +10,18 @@
     >
       <template v-for="message in reversedMessages" :key="message.id">
         <view :id="`msg-${message.id}`">
-          <MyInfo
-            v-if="message.role === 'user'"
-            :content="message.prompt"
-            :upload-image-url="message.underImageUrl"
-          />
           <ServiceInfo
-            v-else
+            v-if="message.role === 'service'"
             :message="message"
             @like="handleLike"
             @publish="emit('publish', $event)"
             @regenerate="handleRegenerate"
             @download="handleDownload"
+          />
+          <MyInfo
+            v-else
+            :content="message.prompt"
+            :upload-image-url="message.underImageUrl"
           />
         </view>
       </template>

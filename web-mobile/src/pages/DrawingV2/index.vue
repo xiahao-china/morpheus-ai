@@ -64,7 +64,7 @@ onMounted(async () => {
     nextTick(() => {
       setTimeout(() => {
         conversationRef.value?.scrollToBottom();
-      }, 100);
+      }, 300);
     });
     return;
   }

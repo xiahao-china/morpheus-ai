@@ -1,4 +1,4 @@
-import { EDrawingType, EEditType } from "@/api/generate/workStream";
+import { EDrawingType } from "@/api/generate/workStream";
 
 /**
  * 用户标签页类型枚举
@@ -45,16 +45,6 @@ export interface IFilterOption {
  */
 export const FILTER_OPTIONS: IFilterOption[] = [
   { label: "全部", value: "" },
-  { label: "灵感生图", value: EDrawingType.INSPIRATION },
-  { label: "线稿渲染", value: EDrawingType.LINEAR_RENDER },
-  { label: "一键渲染", value: EDrawingType.RENDER_LY },
-  { label: "毛坯精装", value: EDrawingType.MAKE_UP },
-  { label: "实景改造", value: EDrawingType.REHABILITATION },
-  { label: "局部重绘", value: EEditType.REDRAW },
-  { label: "智能清除", value: EEditType.CLEAN },
-  { label: "高清放大", value: EEditType.UPSCALE },
-  { label: "一键抠图", value: EEditType.CUTOUT },
-  { label: "万物迁移", value: EEditType.OBJECT_MIGRATION },
 ];
 
 /**

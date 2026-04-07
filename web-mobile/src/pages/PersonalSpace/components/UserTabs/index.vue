@@ -12,7 +12,7 @@
       </view>
     </view>
 
-    <view :class="styles.filterSection" v-if="tab === ETabType.History">
+    <view :class="styles.filterSection" v-if="tab === ETabType.History && FILTER_OPTIONS.length > 1">
       <view :class="styles.filterTrigger" @click="showAllTags = true">
         <text :class="styles.triggerLabel">
           当前筛选：{{

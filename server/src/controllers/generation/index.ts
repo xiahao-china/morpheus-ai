@@ -228,6 +228,7 @@ export const getMyImageCollections = async (ctx: Context) => {
 
     sendResponse.success(ctx, {
       list,
+      records: list, // 兼容前端字段
       total,
       page,
       pageSize,
@@ -600,7 +601,7 @@ export const getTaskDetail = async (ctx: Context) => {
 export const getGenerationHistory = async (ctx: Context) => {
   try {
     const user = ctx.state.user as any;
-    const page = parsePositiveInt(ctx.query.page, DEFAULT_GENERATION_PAGE);
+    const page = parsePositiveInt(ctx.query.page || ctx.query.pageNo, DEFAULT_GENERATION_PAGE);
     const pageSize = parsePositiveInt(ctx.query.pageSize, DEFAULT_GENERATION_PAGE_SIZE);
     const skip = (page - 1) * pageSize;
     const queryPurpose = typeof ctx.query.purpose === "string" ? ctx.query.purpose : "";
@@ -668,8 +669,10 @@ export const getGenerationHistory = async (ctx: Context) => {
         map[taskId] = [];
       }
       map[taskId].push({
+        id: imageId, // 兼容前端字段
         imageId,
         imageUrl: item.imageUrl,
+        recordThumbnailUrl: item.imageUrl, // 兼容前端字段
         fileResourceId: image.fileResourceId,
         width: image.width,
         height: image.height,
@@ -680,8 +683,10 @@ export const getGenerationHistory = async (ctx: Context) => {
       });
       return map;
     }, {} as Record<string, Array<{
+      id: string;
       imageId: string;
       imageUrl: string;
+      recordThumbnailUrl: string;
       fileResourceId: string;
       width?: number;
       height?: number;
@@ -705,9 +710,11 @@ export const getGenerationHistory = async (ctx: Context) => {
       const taskImageUrl = firstImage?.imageUrl || underImageUrl || "";
       return {
         _id: taskId,
+        id: taskId, // 兼容前端字段
         userId: task.userId,
         imageGenTaskId: taskId,
         prompt: task.params?.prompt || "",
+        negativePrompt: task.params?.negativePrompt || "",
         underImageUrl: underImageUrl,
         type: task.purpose,
         status: task.status,
@@ -722,11 +729,14 @@ export const getGenerationHistory = async (ctx: Context) => {
         createdTime: task.createdTime,
         completedTime: task.completedTime,
         images,
+        generatedImages: images, // 兼容前端字段
+        editedGeneratedImages: task.purpose === TaskPurposeEnum.IMG2IMG ? images : [], // 兼容前端字段
       };
     }));
 
     sendResponse.success(ctx, {
       list,
+      records: list, // 兼容前端字段
       total,
       page,
       pageSize,

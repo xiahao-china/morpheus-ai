@@ -1,6 +1,7 @@
 <template>
   <scroll-view
     :class="[pageStyle['infinite-scroll'], customClass]"
+    :style="{ height: `${scrollAreaHeight}px` }"
     :scroll-y="true"
     :show-scrollbar="false"
     :scroll-top="internalScrollTop"
@@ -31,9 +32,10 @@
 </template>
 
 <script setup lang="ts">
-import { withDefaults, ref, watch, onMounted, nextTick } from 'vue';
+import { withDefaults, ref, watch, onMounted, nextTick, computed } from 'vue';
 import { type IInfiniteScrollProps, defaultInfiniteScrollProps } from './const';
 import pageStyle from './index.module.less';
+import { getScreenHeight } from '@/util/layout';
 
 const props = withDefaults(defineProps<IInfiniteScrollProps>(), defaultInfiniteScrollProps);
 
@@ -41,13 +43,21 @@ const emit = defineEmits<{
   loadMore: [];
 }>();
 
+const scrollAreaHeight = computed(() => {
+  return getScreenHeight() - 80;
+});
+
 const internalScrollTop = ref(props.scrollTop);
 const internalScrollIntoView = ref('');
 const scrollWithAnimation = ref(false);
 
 const scrollToBottom = () => {
   // 设置一个极大的值，确保滚到最底部
-  internalScrollTop.value = 99999 + Math.random();
+  internalScrollTop.value = -1;
+  console.log('scrollToBottom', internalScrollTop.value);
+  nextTick(() => {
+    internalScrollTop.value = 99999 + Math.random();
+  });
 };
 
 const scrollToView = (id: string) => {
