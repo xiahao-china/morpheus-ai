@@ -1,5 +1,5 @@
 <template>
-  <view :class="pageStyle['dialogWrap']">
+  <view :class="pageStyle['dialogWrap']" :style="{ bottom: `${safeAreaBottom + 12}px` }">
     <view :class="pageStyle['dialogBody']">
 <!--      <view :class="pageStyle['modeTrigger']" @click="showModePopup = true">-->
 <!--        <text>{{ selectedMode.label }}</text>-->
@@ -62,6 +62,7 @@ import { EDrawingType } from "@/api/generate/workStream";
 import { useDrawingV2ConversationStore } from "@/store";
 import { type IDrawingModeOption } from "@/pages/DrawingV2/const";
 import { makeUrlAbsolute } from "@/util/url";
+import { getSafeAreaBottom } from "@/util/layout";
 
 import type { IBottomDialogProps } from "./const";
 import pageStyle from "./index.module.less";
@@ -85,6 +86,9 @@ const uploadImageUrl = ref("");
 const uploadImageId = ref("");
 const uploading = ref(false);
 const uploadProgress = ref(0);
+
+// 获取底部安全距离并转换为 px
+const safeAreaBottom = getSafeAreaBottom();
 
 const sendDisabled = computed(() => {
   return !prompt.value.trim() || drawingV2ConversationStore.hasActiveTask || uploading.value;

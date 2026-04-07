@@ -29,7 +29,6 @@ import {
   getNavigationBarBackgroundColor,
 } from "./const";
 import {reportPage} from "@/api/system/config/grafana";
-import {onceGetTemporaryLoginInfo} from "@/pages/LoginPage/components/WxLogin/const";
 import Taro from "@tarojs/taro";
 import {STATIC_ASSETS_URL} from "@/constants";
 import {getIsWeb} from "@/util/envCheck";
@@ -88,10 +87,6 @@ Taro.useShareTimeline(() => {
 onMounted(async ()=>{
   const userStore = useUserStore();
   await userStore.initLoginInfo();
-  if (!userStore.isPhone && !getIsWeb()) {
-    await onceGetTemporaryLoginInfo();
-    return;
-  }
   // const config = getCurrentPageConfig();
   // reportPage({
   //   tags:{

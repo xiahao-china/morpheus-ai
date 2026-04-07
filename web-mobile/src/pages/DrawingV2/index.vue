@@ -2,7 +2,7 @@
   <Layouts>
     <view :class="pageStyle['drawingV2']">
       <view :class="pageStyle['conversationShell']">
-        <InfiniteConversation @publish="handlePublish"/>
+        <InfiniteConversation ref="conversationRef" @publish="handlePublish"/>
       </view>
 
       <BottomDialog :mode-options="DRAWING_MODE_OPTIONS"/>
@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, nextTick } from "vue";
 import Taro from "@tarojs/taro";
 import Layouts from "@/components/Layouts/index.vue";
 import { useDrawingV2ConversationStore } from "@/store";
@@ -30,6 +30,7 @@ import pageStyle from "./index.module.less";
 
 const drawingV2ConversationStore = useDrawingV2ConversationStore();
 const publishSquareDialogRef = ref<InstanceType<typeof PublishSquareDialog> | null>(null);
+const conversationRef = ref<InstanceType<typeof InfiniteConversation> | null>(null);
 
 const handlePublish = async (message: IDrawingV2Message) => {
   if (message.isPublished) {
@@ -55,10 +56,16 @@ const handlePublishSuccess = (payload: { messageId: string }) => {
   drawingV2ConversationStore.updateTaskInfo(payload.messageId, { isPublished: true });
 };
 
-onMounted(() => {
+onMounted(async () => {
   if (drawingV2ConversationStore.messages.length === 0) {
     drawingV2ConversationStore.reset();
-    drawingV2ConversationStore.loadNextPage();
+    await drawingV2ConversationStore.loadNextPage();
+    // 数据加载完成后，滚动到最底部
+    nextTick(() => {
+      setTimeout(() => {
+        conversationRef.value?.scrollToBottom();
+      }, 100);
+    });
     return;
   }
   drawingV2ConversationStore.resumePollingForActiveTasks();

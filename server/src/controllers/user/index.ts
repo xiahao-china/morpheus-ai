@@ -1,6 +1,7 @@
 import User, { IUser, UserRoleEnum, UserStatusEnum } from "@/models/user";
 import { signToken } from "@/utils/token";
 import redis from "@/lib/redis";
+import { logger } from "@/lib/log4js";
 import { sendEmail, sendSMS } from "./const";
 import {
   buildVerifyCodeRedisKey,

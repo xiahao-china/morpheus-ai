@@ -33,7 +33,7 @@ import {saveCookie} from "@/util/cookie";
 import {checkBackPath} from "@/pages/LoginPage/const";
 import {useUserStore} from "@/store";
 
-import {getTemporaryLoginInfo, IGetphonenumberData} from './const';
+import {IGetphonenumberData} from './const';
 import pageStyle from './index.module.less'
 import LoginAgreement from '../LoginAgreement/index.vue'
 import { ensureAgreementBefore } from '../LoginAgreement/const'
@@ -65,7 +65,6 @@ const wxOneClickLogin = async (phoneInfo: IGetphonenumberData) => {
   })
   if (response instanceof Error || response.data.code !== 200) {
     console.error(response);
-    getTemporaryLoginInfo();
     return;
   }
   // 检查响应头中是否有 set-cookie

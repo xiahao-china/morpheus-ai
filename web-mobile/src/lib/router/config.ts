@@ -13,7 +13,7 @@ export const ROUTER_INFO = {
     needLogin: true,
     needNavBar: false,
     needMobileNav: false,
-    needBottomBar: true
+    needBottomBar: false
   },
   '/pages/app/index': {
     pageName: 'AI绘图',

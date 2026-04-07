@@ -14,6 +14,7 @@ import {
   Context,
   createLoginSuccessHtml,
   createWechatState,
+  getWechatAccessToken,
   WECHAT_LOGIN_CODE_EXPIRE_SECONDS,
   WECHAT_STATE_EXPIRE_SECONDS,
   WECHAT_TOKEN_API_URL,
@@ -22,42 +23,6 @@ import {
   WECHAT_GET_PHONE_NUMBER_URL
 } from "./const";
 import { LOGIN_COOKIE_KEY, getLoginCookieOptions } from "../user/const";
-
-/**
- * 获取微信接口调用凭证 (Client Credential Access Token)
- * 优先从 Redis 获取，没有则向微信请求并缓存
- */
-const getWechatAccessToken = async (config: { appId: string, appSecret: string }) => {
-  const redisKey = `wechat_access_token:${config.appId}`;
-  
-  // 1. 尝试从 Redis 获取
-  const cachedToken = await redis.get(redisKey);
-  if (cachedToken) {
-    return cachedToken;
-  }
-
-  // 2. 向微信请求新 Token
-  const response = await axios.get(WECHAT_ACCESS_TOKEN_API_URL, {
-    params: {
-      grant_type: "client_credential",
-      appid: config.appId,
-      secret: config.appSecret
-    },
-    proxy: false
-  });
-
-  const { access_token, expires_in, errcode, errmsg } = response.data;
-
-  if (errcode) {
-    throw new Error(`[Wechat Access Token] API error: ${errcode}, ${errmsg}`);
-  }
-
-  // 3. 存入 Redis，提前 10 分钟过期
-  const expireSeconds = Math.max((expires_in || 7200) - 600, 60);
-  await redis.set(redisKey, access_token, "EX", expireSeconds);
-
-  return access_token;
-};
 
 /**
  * 绑定手机号 - Web端微信登录后绑定手机号
@@ -314,73 +279,6 @@ export const miniProgramLogin = async (ctx: Context) => {
     if (error.response) {
         logger.error(`[Wechat Mini Login] Axios response error:`, error.response.status, error.response.data);
     }
-    sendResponse.error(ctx, "Internal server error");
-  }
-};
-
-/**
- * 微信小程序一键登录 (仅获取 openid/unionid，不强制绑定手机号)
- */
-export const wechatTemporaryLogin = async (ctx: Context) => {
-  const { code } = ctx.request.body as any;
-
-  if (!code) {
-    ctx.body = { code: 400, msg: "Missing code parameter" };
-    return;
-  }
-
-  try {
-    const wxResponse = await axios.get(MINI_PROGRAM_CONFIG.loginUrl, {
-      params: {
-        appid: MINI_PROGRAM_CONFIG.appId,
-        secret: MINI_PROGRAM_CONFIG.appSecret,
-        js_code: code,
-        grant_type: "authorization_code"
-      },
-      proxy: false
-    });
-
-    const { openid, session_key, unionid, errcode, errmsg } = wxResponse.data;
-
-    if (errcode) {
-      logger.error(`[Wechat Mini Temporary Login] Wechat API error: ${errcode}, ${errmsg}`);
-      ctx.body = { code: 500, msg: "Wechat API error", data: wxResponse.data };
-      return;
-    }
-
-    // 查找或创建用户
-    let user: IUser | null = null;
-    if (unionid) {
-      user = await User.findOne({ unionId: unionid });
-    }
-    if (!user && openid) {
-      user = await User.findOne({ appOpenid: openid });
-    }
-
-    if (!user) {
-      user = new User({
-        username: `Mini_${Date.now()}`,
-        appOpenid: openid,
-        unionId: unionid,
-        status: UserStatusEnum.ACTIVE,
-        role: UserRoleEnum.USER
-      });
-      await user.save();
-    }
-
-    const token = signToken(user);
-    ctx.cookies.set(LOGIN_COOKIE_KEY, token, getLoginCookieOptions());
-    
-    sendResponse.success(ctx, { 
-      token, 
-      user, 
-      session_key,
-      isPhone: !!user.phone,
-      userId: user._id,
-      username: user.username
-    });
-  } catch (error) {
-    logger.error(`[Wechat Mini Temporary Login] Error:`, error);
     sendResponse.error(ctx, "Internal server error");
   }
 };

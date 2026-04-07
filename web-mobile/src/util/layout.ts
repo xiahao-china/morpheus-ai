@@ -1,6 +1,18 @@
 import Taro from "@tarojs/taro";
 
 /**
+ * 扩展 Taro 的 SystemInfo 类型，以包含可能存在的 safeAreaInsets
+ */
+interface ExtendedSystemInfo extends Taro.getSystemInfoSync.Result {
+  safeAreaInsets?: {
+    top: number;
+    left: number;
+    right: number;
+    bottom: number;
+  };
+}
+
+/**
  * 获取小程序顶部导航栏（Tab）的高度
  * 包含状态栏高度 + 胶囊按钮区域高度
  */
@@ -18,6 +30,12 @@ export const getNavbarHeight = (): number => {
 
     // 状态栏高度
     const statusBarHeight = systemInfo.statusBarHeight || 0;
+
+    // 某些平台下可能获取不到胶囊按钮信息
+    if (!menuButtonInfo || !menuButtonInfo.top || !menuButtonInfo.height) {
+      // 降级处理：状态栏一般 20-44px，导航栏一般 44-48px，合计约 80-90px
+      return statusBarHeight + 44;
+    }
 
     // 导航栏高度 = (胶囊按钮.top - 状态栏高度) * 2 + 胶囊按钮.height
     // 最终总高度 = 状态栏高度 + 导航栏高度
@@ -53,6 +71,27 @@ export const getScreenHeight = (): number => {
     return systemInfo.screenHeight;
   } catch (error) {
     console.error("获取屏幕高度失败", error);
+    return 0;
+  }
+};
+
+/**
+ * 获取底部安全区域距离
+ */
+export const getSafeAreaBottom = (): number => {
+  try {
+    const systemInfo = Taro.getSystemInfoSync() as ExtendedSystemInfo;
+    // 某些平台可能直接提供 safeAreaInsets
+    if (systemInfo.safeAreaInsets) {
+      return systemInfo.safeAreaInsets.bottom;
+    }
+    // 降级使用 safeArea 计算
+    if (systemInfo.safeArea) {
+      return systemInfo.screenHeight - systemInfo.safeArea.bottom;
+    }
+    return 0;
+  } catch (error) {
+    console.error("获取底部安全区域高度失败", error);
     return 0;
   }
 };

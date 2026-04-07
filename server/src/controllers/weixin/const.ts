@@ -1,5 +1,7 @@
 import { Context as KoaContext } from "koa";
 import { v4 as uuidv4 } from "uuid";
+import axios from "axios";
+import redis from "@/lib/redis";
 import { MP_CONFIG, REDIS_KEYS } from "@/config/index";
 
 export type Context = KoaContext | any;
@@ -10,6 +12,42 @@ export const WECHAT_TOKEN_API_URL = "https://api.weixin.qq.com/sns/oauth2/access
 export const WECHAT_USER_INFO_API_URL = "https://api.weixin.qq.com/sns/userinfo";
 export const WECHAT_ACCESS_TOKEN_API_URL = "https://api.weixin.qq.com/cgi-bin/token";
 export const WECHAT_GET_PHONE_NUMBER_URL = "https://api.weixin.qq.com/wxa/business/getuserphonenumber";
+
+/**
+ * 获取微信接口调用凭证 (Client Credential Access Token)
+ * 优先从 Redis 获取，没有则向微信请求并缓存
+ */
+export const getWechatAccessToken = async (config: { appId: string, appSecret: string }) => {
+  const redisKey = `wechat_access_token:${config.appId}`;
+  
+  // 1. 尝试从 Redis 获取
+  const cachedToken = await redis.get(redisKey);
+  if (cachedToken) {
+    return cachedToken;
+  }
+
+  // 2. 向微信请求新 Token
+  const response = await axios.get(WECHAT_ACCESS_TOKEN_API_URL, {
+    params: {
+      grant_type: "client_credential",
+      appid: config.appId,
+      secret: config.appSecret
+    },
+    proxy: false
+  });
+
+  const { access_token, expires_in, errcode, errmsg } = response.data;
+
+  if (errcode) {
+    throw new Error(`[Wechat Access Token] API error: ${errcode}, ${errmsg}`);
+  }
+
+  // 3. 存入 Redis，提前 10 分钟过期
+  const expireSeconds = Math.max((expires_in || 7200) - 600, 60);
+  await redis.set(redisKey, access_token, "EX", expireSeconds);
+
+  return access_token;
+};
 
 export const buildSmsLoginRedisKey = (phone: string) => `${REDIS_KEYS.SMS_LOGIN_CODE}${phone}`;
 export const buildWechatLoginStateRedisKey = (state: string) => `${REDIS_KEYS.WECHAT_LOGIN_STATE}${state}`;
