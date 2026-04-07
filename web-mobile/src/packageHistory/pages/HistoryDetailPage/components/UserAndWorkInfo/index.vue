@@ -64,24 +64,24 @@ const isCollection = ref(props.work.isCollection);
 const likeCountStr = ref(turnNumberToString(props.work.collections));
 
 const handleCollection = async () => {
-  const response = await collectSquare(props.work.workId);
-  console.log(response);
+  const action = isCollection.value ? 'unlike' : 'like';
+  const response = await collectSquare(props.work.workId, action);
+  
   if (response instanceof Error || response.code !== 200) {
     if ((response as IObject).status === 401){
       handle401ToLogin(true);
     }
-    return console.log(response);
+    console.error("操作失败:", response);
+    return;
   }
 
-  if (props.work.isCollection){
-    likeCountStr.value = turnNumberToString(props.work.collections + (isCollection.value?-1:0));
-  }else {
-    likeCountStr.value = turnNumberToString(props.work.collections + (isCollection.value?0:1));
-  }
-  isCollection.value = !isCollection.value;
+  // 使用接口返回的最新数据更新状态
+  const { isCollected, collectCount } = response.data;
+  
+  isCollection.value = isCollected;
+  likeCountStr.value = turnNumberToString(collectCount);
 
-  emit('collect', isCollection.value);
-  return;
+  emit('collect', isCollected);
 }
 
 watch(() => props.work, (val) => {

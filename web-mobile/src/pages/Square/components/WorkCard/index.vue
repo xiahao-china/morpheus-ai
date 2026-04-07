@@ -26,12 +26,12 @@
       <view :class="pageStyle['card-footer']">
         <view :class="pageStyle['author']">
           <image
-            :src="info.avatar"
+            :src="info.avatar || DEFAULT_USER_INFO.avatar"
             mode="aspectFill"
             :class="pageStyle['card-avatar']"
           />
           <text :class="pageStyle['author-name']">{{
-            info.name || "未知用户"
+            info.name || DEFAULT_USER_INFO.username
           }}</text>
         </view>
         <view
@@ -61,6 +61,7 @@ import { turnNumberToString, turnToScreenSizePx } from "@/constants/util";
 import { collectSquare } from "@/api/square/collectSquare";
 import type { IObject } from "@/constants/types";
 import { handle401ToLogin } from "@/lib/router/config";
+import { DEFAULT_USER_INFO } from "@/components/HistoryDetail/components/UserAndWorkInfo/const";
 
 import type { IWorkCardProps } from "./const";
 import pageStyle from "./index.module.less";

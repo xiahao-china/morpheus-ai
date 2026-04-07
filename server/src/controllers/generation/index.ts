@@ -41,14 +41,6 @@ interface IFengShuiRequestBody {
 }
 
 /**
- * 从上下文获取当前用户ID
- */
-const getCurrentUserId = (ctx: Context) => {
-  const user = ctx.state.user as any;
-  return String(user?.uid || user?._id || "");
-};
-
-/**
  * 提交图片反馈（仅点赞/取消点赞）
  * action: 'like' | 'cancel'
  */
@@ -125,7 +117,7 @@ export const likeImage = async (ctx: Context) => {
  */
 export const collectImage = async (ctx: Context) => {
   const { id } = ctx.params;
-  const userId = getCurrentUserId(ctx);
+  const userId = ctx.state.user?._id;
 
   if (!id) {
     ctx.body = { code: 400, msg: "Image ID is required" };
@@ -165,7 +157,7 @@ export const collectImage = async (ctx: Context) => {
  */
 export const uncollectImage = async (ctx: Context) => {
   const { id } = ctx.params;
-  const userId = getCurrentUserId(ctx);
+  const userId = ctx.state.user?._id;
 
   if (!id) {
     ctx.body = { code: 400, msg: "Image ID is required" };
@@ -185,7 +177,7 @@ export const uncollectImage = async (ctx: Context) => {
  */
 export const getMyImageCollections = async (ctx: Context) => {
   try {
-    const userId = getCurrentUserId(ctx);
+    const userId = ctx.state.user?._id;
     const page = parsePositiveInt(ctx.query.page, DEFAULT_GENERATION_PAGE);
     const pageSize = parsePositiveInt(ctx.query.pageSize, DEFAULT_GENERATION_PAGE_SIZE);
     const skip = (page - 1) * pageSize;
@@ -297,7 +289,7 @@ export const generateImage = async (ctx: Context) => {
       return;
     }
 
-    const userId = getCurrentUserId(ctx);
+    const userId = ctx.state.user?._id;
     const activeTask = await GenerationTask.findOne({
       userId,
       purpose: { $in: [TaskPurposeEnum.TXT2IMG, TaskPurposeEnum.IMG2IMG, TaskPurposeEnum.UPSCALE] },

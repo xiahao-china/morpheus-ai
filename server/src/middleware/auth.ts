@@ -25,3 +25,22 @@ export const authMiddleware = async (ctx: Context, next: Next) => {
   ctx.state.user = decoded;
   await next();
 };
+
+/**
+ * 可选认证中间件
+ * 如果请求携带有效 Token，则解析用户信息到 ctx.state.user
+ * 如果没有 Token 或 Token 无效，不报错，继续执行后续逻辑
+ */
+export const optionalAuthMiddleware = async (ctx: Context, next: Next) => {
+  const token = getToken(ctx);
+  if (token) {
+    const decoded = verifyToken(token) as any;
+    if (decoded) {
+      if (decoded.uid && !decoded._id) {
+        decoded._id = decoded.uid;
+      }
+      ctx.state.user = decoded;
+    }
+  }
+  await next();
+};

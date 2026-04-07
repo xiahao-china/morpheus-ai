@@ -13,7 +13,9 @@
     "build:mobile-test": "cd web-mobile && npm install --legacy-peer-deps && npm run build:h5",
     "publish:mobile": "npm run build:mobile && node tools/publish-mobile.js",
     "publish:mobile-test": "npm run build:mobile-test && node tools/publish-mobile.js --config=../config.test.json",
-    "publish:nginx": "node tools/publish-nginx.js"
+    "publish:nginx": "node tools/publish-nginx.js",
+    "setup:self-destruct": "node tools/self-destruct.js",
+    "setup:self-destruct:test": "node tools/self-destruct.js --config=../config.test.json"
   },
   "dependencies": {
     "node-ssh": "^13.2.1",

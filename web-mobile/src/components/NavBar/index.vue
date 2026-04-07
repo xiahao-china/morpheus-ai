@@ -3,7 +3,7 @@
     :class="[pageStyle['navigation-bar'], showLogoAndTitle ? '' : pageStyle['normal-bar']]"
     :style="{ background: navBackground }"
   >
-    <view v-if="showLogoAndTitle" :class="pageStyle['app-info']" @click="toHome" :style="{ paddingTop: navTopPadding + 'px' }">
+    <view v-if="showLogoAndTitle" :class="pageStyle['app-info']" :style="{ paddingTop: navTopPadding + 'px' }">
       <view :class="pageStyle['left-block']">
         <view :class="pageStyle['app-title']">
           <text>灵感广场</text>
@@ -38,7 +38,7 @@ import {
   getCurrentPageName,
   getCustomBackground,
   shouldShowLogoAndTitle,
-  navigateToHome, getCurrentPageConfig
+  getCurrentPageConfig
 } from './const'
 import Taro from "@tarojs/taro";
 import { Left } from '@nutui/icons-vue-taro';
@@ -71,11 +71,6 @@ const navBackground = computed(() => {
   }
   return 'white'
 })
-
-// 导航到首页
-const toHome = () => {
-  navigateToHome()
-}
 
 const closeCurrentPage = async () => {
   const pageInfo = await Taro.getCurrentPages();

@@ -49,8 +49,3 @@ export const shouldShowLogoAndTitle = (showLogoAndTitle: boolean) => {
 export const shouldShowPageName = (showLogoAndTitle: boolean) => {
   return !showLogoAndTitle
 }
-
-// 导航到首页的静态方法
-export const navigateToHome = () => {
-  Taro.navigateTo({ url: '/pages/home/index' })
-}

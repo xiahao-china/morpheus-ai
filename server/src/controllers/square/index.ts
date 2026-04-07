@@ -2,6 +2,8 @@ import Square from "@/models/square";
 import ImageGenInfo from "@/models/imageGenInfo";
 import GenerationTask from "@/models/generationTask";
 import User from "@/models/user";
+import FileResource from "@/models/fileResource";
+import UserSquareCollect from "@/models/userSquareCollect";
 import { BUCKET_NAME, buildObjectPublicUrl } from "@/lib/minio";
 import { sendResponse } from "@/utils/const";
 import { buildSquareFilter, Context, getNextLikeCount } from "./const";
@@ -19,23 +21,55 @@ export const getSquareList = async (ctx: Context) => {
     .limit(Number(pageSize))
     .lean();
   const total = await Square.countDocuments(filter);
+  const userIds = Array.from(new Set(rawList.map((item) => String(item.userId || "")).filter(Boolean)));
   const imageIds = rawList.map((item) => String(item.imageId || "")).filter(Boolean);
-  const imageList = imageIds.length
-    ? await ImageGenInfo.find({ _id: { $in: imageIds } }, { _id: 1, fileResourceId: 1, imageUrl: 1 }).lean()
-    : [];
+
+  const currentUserId = ctx.state.user?._id;
+  const squareIds = rawList.map((item) => String(item._id));
+  const [userList, imageList, userCollections] = await Promise.all([
+    userIds.length ? User.find({ _id: { $in: userIds } }, { _id: 1, nickname: 1, username: 1, avatar: 1 }).lean() : [],
+    imageIds.length ? ImageGenInfo.find({ _id: { $in: imageIds } }, { _id: 1, fileResourceId: 1, imageUrl: 1 }).lean() : [],
+    currentUserId ? UserSquareCollect.find({ userId: currentUserId, squareId: { $in: squareIds } }).lean() : [],
+  ]);
+
+  const userCollectionSet = new Set(userCollections.map((item) => String(item.squareId)));
+
+  const userMap = userList.reduce((map, user) => {
+    map[String(user._id)] = user;
+    return map;
+  }, {} as Record<string, { _id: any; nickname?: string; username?: string; avatar?: string }>);
+
   const imageMap = imageList.reduce((map, image) => {
     map[String(image._id)] = image;
     return map;
   }, {} as Record<string, { _id: any; fileResourceId?: string; imageUrl?: string }>);
 
+  const avatarIds = Array.from(new Set(userList.map((user) => user.avatar).filter((avatar) => avatar && /^[0-9a-fA-F]{24}$/.test(avatar))));
+  const fileResources = avatarIds.length ? await FileResource.find({ _id: { $in: avatarIds } }).lean() : [];
+  const fileResourceMap = fileResources.reduce((map, file) => {
+    map[String(file._id)] = buildObjectPublicUrl(file.bucket || BUCKET_NAME, file.path);
+    return map;
+  }, {} as Record<string, string>);
+
   const list = rawList.map((item) => {
+    const user = userMap[String(item.userId || "")];
     const image = imageMap[String(item.imageId || "")];
     const imageUrl = image?.fileResourceId
       ? buildObjectPublicUrl(BUCKET_NAME, image.fileResourceId)
       : (image?.imageUrl || item.imageUrl || "");
+    let avatar = user?.avatar || "";
+    if (avatar && fileResourceMap[avatar]) {
+      avatar = fileResourceMap[avatar];
+    }
+    const { _id, userId: authorId, imageId: imgId, ...rest } = item;
     return {
-      ...item,
-      imageUrl
+      ...rest,
+      id: String(_id),
+      imageUrl,
+      username: user?.nickname || user?.username || "匿名用户",
+      avatar,
+      isCollected: userCollectionSet.has(String(_id)),
+      isOwner: currentUserId === String(authorId),
     };
   });
   sendResponse.success(ctx, { list, total });
@@ -58,9 +92,11 @@ export const getSquareDetail = async (ctx: Context) => {
       return;
     }
 
-    const [userInfo, imageInfo] = await Promise.all([
+    const userId = ctx.state.user?._id;
+    const [userInfo, imageInfo, isCollected] = await Promise.all([
       square.userId ? User.findById(square.userId).lean() : null,
       square.imageId ? ImageGenInfo.findById(square.imageId).lean() : null,
+      userId ? UserSquareCollect.exists({ userId, squareId: id }) : Promise.resolve(false),
     ]);
 
     const imageGenTaskId = imageInfo?.imageGenTaskId;
@@ -70,6 +106,18 @@ export const getSquareDetail = async (ctx: Context) => {
     const currentImageUrl = imageInfo?.fileResourceId
       ? buildObjectPublicUrl(BUCKET_NAME, imageInfo.fileResourceId)
       : (imageInfo?.imageUrl || square.imageUrl || "");
+
+    let underImageUrl = generationTask?.params?.underImage?.url || generationTask?.params?.underImage?.id || generationTask?.params?.baseImages?.[0] || "";
+    if (underImageUrl && /^[0-9a-fA-F]{24}$/.test(underImageUrl)) {
+      const file = await FileResource.findById(underImageUrl).lean();
+      if (file) underImageUrl = buildObjectPublicUrl(file.bucket || BUCKET_NAME, file.path);
+    }
+
+    let referImageUrl = generationTask?.params?.referImage?.url || generationTask?.params?.referImage?.id || "";
+    if (referImageUrl && /^[0-9a-fA-F]{24}$/.test(referImageUrl)) {
+      const file = await FileResource.findById(referImageUrl).lean();
+      if (file) referImageUrl = buildObjectPublicUrl(file.bucket || BUCKET_NAME, file.path);
+    }
 
     const taskDetail = generationTask ? {
       taskId: generationTask._id?.toString(),
@@ -82,18 +130,24 @@ export const getSquareDetail = async (ctx: Context) => {
       width: imageInfo?.width || generationTask.params?.width || 0,
       height: imageInfo?.height || generationTask.params?.height || 0,
       prompt: generationTask.params?.prompt || "",
-      underImageUrl: generationTask.params?.baseImages?.[0] || "",
+      underImageUrl: underImageUrl,
       negativePrompt: generationTask.params?.negativePrompt || "",
-      referImageUrl: generationTask.params?.referImage?.url || "",
+      referImageUrl: referImageUrl,
       modelOutwardName: generationTask.params?.modelOutwardName || "",
       styleModelOutwardName: generationTask.params?.styleModelOutwardName || "",
       magnificationOutward: generationTask.params?.magnificationOutward,
       scene: generationTask.params?.scene || "",
     } : null;
 
+    let avatar = userInfo?.avatar || "";
+    if (avatar && /^[0-9a-fA-F]{24}$/.test(avatar)) {
+      const file = await FileResource.findById(avatar).lean();
+      if (file) avatar = buildObjectPublicUrl(file.bucket || BUCKET_NAME, file.path);
+    }
+
     sendResponse.success(ctx, {
       id: square._id?.toString(),
-      userId: square.userId || null,
+      isOwner: userId === String(square.userId),
       username: userInfo?.nickname || userInfo?.username || "匿名用户",
       title: square.title || "",
       caption: square.caption || "",
@@ -110,8 +164,8 @@ export const getSquareDetail = async (ctx: Context) => {
       updateTime: square.publishedTime,
       auditStatus: "PASS",
       collectCount: square.collectCount || 0,
-      isCollected: false,
-      avatar: userInfo?.avatar || "",
+      isCollected: !!isCollected,
+      avatar: avatar,
     });
   } catch (error: any) {
     sendResponse.error(ctx, "Internal server error");
@@ -124,6 +178,7 @@ export const getSquareDetail = async (ctx: Context) => {
  */
 export const publishSquare = async (ctx: Context) => {
   const user = ctx.state.user;
+  const userId = user?._id;
   const { title, caption, imageId, styleTags, sceneTags } = ctx.request.body as any;
 
   if (!imageId) {
@@ -139,7 +194,7 @@ export const publishSquare = async (ctx: Context) => {
   }
 
   // 验证所有权
-  if (imageInfo.userId && imageInfo.userId !== user.uid) {
+  if (imageInfo.userId && imageInfo.userId !== userId) {
       ctx.body = { code: 403, msg: "You can only publish your own images" };
       return;
   }
@@ -151,7 +206,7 @@ export const publishSquare = async (ctx: Context) => {
   }
 
   const square = new Square({
-    userId: user.uid,
+    userId,
     imageId: imageInfo._id,
     imageUrl: imageInfo.fileResourceId
       ? buildObjectPublicUrl(BUCKET_NAME, imageInfo.fileResourceId)
@@ -168,7 +223,9 @@ export const publishSquare = async (ctx: Context) => {
   // 更新图片的发布状态
   await ImageGenInfo.findByIdAndUpdate(imageId, { isPublishedToSquare: true });
 
-  sendResponse.success(ctx, square);
+  const result = square.toObject();
+  const { _id, userId: authorId, imageId: imgId, ...rest } = result;
+  sendResponse.success(ctx, { ...rest, id: String(_id) });
 };
 
 /**
@@ -177,6 +234,7 @@ export const publishSquare = async (ctx: Context) => {
  */
 export const deleteSquare = async (ctx: Context) => {
   const user = ctx.state.user;
+  const userId = user?._id;
   const { id } = ctx.params;
 
   const square = await Square.findById(id);
@@ -185,7 +243,7 @@ export const deleteSquare = async (ctx: Context) => {
     return;
   }
 
-  if (square.userId !== user.uid) {
+  if (square.userId !== userId) {
     ctx.body = { code: 403, msg: 'Permission denied' };
     return;
   }
@@ -203,7 +261,14 @@ export const deleteSquare = async (ctx: Context) => {
  */
 export const likeSquare = async (ctx: Context) => {
   const { id } = ctx.params;
-  const { action } = ctx.request.body as any;
+  const userId = ctx.state.user?._id;
+  const { action: requestAction } = ctx.request.body as any;
+
+  if (!userId) {
+    ctx.status = 401;
+    ctx.body = { code: 401, msg: 'Please login first' };
+    return;
+  }
 
   const square = await Square.findById(id);
   if (!square) {
@@ -211,8 +276,34 @@ export const likeSquare = async (ctx: Context) => {
     return;
   }
 
-  square.likeCount = getNextLikeCount(action, square.likeCount || 0);
+  // 检查是否已收藏
+  const existingCollect = await UserSquareCollect.findOne({ userId, squareId: id });
+  
+  // 确定 action
+  let action = requestAction;
+  if (!action) {
+    action = existingCollect ? 'unlike' : 'like';
+  }
 
-  await square.save();
-  sendResponse.success(ctx, square);
+  if (action === 'like') {
+    if (!existingCollect) {
+      await UserSquareCollect.create({ userId, squareId: id });
+      square.collectCount = (square.collectCount || 0) + 1;
+      square.likeCount = (square.likeCount || 0) + 1;
+      await square.save();
+    }
+  } else {
+    if (existingCollect) {
+      await UserSquareCollect.deleteOne({ _id: existingCollect._id });
+      square.collectCount = Math.max(0, (square.collectCount || 0) - 1);
+      square.likeCount = Math.max(0, (square.likeCount || 0) - 1);
+      await square.save();
+    }
+  }
+
+  sendResponse.success(ctx, {
+    collectCount: square.collectCount,
+    likeCount: square.likeCount,
+    isCollected: action === 'like'
+  });
 };

@@ -52,7 +52,7 @@ export const mergeWorks = (currentWorksList: IWorkBaseInfo[], newWorksList: ISqu
     workId: item._id,
     workImg: makeUrlAbsolute(item.imageUrl || ''),
     avatar: makeUrlAbsolute(item.avatar || DEFAULT_USER_INFO.avatar),
-    name: item.username || '匿名用户',
+    name: item.username || DEFAULT_USER_INFO.username,
     likeCount: item.likeCount || item.collectCount || 0,
     hasLike: false,
     title: item.title,

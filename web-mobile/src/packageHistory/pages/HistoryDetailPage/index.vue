@@ -94,6 +94,7 @@ import {
 } from "./components/UserAndWorkInfo/const";
 
 import { handleToHistoryTaskInfo, type IHistoryTaskInfo } from "./const";
+import { makeUrlAbsolute } from "@/util/url";
 import {getIsWeb} from "@/util/envCheck";
 import {getCurrentPage} from "@tarojs/runtime";
 
@@ -197,7 +198,7 @@ const initSquareDetail = async (squareId: string) => {
 
     userInfo.value = {
       username: response.data.username || DEFAULT_USER_INFO.username,
-      avatar: response.data.avatar || DEFAULT_USER_INFO.avatar,
+      avatar: makeUrlAbsolute(response.data.avatar || DEFAULT_USER_INFO.avatar),
       nickname: response.data.nickname,
     };
 
@@ -235,33 +236,25 @@ const handleSave = () => {
 const handleCollect = async () => {
   if (!taskInfo.value?.squareId || !workInfo.value) return;
 
-  const response = await collectSquare(taskInfo.value.squareId);
-  // 收藏成功后刷新详情
-  console.log(response);
+  const currentIsCollected = !!publishInfo.value.isCollected;
+  const action = currentIsCollected ? "unlike" : "like";
+
+  const response = await collectSquare(taskInfo.value.squareId, action);
+
   if (response instanceof Error || response.code !== 200) {
     if ((response as IObject).status === 401) {
       handle401ToLogin(true);
     }
-    return console.log(response);
-  }
-  const res = await getSquareDetail(taskInfo.value.squareId);
-
-  if (res instanceof Error || res.code !== 200) {
-    console.error("刷新广场详情失败:", res);
-    Taro.showToast({ title: "刷新广场详情失败", icon: "error" });
+    console.error("操作失败:", response);
     return;
   }
 
-  const isCollected = res.data.isCollected;
+  // 使用接口返回的最新数据更新状态
+  const { isCollected, collectCount } = response.data;
 
   publishInfo.value.isCollected = isCollected;
   workInfo.value.isCollection = isCollected;
-
-  if (publishInfo.value.isCollected) {
-    workInfo.value.collections++;
-  } else {
-    workInfo.value.collections--;
-  }
+  workInfo.value.collections = collectCount;
 
   const pages = Taro.getCurrentPages();
   const current = pages[pages.length - 1];

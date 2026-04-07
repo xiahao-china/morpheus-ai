@@ -1,11 +1,13 @@
 import { STATIC_ASSETS_URL } from '@/constants'
+import defaultAvatar from '@/assest/image/logo.png';
 
 export interface UserInfo {
   /** 用户头像URL */
   avatar: string;
-  /** 用户昵称 */
-  nickname: string;
-
+  /** 用户昵称 (展示用，对应后端 username) */
+  username: string;
+  /** 原始昵称 (仅作备份) */
+  nickname?: string;
 }
 
 export interface WorkInfo {
@@ -30,7 +32,8 @@ export interface WorkInfo {
 /** 默认用户信息 */
 export const DEFAULT_USER_INFO: UserInfo = {
   // avatar: new URL('@/assest/image/default-head-image.png', import.meta.url).href,
-  avatar: `${STATIC_ASSETS_URL}/default-head-image.png`,
+  avatar: defaultAvatar,
+  username: '未知用户',
   nickname: '未知用户',
 };
 

@@ -122,7 +122,7 @@ export const ROUTER_INFO = {
   },
   '/packageHistory/pages/HistoryDetailPage/index': {
     pageName: '历史详情',
-    needLogin: true,
+    needLogin: false,
     needNavBar: false,
     needMobileNav: false,
     needBottomBar: false
