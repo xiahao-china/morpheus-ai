@@ -8,20 +8,20 @@
       :scroll-into-view="lastMessageId"
       @load-more="handleLoadMore"
     >
-      <template v-for="message in reversedMessages" :key="message.id">
+      <template v-for="message in displayMessages" :key="message.id">
         <view :id="`msg-${message.id}`">
+          <MyInfo
+            v-if="message.role === 'user'"
+            :content="message.prompt"
+            :upload-image-url="message.underImageUrl"
+          />
           <ServiceInfo
-            v-if="message.role === 'service'"
+            v-else
             :message="message"
             @like="handleLike"
             @publish="emit('publish', $event)"
             @regenerate="handleRegenerate"
             @download="handleDownload"
-          />
-          <MyInfo
-            v-else
-            :content="message.prompt"
-            :upload-image-url="message.underImageUrl"
           />
         </view>
       </template>
@@ -41,13 +41,13 @@ import pageStyle from "./index.module.less";
 const drawingV2ConversationStore = useDrawingV2ConversationStore();
 const infiniteScrollRef = ref<InstanceType<typeof InfiniteScroll> | null>(null);
 
-const reversedMessages = computed(() => {
-  return [...drawingV2ConversationStore.messages].reverse();
+const displayMessages = computed(() => {
+  return [...drawingV2ConversationStore.messages];
 });
 
 const lastMessageId = computed(() => {
-  if (reversedMessages.value.length === 0) return '';
-  return `msg-${reversedMessages.value[reversedMessages.value.length - 1].id}`;
+  if (displayMessages.value.length === 0) return '';
+  return `msg-${displayMessages.value[displayMessages.value.length - 1].id}`;
 });
 
 const emit = defineEmits<{

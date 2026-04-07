@@ -34,7 +34,8 @@ export const useDrawingV2ConversationStore = defineStore("drawingV2Conversation"
   const mergeHistoryMessages = (historyMessages: IDrawingV2Message[]) => {
     const existed = new Set(messages.value.map((item) => item.id));
     const next = historyMessages.filter((item) => !existed.has(item.id));
-    messages.value = messages.value.concat(next);
+    // 历史消息（旧消息）插入在列表最前面
+    messages.value = [...next, ...messages.value];
   };
 
   const normalizeStatus = (status?: string): IDrawingV2Message["status"] => {
@@ -130,7 +131,9 @@ export const useDrawingV2ConversationStore = defineStore("drawingV2Conversation"
       historyLoadEnd.value = true;
       return { ok: true, list: [] as IDrawingV2Message[] };
     }
-    const mapped = mapHistoryToServiceMessages(list);
+    // API 返回的是最新在前的顺序，我们需要转换成旧的在前、新的在后的顺序
+    const reversedList = [...list].reverse();
+    const mapped = mapHistoryToServiceMessages(reversedList);
     mergeHistoryMessages(mapped);
     resumePollingForMessages(mapped);
     historyPage.value += 1;
@@ -155,7 +158,8 @@ export const useDrawingV2ConversationStore = defineStore("drawingV2Conversation"
     );
     serviceMessage.status = "INITIATED";
     serviceMessage.progress = 0;
-    messages.value = [userMessage, serviceMessage, ...messages.value];
+    // 新创建的任务插入在最后面
+    messages.value = [...messages.value, userMessage, serviceMessage];
     return {
       userMessageId: userMessage.id,
       serviceMessageId: serviceMessage.id,
