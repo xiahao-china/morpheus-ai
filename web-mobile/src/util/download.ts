@@ -1,9 +1,11 @@
 import Taro from '@tarojs/taro';
+import { getIsWeb } from './envCheck';
 
 /**
- * 批量下载文件（带进度条的a标签实现）
+ * 批量下载文件
+ * Web端使用a标签下载，小程序端使用 Taro.downloadFile 和 Taro.saveImageToPhotosAlbum
  * @param urls 要下载的文件URL列表
- * @param delay 下载间隔时间(ms)，防止浏览器阻止连续下载
+ * @param delay 下载间隔时间(ms)
  */
 export const batchDownload = async (
   urls: string[],
@@ -11,7 +13,60 @@ export const batchDownload = async (
 ): Promise<void> => {
   if (!urls.length) return;
 
-  // 创建进度条元素
+  const isWeb = getIsWeb();
+
+  if (!isWeb) {
+    // 小程序端下载逻辑
+    Taro.showLoading({ title: '准备下载...' });
+
+    try {
+      for (let i = 0; i < urls.length; i++) {
+        const url = urls[i];
+        Taro.showLoading({ title: `正在下载 (${i + 1}/${urls.length})` });
+
+        await new Promise<void>((resolve, reject) => {
+          // 获取文件扩展名，默认为 .jpg
+          let extension = '.jpg';
+          if (url.includes('.png')) extension = '.png';
+          else if (url.includes('.gif')) extension = '.gif';
+          else if (url.includes('.webp')) extension = '.webp';
+
+          // 在小程序中指定 filePath 可以避免 saveImageToPhotosAlbum:fail invalid 报错
+          const filePath = `${Taro.env.USER_DATA_PATH}/download_${Date.now()}_${i}${extension}`;
+
+          Taro.downloadFile({
+            url: url,
+            filePath: filePath,
+            success: (res) => {
+              if (res.statusCode === 200) {
+                Taro.saveImageToPhotosAlbum({
+                  filePath: res.filePath || res.tempFilePath,
+                  success: () => resolve(),
+                  fail: (err) => reject(new Error('保存到相册失败: ' + err.errMsg)),
+                });
+              } else {
+                reject(new Error(`下载失败: ${res.statusCode}`));
+              }
+            },
+            fail: (err) => reject(new Error('下载请求失败: ' + err.errMsg)),
+          });
+        });
+
+        if (i < urls.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+      Taro.hideLoading();
+      Taro.showToast({ title: '下载完成', icon: 'success' });
+    } catch (error) {
+      Taro.hideLoading();
+      console.error('批量下载出错:', error);
+      Taro.showToast({ title: (error as Error).message || '下载出错', icon: 'none' });
+    }
+    return;
+  }
+
+  // Web端下载逻辑（保留原有基于 DOM 的实现）
   const progressBar = document.createElement('div');
   progressBar.style.cssText = `
     position: fixed;

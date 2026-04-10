@@ -22,6 +22,7 @@ export interface ImageInfo {
   imageUrl: string
   thumbnailUrl: string
   recordThumbnailUrl: string
+  url256?: string
   width: number
   height: number
   createdTime: string

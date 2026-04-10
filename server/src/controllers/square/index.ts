@@ -7,12 +7,14 @@ import UserSquareCollect from "@/models/userSquareCollect";
 import { BUCKET_NAME, buildObjectPublicUrl } from "@/lib/minio";
 import { sendResponse } from "@/utils/const";
 import { buildSquareFilter, Context, getNextLikeCount } from "./const";
+import { parsePositiveInt } from "../generation/const";
 
 /**
  * 获取广场列表（支持风格和场景标签筛选）
  */
 export const getSquareList = async (ctx: Context) => {
-  const { page = 1, pageSize = 20, styleTags, sceneTags } = ctx.query;
+  try {
+    const { page = 1, pageSize = 20, styleTags, sceneTags } = ctx.query;
   const filter = buildSquareFilter(styleTags, sceneTags);
 
   const rawList = await Square.find(filter)
@@ -122,12 +124,131 @@ export const getSquareList = async (ctx: Context) => {
     };
   });
   sendResponse.success(ctx, { list, total });
+  } catch (error: any) {
+    console.error("Error in getSquareList:", error);
+    sendResponse.error(ctx, "Internal server error");
+  }
+};
+
+/**
+ * 获取用户的广场作品收藏列表
+ */
+export const getMySquareCollections = async (ctx: Context) => {
+  try {
+    const userId = ctx.state.user?._id;
+    const page = parsePositiveInt(ctx.query.page, 1);
+    const pageSize = parsePositiveInt(ctx.query.pageSize, 20);
+    const skip = (page - 1) * pageSize;
+
+    const [collections, total] = await Promise.all([
+      UserSquareCollect.find({ userId })
+        .sort({ createdTime: -1 })
+        .skip(skip)
+        .limit(pageSize)
+        .lean(),
+      UserSquareCollect.countDocuments({ userId })
+    ]);
+
+    const squareIds = collections.map((item) => item.squareId);
+    const squares = squareIds.length
+      ? await Square.find({ _id: { $in: squareIds } }).lean()
+      : [];
+
+    const squareMap = squares.reduce((map, square) => {
+      map[String(square._id)] = square;
+      return map;
+    }, {} as Record<string, any>);
+
+    const imageIds = squares.map((item) => item.imageId).filter(Boolean);
+    const images = imageIds.length
+      ? await ImageGenInfo.find({ _id: { $in: imageIds } }).lean()
+      : [];
+
+    // 针对 fileResourceId 可能是 ObjectId 的情况
+    const imageFileResourceIds = images
+      .map(img => img.fileResourceId)
+      .filter(id => id && /^[0-9a-fA-F]{24}$/.test(id));
+    const imageFileResources = imageFileResourceIds.length ? await FileResource.find({ _id: { $in: imageFileResourceIds } }).lean() : [];
+    const imageFileResourceMap = imageFileResources.reduce((map, file) => {
+      map[String(file._id)] = {
+        url: buildObjectPublicUrl(file.bucket || BUCKET_NAME, file.path),
+        url128: file.url128,
+        url256: file.url256,
+        url512: file.url512
+      };
+      return map;
+    }, {} as Record<string, any>);
+
+    const imageMap = images.reduce((map, image) => {
+      map[String(image._id)] = image;
+      return map;
+    }, {} as Record<string, any>);
+
+    const mappedList = collections.map((item) => {
+      const square = squareMap[item.squareId];
+      const image = square ? imageMap[square.imageId] : null;
+      let imageUrl = image?.imageUrl || square?.imageUrl || "";
+      let url128 = image?.url128 || "";
+      let url256 = image?.url256 || "";
+      let url512 = image?.url512 || "";
+
+      if (image?.fileResourceId) {
+        if (/^[0-9a-fA-F]{24}$/.test(image.fileResourceId)) {
+          const fileInfo = imageFileResourceMap[image.fileResourceId];
+          if (fileInfo) {
+            imageUrl = fileInfo.url;
+            url128 = fileInfo.url128 || url128;
+            url256 = fileInfo.url256 || url256;
+            url512 = fileInfo.url512 || url512;
+          }
+        } else {
+          imageUrl = buildObjectPublicUrl(BUCKET_NAME, image.fileResourceId);
+        }
+      }
+
+      return {
+        imageId: image?._id?.toString() || square?.imageId || "",
+        imageGenTaskId: image?.imageGenTaskId || "",
+        imageUrl,
+        url128,
+        url256,
+        url512,
+        fileResourceId: image?.fileResourceId || "",
+        width: image?.width || 0,
+        height: image?.height || 0,
+        isLiked: Boolean(image?.isLiked),
+        isCollected: true,
+        collectedTime: item.createdTime,
+        // 返回 squareId 供前端可能有特殊需求使用
+        squareId: item.squareId,
+      };
+    });
+    const list = mappedList.filter((item) => item.imageUrl);
+
+    sendResponse.success(ctx, {
+      list,
+      records: list, // 兼容前端字段
+      total,
+      page,
+      pageSize,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize)
+      }
+    });
+  } catch (error: any) {
+    console.error("Error in getMySquareCollections:", error);
+    sendResponse.error(ctx, "Internal server error");
+  }
 };
 
 /**
  * 获取广场详情
  */
 export const getSquareDetail = async (ctx: Context) => {
+
   try {
     const { id } = ctx.params;
     if (!id || id === 'undefined') {
@@ -248,6 +369,7 @@ export const getSquareDetail = async (ctx: Context) => {
       avatar512,
     });
   } catch (error: any) {
+    console.error("Error in getSquareDetail:", error);
     sendResponse.error(ctx, "Internal server error");
   }
 };

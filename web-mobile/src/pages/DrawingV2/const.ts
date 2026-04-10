@@ -89,7 +89,10 @@ export const mapHistoryToServiceMessages = (
   list: IGetGenerationHistoryItem[],
 ): IDrawingV2Message[] => {
   return list.flatMap((item, index) => {
-    const mode = DRAWING_MODE_OPTIONS[0];
+    // 根据 item.type 匹配对应的 mode
+    const matchedMode = DRAWING_MODE_OPTIONS.find(m => m.type === item.type);
+    const mode = matchedMode || DRAWING_MODE_OPTIONS[0];
+
     const timeText = dayjs(item.createdTime).format("YYYY-MM-DD HH:mm");
     const taskId = item.imageGenTaskId || item._id;
     const prompt = item.prompt || "历史生成记录";
@@ -110,13 +113,13 @@ export const mapHistoryToServiceMessages = (
       id: `history-service-${taskId}-${index}`,
       role: "service",
       prompt,
-      mode,
+      mode: mode,
       status,
       progress: status === "COMPLETED" ? 100 : Number(item.progress || 0),
       createdTime: timeText,
       taskId,
       imageUrl: makeUrlAbsolute(item.imageUrl || firstImage?.imageUrl || ""),
-      imageId: item.imageId || firstImage?.imageId,
+      imageId: item.imageId || firstImage?.imageId || (firstImage?.id ? String(firstImage.id) : undefined),
       isLiked: Boolean(firstImage?.isLiked),
       isPublished: Boolean(firstImage?.isPublishedToSquare),
       underImageId: item.underImageId,

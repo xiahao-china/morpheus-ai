@@ -143,6 +143,15 @@
         color: #C9CDD4;
       }
     }
+
+    .disabledMenuItem {
+      opacity: 0.4;
+      pointer-events: none;
+      cursor: not-allowed;
+      &:active {
+        background: transparent;
+      }
+    }
   }
 
   .versionInfo {

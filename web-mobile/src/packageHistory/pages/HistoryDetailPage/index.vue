@@ -6,23 +6,24 @@
           <!-- Main Image Card -->
           <MainImageCard
             :imageUrl="taskInfo.images[currentImgIndex].imageUrl"
-            :title="workInfo?.title || '未命名作品'"
-            :tags="[...(workInfo?.type || []), ...(workInfo?.scene || [])]"
-            :likeCount="workInfo?.collections || 0"
+            :title="type === 'history' ? undefined : (workInfo?.title || '未命名作品')"
+            :tags="type === 'history' ? undefined : [...(workInfo?.type || []), ...(workInfo?.scene || [])]"
+            :likeCount="type === 'history' ? undefined : (workInfo?.collections || 0)"
             :isCollected="!!publishInfo.isCollected"
+            :isSquare="type === 'square'"
             @collect="handleCollect"
           />
 
           <!-- User Info Card -->
           <UserInfoCard
-            v-if="userInfo"
+            v-if="type === 'square' && userInfo"
             :user="userInfo"
             :updateTime="workInfo?.updateTime || ''"
           />
 
           <!-- Description Card -->
           <DescriptionCard
-            v-if="workInfo?.description"
+            v-if="type === 'square' && workInfo?.description"
             :description="workInfo.description"
           />
 
@@ -111,21 +112,32 @@ const publishInfo = ref<ISquarePublishInfo>(cloneDeep(DEFAULT_PUBLISH_INFO));
 
 // 从路由参数获取ID
 const id = ref<string>("");
+const taskId = ref<string>("");
 const type = ref<"history" | "square">("history");
 
 // 初始化页面参数
 const initPageParams = () => {
   const params = Taro.getCurrentInstance()?.router?.params || {};
   id.value = params.id as string;
+  taskId.value = params.taskId as string;
   type.value = (params.type as string) || "history";
 
-  if (!id.value) {
-    Taro.showToast({ title: "缺少ID参数", icon: "error" });
+  if (type.value === "square" && !id.value) {
+    Taro.showToast({ title: "缺少作品ID参数", icon: "error" });
     setTimeout(() => {
       Taro.navigateBack();
     }, 1500);
     return false;
   }
+
+  if (type.value === "history" && !taskId.value) {
+    Taro.showToast({ title: "缺少任务ID参数", icon: "error" });
+    setTimeout(() => {
+      Taro.navigateBack();
+    }, 1500);
+    return false;
+  }
+
   return true;
 };
 
@@ -275,21 +287,12 @@ onMounted(async () => {
     await initSquareDetail(id.value);
   } else {
     const params = Taro.getCurrentInstance()?.router?.params || {};
-    const taskId = params.taskId as string;
     const taskType =
       (params.type as string as EFunctionGroupMode) ||
       EFunctionGroupMode.DRAWING;
     const defaultImgId = Number(params.defaultImgId) || 0;
 
-    if (!taskId) {
-      Taro.showToast({ title: "缺少taskId参数", icon: "error" });
-      setTimeout(() => {
-        Taro.navigateBack();
-      }, 1500);
-      return;
-    }
-
-    await initHistoryDetail(taskId, taskType, defaultImgId);
+    await initHistoryDetail(taskId.value, taskType, defaultImgId);
   }
 });
 

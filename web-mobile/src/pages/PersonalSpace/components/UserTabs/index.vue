@@ -204,6 +204,8 @@ import { API_URL } from "@/constants";
 import { getCookie } from "@/util/cookie";
 import { getSquareDetail } from "@/api/square/squareDetail";
 import { deleteBatchImage } from "@/api/images/deleteBatchImage";
+import { batchDownload } from "@/util/download";
+import { makeUrlAbsolute } from "@/util/url";
 
 
 
@@ -227,6 +229,7 @@ const historyList = ref<
   {
     id: number;
     url: string;
+    originalUrl?: string;
     recordId: number;
     type: string;
     fileResourceId: number;
@@ -237,6 +240,7 @@ const collectionList = ref<
   {
     id: number;
     url: string;
+    originalUrl?: string;
     recordId?: number;
     type?: string;
     fileResourceId?: number;
@@ -345,6 +349,7 @@ const loadData = async () => {
         const newItems: {
           id: number;
           url: string;
+          originalUrl?: string;
           recordId: number;
           fileResourceId: number;
           type: string;
@@ -358,11 +363,14 @@ const loadData = async () => {
 
           if (images && images.length > 0) {
             images.forEach((img) => {
-              if (img.recordThumbnailUrl) {
+              // 优先使用 url256，与广场保持一致
+              const imgUrl = img.url256 || img.imageUrl || img.recordThumbnailUrl || "";
+              if (imgUrl) {
                 newItems.push({
                   id: img.id,
                   fileResourceId: img.fileResourceId,
-                  url: img.recordThumbnailUrl,
+                  url: makeUrlAbsolute(imgUrl),
+                  originalUrl: makeUrlAbsolute(img.imageUrl || img.recordThumbnailUrl || ""),
                   recordId: record.id,
                   type: record.type,
                 });
@@ -395,11 +403,18 @@ const loadData = async () => {
 
       if (res.data.records && res.data.records.length > 0) {
         const newItems = res.data.records
-          .map((record) => ({
-            id: record.squareId,
-            url: record.squareImage?.scaleThumbnailUrl || "",
-            fileResourceId: record.squareImage?.fileResourceId,
-          }))
+          .map((record) => {
+            // @ts-ignore
+            const imgUrl = record.url256 || record.imageUrl || record.scaleThumbnailUrl || "";
+            // @ts-ignore
+            const originalUrl = record.imageUrl || record.scaleThumbnailUrl || "";
+            return {
+              id: record.squareId,
+              url: makeUrlAbsolute(imgUrl),
+              originalUrl: makeUrlAbsolute(originalUrl),
+              fileResourceId: record.fileResourceId,
+            };
+          })
           .filter((item) => item.url);
 
         collectionList.value = [...collectionList.value, ...newItems];
@@ -428,28 +443,35 @@ const handleImageError = (e: any) => {
 const downloadImage = async (item: {
   id: number;
   url: string;
+  originalUrl?: string;
   fileResourceId?: number;
 }) => {
-  if (!item.fileResourceId) {
-    Taro.showToast({ title: "图片资源ID不存在", icon: "none" });
+  if (!item.url && !item.originalUrl) {
+    Taro.showToast({ title: "图片URL不存在", icon: "none" });
     return false;
   }
 
   try {
-    const url = `${API_URL}/files/download/${item.fileResourceId}`;
+    const url = item.originalUrl || item.url;
+
+    // 指定明确的后缀名，避免小程序 saveImageToPhotosAlbum 报错 fail invalid
+    const filePath = `${Taro.env.USER_DATA_PATH}/download_${Date.now()}.jpg`;
+
     const res = await Taro.downloadFile({
       url,
+      filePath,
       header: { Cookie: getCookie() || "" },
     });
 
     if ((res as any).statusCode === 200) {
       return new Promise<boolean>((resolve) => {
         Taro.saveImageToPhotosAlbum({
-          filePath: (res as any).tempFilePath,
+          filePath: (res as any).filePath || (res as any).tempFilePath,
           success: () => {
             resolve(true);
           },
-          fail: () => {
+          fail: (err) => {
+            console.error('保存相册失败:', err);
             resolve(false);
           },
         });
@@ -477,55 +499,17 @@ const batchDownloadImages = async (selectedIds: Set<number>) => {
   // 过滤出选中的图片
   const selectedImages = currentList.filter((item) => selectedIds.has(item.id));
 
-  // 检查所有图片是否有fileResourceId
-  const imagesWithoutResourceId = selectedImages.filter(
-    (item) => !item.fileResourceId
+  // 检查所有图片是否有url
+  const imagesWithoutUrl = selectedImages.filter(
+    (item) => !item.url && !item.originalUrl
   );
-  if (imagesWithoutResourceId.length > 0) {
+  if (imagesWithoutUrl.length > 0) {
     Taro.showToast({ title: "部分图片无法下载", icon: "none" });
     return;
   }
 
-  Taro.showLoading({ title: "下载中...", mask: true });
-
-  let successCount = 0;
-  let failCount = 0;
-
-  // 逐个下载图片
-  for (const image of selectedImages) {
-    const success = await downloadImage(image);
-    if (success) {
-      successCount++;
-    } else {
-      failCount++;
-    }
-
-    // 更新下载进度
-    Taro.showLoading({
-      title: `下载中... ${successCount + failCount}/${selectedImages.length}`,
-      mask: true,
-    });
-  }
-
-  Taro.hideLoading();
-
-  // 显示下载结果
-  if (failCount === 0) {
-    Taro.showToast({
-      title: `成功下载${successCount}张图片`,
-      icon: "success",
-    });
-  } else if (successCount === 0) {
-    Taro.showToast({
-      title: `下载失败，请重试`,
-      icon: "error",
-    });
-  } else {
-    Taro.showToast({
-      title: `成功下载${successCount}张，失败${failCount}张`,
-      icon: "none",
-    });
-  }
+  const urls = selectedImages.map(item => item.originalUrl || item.url);
+  await batchDownload(urls);
 
   // 下载完成后退出批量模式
   exitBatchMode();
@@ -631,19 +615,15 @@ const handleImageClick = (item: {
     return;
   }
 
-  // 检查类型是否支持
-  // 注意：API 返回的 type 可能是字符串，需要确保与枚举值匹配
-  if (SUPPORTED_TYPES.includes(item.type as EDrawingType)) {
-    Taro.navigateTo({
-      url: `/packageHistory/pages/GeneratedDetail/index?taskId=${item.recordId}`,
-    });
-  } else {
-    Taro.showToast({
-      title: "暂不支持查看该类型的图片",
-      icon: "none",
-      duration: 2000,
-    });
-  }
+  // 和广场那边一样进入历史详情页
+  Taro.navigateTo({
+    url: `/packageHistory/pages/HistoryDetailPage/index?taskId=${item.recordId}&defaultImgId=${item.id}&type=history`,
+    events: {
+      likeStatusChange: (status: boolean) => {
+        // do nothing for history list or handle if needed
+      }
+    }
+  });
 };
 
 // 处理广场收藏图片点击

@@ -619,6 +619,14 @@ export const getTaskDetail = async (ctx: Context) => {
       }
     } else if (task.status === TaskStatusEnum.COMPLETED) {
       result.progress = 100;
+    }
+    
+    // 无论什么状态，只要任务有参数，都返回提示词等生成信息
+    result.prompt = task.params?.prompt || task.translatedPrompt || "";
+    result.negativePrompt = task.params?.negativePrompt || "";
+    result.type = task.purpose;
+    
+    if (task.status === TaskStatusEnum.COMPLETED) {
       const images = await ImageGenInfo.find({ imageGenTaskId: taskId }).lean();
       
       const imageFileResourceIds = images

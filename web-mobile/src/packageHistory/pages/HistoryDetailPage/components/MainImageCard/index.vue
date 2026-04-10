@@ -3,7 +3,7 @@
     <view :class="styles['image-wrapper']">
       <image :src="imageUrl" mode="widthFix" :class="styles['image']" />
     </view>
-    <view :class="styles['content']">
+    <view :class="styles['content']" v-if="isSquare">
       <view :class="styles['title-row']">
         <text :class="styles['title']">{{ title }}</text>
         <view
@@ -25,7 +25,7 @@
           <text :class="styles['count']">{{ likeCountStr }}</text>
         </view>
       </view>
-      <view :class="styles['tags']">
+      <view :class="styles['tags']" v-if="tags && tags.length > 0">
         <view v-for="(tag, index) in tags" :key="index" :class="styles['tag']">
           #{{ tag }}
         </view>
@@ -42,10 +42,11 @@ import { turnNumberToString } from "@/constants/util";
 
 const props = defineProps<{
   imageUrl: string;
-  title: string;
-  tags: string[];
-  likeCount: number;
+  title?: string;
+  tags?: string[];
+  likeCount?: number;
   isCollected: boolean;
+  isSquare?: boolean;
 }>();
 
 const emit = defineEmits<{

@@ -219,20 +219,33 @@ const handleDownload = async () => {
       return;
     }
 
+    const url = props.currentImage.url;
+    
+    // 获取文件扩展名，默认为 .jpg
+    let extension = '.jpg';
+    if (url.includes('.png')) extension = '.png';
+    else if (url.includes('.gif')) extension = '.gif';
+    else if (url.includes('.webp')) extension = '.webp';
+
+    // 指定明确的后缀名，避免小程序 saveImageToPhotosAlbum 报错 fail invalid
+    const filePath = `${Taro.env.USER_DATA_PATH}/download_${Date.now()}${extension}`;
+
     // 使用Taro的下载方式
     await Taro.downloadFile({
-      url: props.currentImage.url,
+      url: url,
+      filePath: filePath,
       success: (res) => {
         if (res.statusCode === 200) {
           Taro.saveImageToPhotosAlbum({
-            filePath: res.tempFilePath,
+            filePath: res.filePath || res.tempFilePath,
             success: () => {
               Taro.showToast({
                 title: '保存成功',
                 icon: 'success'
               });
             },
-            fail: () => {
+            fail: (err) => {
+              console.error('保存相册失败:', err);
               Taro.showToast({
                 title: '保存失败',
                 icon: 'error'
@@ -241,7 +254,8 @@ const handleDownload = async () => {
           });
         }
       },
-      fail: () => {
+      fail: (err) => {
+        console.error('下载失败:', err);
         Taro.showToast({
           title: '下载失败',
           icon: 'error'

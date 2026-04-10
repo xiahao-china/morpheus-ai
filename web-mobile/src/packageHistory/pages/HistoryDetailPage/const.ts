@@ -84,10 +84,12 @@ export const handleToHistoryTaskInfo = (
     };
   }
   const normalTaskInfo = taskInfo as IGetGenerationHistoryItem;
+  // 处理后端数据 images 和 generatedImages 的兼容
+  const images = normalTaskInfo.images || normalTaskInfo.generatedImages || [];
   return {
     id: normalTaskInfo.id,
     type: normalTaskInfo.type ?? EFunctionGroupMode.DRAWING,
-    images: normalTaskInfo.images.map((item) => ({
+    images: images.map((item) => ({
       id: item.id,
       fileResourceId: item.fileResourceId,
       imageUrl: makeUrlAbsolute(item.imageUrl),
@@ -97,7 +99,7 @@ export const handleToHistoryTaskInfo = (
     completedTime: normalTaskInfo.completedTime,
     scene: normalTaskInfo.scene,
     styleModelOutwardName: normalTaskInfo.styleModelOutwardName,
-    prompt: normalTaskInfo.prompt,
+    prompt: normalTaskInfo.prompt || (normalTaskInfo as any).promptText || '',
     width: normalTaskInfo.width,
     height: normalTaskInfo.height,
     magnificationOutward: normalTaskInfo.magnificationOutward,

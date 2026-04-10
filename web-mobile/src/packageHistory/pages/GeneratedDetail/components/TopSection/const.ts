@@ -1,8 +1,8 @@
 import Taro from '@tarojs/taro'
-import { API_URL } from '@/constants'
 import { getGenerationsDetail } from '@/api/images/getGenerationHistoryDetail'
 import {getCookie} from "@/util/cookie";
 import {getIsWeb} from "@/util/envCheck";
+import {makeUrlAbsolute} from "@/util/url";
 
 export interface ITopSectionProps {
   generating: boolean
@@ -25,17 +25,21 @@ export const downloadImageByEnv = async (taskId: string | number) => {
   const resp = await getGenerationsDetail(taskId.toString())
   if (resp instanceof Error || resp.code !== 200 || !resp.data) return
   const img = resp.data.images?.[0]
-  const fileId = img?.fileResourceId
-  if (!fileId) return
-  const url = `${API_URL}/files/download/${fileId}`
-  const res = await Taro.downloadFile({ url, header: { Cookie: getCookie() || '' } })
+  if (!img?.imageUrl) return
+  const url = makeUrlAbsolute(img.imageUrl)
+
+  // 指定明确的后缀名，避免小程序 saveImageToPhotosAlbum 报错 fail invalid
+  const filePath = `${Taro.env.USER_DATA_PATH}/download_${Date.now()}.jpg`;
+
+  const res = await Taro.downloadFile({ url, filePath, header: { Cookie: getCookie() || '' } })
   if ((res as any).statusCode === 200) {
     Taro.saveImageToPhotosAlbum({
-      filePath: (res as any).tempFilePath,
+      filePath: (res as any).filePath || (res as any).tempFilePath,
       success: () => {
         Taro.showToast({ title: '保存成功', icon: 'success' })
       },
-      fail: () => {
+      fail: (err) => {
+        console.error('保存相册失败:', err)
         Taro.showToast({ title: '保存失败', icon: 'error' })
       },
     })
