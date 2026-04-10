@@ -65,20 +65,20 @@
       </view>
     </view>
 
-    <view
-      v-if="publishInfo.showPublishBtn"
-      :class="[
-        styles['publish-btn'],
-        {
-          [styles['disabled']]:
-            !publishInfo.isFromWorks &&
-            publishInfo.publishStatus === EPublishStatus.published,
-        },
-      ]"
-      @click="handlePublish"
-    >
-      {{ publishText }}
-    </view>
+<!--    <view-->
+<!--      v-if="publishInfo.showPublishBtn"-->
+<!--      :class="[-->
+<!--        styles['publish-btn'],-->
+<!--        {-->
+<!--          [styles['disabled']]:-->
+<!--            !publishInfo.isFromWorks &&-->
+<!--            publishInfo.publishStatus === EPublishStatus.published,-->
+<!--        },-->
+<!--      ]"-->
+<!--      @click="handlePublish"-->
+<!--    >-->
+<!--      {{ publishText }}-->
+<!--    </view>-->
   </view>
 </template>
 

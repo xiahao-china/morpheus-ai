@@ -27,6 +27,12 @@ export const appConfig = {
         "pages/History/index",
       ],
     },
+    {
+      root: "packageOther",
+      pages: [
+        "pages/NotFound/index",
+      ],
+    },
   ],
   window: {
     backgroundTextStyle: "light",
