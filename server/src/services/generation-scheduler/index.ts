@@ -1,6 +1,8 @@
 import { comfyUIPool, ComfyUIClient, ComfyUINodeStatus } from "@/lib/comfyui-client";
 import { workflowManager } from "@/lib/workflow-manager";
 import { minioClient, BUCKET_NAME, buildObjectPublicUrl } from "@/lib/minio";
+import { processAndUploadCompressedImages } from "@/utils/image";
+import FileResource from "@/models/fileResource";
 import { sseService } from "@/services/sse-service";
 import GenerationQueue, { IGenerationQueue } from "@/models/generationQueue";
 import GenerationTask, { IGenerationTask, TaskStatusEnum, TaskChannelEnum } from "@/models/generationTask";
@@ -337,12 +339,45 @@ class GenerationScheduler {
 
     const imageUrl = buildObjectPublicUrl(BUCKET_NAME, minioFilename);
 
+    // 图片压缩
+    let compressInfo = {};
+    const compressedImages = await processAndUploadCompressedImages(imageBuffer, minioFilename);
+    compressInfo = {
+      size128: compressedImages.size128?.size,
+      path128: compressedImages.size128?.path,
+      url128: compressedImages.size128 ? buildObjectPublicUrl(BUCKET_NAME, compressedImages.size128.path) : undefined,
+      size256: compressedImages.size256?.size,
+      path256: compressedImages.size256?.path,
+      url256: compressedImages.size256 ? buildObjectPublicUrl(BUCKET_NAME, compressedImages.size256.path) : undefined,
+      size512: compressedImages.size512?.size,
+      path512: compressedImages.size512?.path,
+      url512: compressedImages.size512 ? buildObjectPublicUrl(BUCKET_NAME, compressedImages.size512.path) : undefined,
+    };
+
+    // 保存到文件资源表
+    const fileResource = new FileResource({
+      filename: minioFilename,
+      originalName: imageOutput.filename,
+      mimeType: "image/png", // ComfyUI 默认输出PNG
+      size: imageBuffer.length,
+      path: minioFilename,
+      bucket: BUCKET_NAME,
+      url: imageUrl,
+      userId: task.userId,
+      type: "AI_GENERATED",
+      ...compressInfo
+    });
+    await fileResource.save();
+
     // 6. 保存生成的图像信息到数据库
     const imageGenInfo = new ImageGenInfo({
       userId: task.userId,
       imageGenTaskId: task.taskId, // 这是GenerationTask的ID
-      fileResourceId: minioFilename,
+      fileResourceId: fileResource._id.toString(),
       imageUrl,
+      url128: fileResource.url128,
+      url256: fileResource.url256,
+      url512: fileResource.url512,
       width: params.width,
       height: params.height,
       createdTime: new Date()
@@ -366,6 +401,9 @@ class GenerationScheduler {
             status: TaskStatusEnum.COMPLETED,
             progress: 100,
             imageUrl,
+            url128: fileResource.url128,
+            url256: fileResource.url256,
+            url512: fileResource.url512,
             imageId: imageGenInfo._id
         });
     }

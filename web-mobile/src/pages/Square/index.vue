@@ -3,7 +3,7 @@
     <view id="square" :class="pageStyle['square-container']">
       <!-- 第一行：筛选模块和banner -->
       <view :class="pageStyle['filter-and-banner']">
-        <SquareFilter @filter-result="filterResult">
+        <SquareFilter ref="squareFilterRef" @filter-result="filterResult">
         </SquareFilter>
       </view>
 
@@ -38,6 +38,16 @@ const currentWorks = ref<IWorkBaseInfo[]>([]);
 const filterResult = (val: IWorkBaseInfo[]) => {
   currentWorks.value = val;
 }
+
+const squareFilterRef = ref();
+
+import { useDidShow } from "@tarojs/taro";
+
+useDidShow(() => {
+  if (squareFilterRef.value) {
+    squareFilterRef.value.refreshData();
+  }
+});
 
 onMounted(() => {
   const env = Taro.getEnv();

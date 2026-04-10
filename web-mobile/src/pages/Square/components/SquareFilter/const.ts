@@ -48,15 +48,20 @@ export const DEFAULT_SPACE_OPTIONS: ISortItem[] = [
 
 
 export const mergeWorks = (currentWorksList: IWorkBaseInfo[], newWorksList: ISquareItem[]): IWorkBaseInfo[] => {
-  const handleResList = newWorksList.map((item) => ({
-    workId: item._id,
-    workImg: makeUrlAbsolute(item.imageUrl || ''),
-    avatar: makeUrlAbsolute(item.avatar || DEFAULT_USER_INFO.avatar),
-    name: item.username || DEFAULT_USER_INFO.username,
-    likeCount: item.likeCount || item.collectCount || 0,
-    hasLike: false,
-    title: item.title,
-  }))
+  const handleResList = newWorksList.map((item) => {
+    // 优先使用 url256，没有时才回退使用 imageUrl
+    const workImg = item.url256 || item.imageUrl || '';
+
+    return {
+      workId: item._id,
+      workImg: makeUrlAbsolute(workImg),
+      avatar: makeUrlAbsolute(item.avatar || DEFAULT_USER_INFO.avatar),
+      name: item.username || DEFAULT_USER_INFO.username,
+      likeCount: item.likeCount || item.collectCount || 0,
+      hasLike: Boolean(item.isCollected),
+      title: item.title,
+    };
+  })
   return [...currentWorksList, ...handleResList];
 }
 

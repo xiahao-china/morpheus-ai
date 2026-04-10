@@ -30,8 +30,8 @@ import {
 } from "./const";
 import {reportPage} from "@/api/system/config/grafana";
 import Taro from "@tarojs/taro";
-import {STATIC_ASSETS_URL} from "@/constants";
 import {getIsWeb} from "@/util/envCheck";
+import drawBanner from '@/assest/image/banner/draw.png';
 
 const props = withDefaults(defineProps<LayoutProps>(), defaultLayoutProps);
 // 进入即加载用户信息
@@ -80,7 +80,7 @@ Taro.useShareAppMessage((res) => {
 Taro.useShareTimeline(() => {
   return {
     title: '暖界-让设计更合心意',
-    imageUrl: `${STATIC_ASSETS_URL}/banner/draw.png`
+    imageUrl: drawBanner
   }
 })
 

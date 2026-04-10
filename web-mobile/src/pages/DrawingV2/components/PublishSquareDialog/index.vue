@@ -38,46 +38,6 @@
               placeholder-style="color:#cbd5e1;"
             />
           </view>
-
-          <view :class="pageStyle['block']">
-            <text :class="pageStyle['label']">设计简介</text>
-            <textarea
-              v-model="caption"
-              :maxlength="100"
-              :class="pageStyle['textarea']"
-              placeholder="分享你的设计理念或装修心得..."
-              placeholder-style="color:#cbd5e1;"
-              :show-confirm-bar="false"
-            />
-          </view>
-
-          <view :class="pageStyle['tagGroup']">
-            <view :class="pageStyle['tagTitle']">装修风格</view>
-            <view :class="pageStyle['tagList']">
-              <view
-                v-for="tag in STYLE_TAGS"
-                :key="tag"
-                :class="[pageStyle['tag'], selectedStyleTags.includes(tag) ? pageStyle['tagActive'] : '']"
-                @click="toggleTag(tag, 'style')"
-              >
-                {{ tag }}
-              </view>
-            </view>
-          </view>
-
-          <view :class="pageStyle['tagGroup']">
-            <view :class="pageStyle['tagTitle']">场景标签</view>
-            <view :class="pageStyle['tagList']">
-              <view
-                v-for="tag in SCENE_TAGS"
-                :key="tag"
-                :class="[pageStyle['tag'], selectedSceneTags.includes(tag) ? pageStyle['tagActive'] : '']"
-                @click="toggleTag(tag, 'scene')"
-              >
-                {{ tag }}
-              </view>
-            </view>
-          </view>
         </scroll-view>
 
         <view :class="pageStyle['footer']">
@@ -121,7 +81,7 @@ const caption = ref("");
 const selectedStyleTags = ref<string[]>([]);
 const selectedSceneTags = ref<string[]>([]);
 
-const canSubmit = computed(() => title.value.trim() && caption.value.trim() && !confirmLoading.value);
+const canSubmit = computed(() => title.value.trim() && !confirmLoading.value);
 
 const resetForm = () => {
   title.value = "";

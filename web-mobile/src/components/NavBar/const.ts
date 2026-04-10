@@ -1,6 +1,7 @@
 import Taro from '@tarojs/taro'
-import { STATIC_ASSETS_URL } from "@/constants"
 import { ROUTER_INFO } from "@/lib/router/config"
+import appLogoImg from "@/assest/image/white_logo.png"
+import appNameImg from "@/assest/image/white_title.png"
 
 // NavigationBar组件的Props接口定义
 export interface NavigationBarProps {
@@ -16,8 +17,8 @@ export const defaultNavigationBarProps: Required<NavigationBarProps> = {
 
 // 静态资源路径
 export const NAVIGATION_ASSETS = {
-  appLogoImg: `${STATIC_ASSETS_URL}/white_logo.png`,
-  appNameImg: `${STATIC_ASSETS_URL}/white_title.png`
+  appLogoImg,
+  appNameImg
 } as const
 
 // 获取当前页面配置的静态方法

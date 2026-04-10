@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'http://localhost:3001';
 
 describe('Square API Tests', () => {
     const testPhone = '13900000001';
@@ -69,7 +69,7 @@ describe('Square API Tests', () => {
             return;
         }
 
-        const found = res.data.data.list.find((item: any) => String(item._id) === squareId);
+        const found = res.data.data.list.find((item: any) => String(item.id) === squareId);
         expect(found).toBeTruthy();
         expect(found.title).toBe('Test Square');
     });

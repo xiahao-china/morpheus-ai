@@ -16,94 +16,6 @@
         />
       </nut-form-item>
 
-      <!-- 描述 -->
-      <nut-form-item
-        label="描述"
-        prop="description"
-        :class="pageStyle['form-item']"
-      >
-        <nut-textarea
-          v-model="formData.description"
-          placeholder="请输入描述（最多100字）"
-          :rows="3"
-          :maxlength="100"
-          show-word-limit
-        />
-      </nut-form-item>
-
-      <!-- 风格标签 -->
-      <view :class="pageStyle['tag-group']">
-        <nut-form-item
-          prop="styleTags"
-          :class="pageStyle['tag-selector']"
-          label="风格标签"
-        >
-          <view :class="pageStyle['tag-selector-group']">
-            <view
-              v-for="tag in styleTags"
-              :key="tag.id"
-              :class="[
-                pageStyle['tag-selector-item'],
-                {
-                  [pageStyle['tag-selected']]: formData.styleTags.includes(
-                    tag.name
-                  ),
-                },
-              ]"
-              @click="handleTagClick(tag.name, 'styleTags')"
-            >
-              <nut-tag :class="pageStyle['tag-item']" :closable="false">
-                {{ tag.name }}
-                <Close
-                  :class="pageStyle['delete-icon']"
-                  v-if="tag.canDelete"
-                  @click.stop="() => deleteTag(tag, TagType.STYLE)"
-                />
-              </nut-tag>
-            </view>
-            <AddCustomTag
-              @save="(str) => handleAddCustomTag(TagType.STYLE, str)"
-            />
-          </view>
-        </nut-form-item>
-      </view>
-
-      <!-- 场景标签 -->
-      <view :class="pageStyle['tag-group']">
-        <nut-form-item
-          prop="sceneTags"
-          :class="pageStyle['tag-selector']"
-          label="场景标签"
-        >
-          <view :class="pageStyle['tag-selector-group']">
-            <view
-              v-for="tag in sceneTags"
-              :key="tag.id"
-              :class="[
-                pageStyle['tag-selector-item'],
-                {
-                  [pageStyle['tag-selected']]: formData.sceneTags.includes(
-                    tag.name
-                  ),
-                },
-              ]"
-              @click="handleTagClick(tag.name, 'sceneTags')"
-            >
-              <nut-tag :class="pageStyle['tag-item']" :closable="false">
-                {{ tag.name }}
-                <Close
-                  v-if="tag.canDelete"
-                  @click.stop="() => deleteTag(tag, TagType.SCENE)"
-                />
-              </nut-tag>
-            </view>
-            <AddCustomTag
-              @save="(str) => handleAddCustomTag(TagType.SCENE, str)"
-            />
-          </view>
-        </nut-form-item>
-      </view>
-
       <view :class="pageStyle['btn-group']">
         <nut-button
           type="primary"
@@ -246,16 +158,6 @@ const handleSubmit = async () => {
   // 简化表单验证，因为nutui的form验证方式不同
   if (!formData.title.trim()) {
     Toast.fail("请输入标题");
-    return;
-  }
-
-  if (!formData.description.trim()) {
-    Toast.fail("请输入描述");
-    return;
-  }
-
-  if (formData.styleTags.length + formData.sceneTags.length > 5) {
-    Toast.fail("风格标签与场景标签最多选择5个");
     return;
   }
 

@@ -40,7 +40,14 @@ const getNodes = (): ComfyUINode[] => {
 export const COMFYUI_NODES = getNodes();
 
 // ComfyUI Configuration (Default to the first normal node for backward compatibility)
-const defaultNode = COMFYUI_NODES.find(n => n.type === 'normal') || COMFYUI_NODES[0];
+const defaultNode = COMFYUI_NODES.find(n => n.type === 'normal') || COMFYUI_NODES[0] || {
+  host: '127.0.0.1',
+  port: 8188,
+  wsHost: '127.0.0.1',
+  wsPort: 8188,
+  protocol: 'http',
+  wsProtocol: 'ws'
+};
 
 export const COMFYUI_CONFIG = {
   host: defaultNode.host,

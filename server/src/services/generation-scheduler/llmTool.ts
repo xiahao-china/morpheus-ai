@@ -5,6 +5,7 @@ import GenerationQueue, { IGenerationQueue } from "@/models/generationQueue";
 import GenerationTask, { IGenerationTask, TaskStatusEnum, TaskChannelEnum, TaskPurposeChannelMapping } from "@/models/generationTask";
 import ImageGenInfo from "@/models/imageGenInfo";
 import FileResource from "@/models/fileResource";
+import { processAndUploadCompressedImages } from "@/utils/image";
 import { getLogger } from "@/lib/log4js";
 import { IMAGE_GENERATION_CONFIG, VISION_LLM_CONFIG, LLM_CONFIG, AIModelConfig } from "@/config/aiModels";
 import { incrementTaskProgress } from "@/services/task";
@@ -199,6 +200,8 @@ export const callLLMAPI = async (params: any, taskChannel: TaskChannelEnum): Pro
     const requestConfig: any = {
         headers,
         timeout: requestTimeoutMs,
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity,
         proxy: false
     };
     const fallbackMessages = JSON.parse(JSON.stringify(messages));
@@ -285,16 +288,49 @@ export const callLLMAPI = async (params: any, taskChannel: TaskChannelEnum): Pro
 
         imageUrl = buildObjectPublicUrl(BUCKET_NAME, filename);
 
+        // 图片压缩
+        let compressInfo = {};
+        const compressedImages = await processAndUploadCompressedImages(imageBuffer, filename);
+        compressInfo = {
+            size128: compressedImages.size128?.size,
+            path128: compressedImages.size128?.path,
+            url128: compressedImages.size128 ? buildObjectPublicUrl(BUCKET_NAME, compressedImages.size128.path) : undefined,
+            size256: compressedImages.size256?.size,
+            path256: compressedImages.size256?.path,
+            url256: compressedImages.size256 ? buildObjectPublicUrl(BUCKET_NAME, compressedImages.size256.path) : undefined,
+            size512: compressedImages.size512?.size,
+            path512: compressedImages.size512?.path,
+            url512: compressedImages.size512 ? buildObjectPublicUrl(BUCKET_NAME, compressedImages.size512.path) : undefined,
+        };
+
+        // 保存到文件资源表
+        const fileResource = new FileResource({
+            filename: filename,
+            originalName: filename,
+            mimeType: "image/png",
+            size: imageBuffer.length,
+            path: filename,
+            bucket: BUCKET_NAME,
+            url: imageUrl,
+            userId: params.userId,
+            type: "AI_GENERATED",
+            ...compressInfo
+        });
+        await fileResource.save();
+
          // 保存信息
         if (params.userId && params.taskId) {
             const imageGenInfo = new ImageGenInfo({
                 userId: params.userId,
                 imageGenTaskId: params.taskId,
-                fileResourceId: filename,
+                fileResourceId: fileResource._id.toString(),
                 prompt: params.prompt,
                 width: params.width,
                 height: params.height,
                 imageUrl: imageUrl,
+                url128: fileResource.url128,
+                url256: fileResource.url256,
+                url512: fileResource.url512,
                 model: config.model,
                 comfyuiPromptId: "THIRD_PARTY",
                 comfyuiClientId: "THIRD_PARTY",
@@ -408,11 +444,22 @@ export const executeThirdPartyTask = async (task: IGenerationQueue, generationTa
 
         // SSE推送
         if (task.sseId) {
+            let url128, url256, url512;
+            if (savedImageGenId) {
+                const imgInfo = await ImageGenInfo.findById(savedImageGenId);
+                url128 = imgInfo?.url128;
+                url256 = imgInfo?.url256;
+                url512 = imgInfo?.url512;
+            }
             sseService.send(task.sseId, "complete", {
                 taskId: task.taskId,
                 status: TaskStatusEnum.COMPLETED,
                 progress: 100,
                 imageUrl: imageUrl, // 生图任务有图片
+                url128,
+                url256,
+                url512,
+                imageId: savedImageGenId,
                 content: content    // LLM任务有文本
             });
         }

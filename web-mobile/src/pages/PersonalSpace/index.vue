@@ -61,13 +61,13 @@
           <RectRight :class="styles.menuArrow" size="16" />
         </view>
 
-<!--        <view :class="styles.menuItem" @tap="handleContact">-->
-<!--          <view :class="styles.menuIcon">-->
-<!--            <Service size="20" />-->
-<!--          </view>-->
-<!--          <view :class="styles.menuLabel">联系客服</view>-->
-<!--          <RectRight :class="styles.menuArrow" size="16" />-->
-<!--        </view>-->
+        <view :class="styles.menuItem" @tap="handleContact">
+          <view :class="styles.menuIcon">
+            <Service size="20" />
+          </view>
+          <view :class="styles.menuLabel">用户交流群</view>
+          <RectRight :class="styles.menuArrow" size="16" />
+        </view>
 
         <view :class="styles.menuItem" @tap="showToast('功能开发中')">
           <view :class="styles.menuIcon">
@@ -99,11 +99,11 @@
     <view :class="styles['contact-modal-content-shell']">
       <view :class="styles['contact-modal-content']">
         <image
-          :src="`${STATIC_ASSETS_URL}/navbar/customerServiceQrCodeImg.png`"
+          :src="customerServiceQrCodeImg"
           :class="styles['qr-code-img']"
           :show-menu-by-longpress="true"
         />
-        <view :class="styles['contact-tip']">长按识别二维码联系客服</view>
+        <view :class="styles['contact-tip']">扫码加入用户交流群</view>
       </view>
        <view :class="styles['close-btn']" @tap="showContactModal = false">
           <Close :class="styles['close-btn-icon']" />
@@ -119,8 +119,8 @@ import { ref, onMounted } from "vue";
 import Taro, { useDidShow } from "@tarojs/taro";
 import Layouts from "@/components/Layouts/index.vue";
 import { getUserInfo } from "@/api/users/getUserInfo";
-import { STATIC_ASSETS_URL } from "@/constants";
-import defaultAvatar from '@/assest/image/logo.png';
+import customerServiceQrCodeImg from "@/assest/image/weixinqun.jpg";
+import defaultAvatar from '@/assest/image/default-head-image.png';
 import { useUserStore } from "@/store/user";
 import {
   Heart,

@@ -5,6 +5,9 @@ export interface IImageGenInfo extends Document {
   imageGenTaskId: string; // 关联生成任务ID
   fileResourceId: string; // 关联文件资源ID
   imageUrl: string; // 图片URL
+  url128?: string; // 长边128访问URL
+  url256?: string; // 长边256访问URL
+  url512?: string; // 长边512访问URL
   width: number; // 宽度
   height: number; // 高度
 
@@ -23,6 +26,9 @@ const ImageGenInfoSchema: Schema = new Schema({
   imageGenTaskId: { type: String, required: true }, // 生成任务ID
   fileResourceId: { type: String, required: true }, // 文件资源ID
   imageUrl: { type: String, required: true }, // 图片URL
+  url128: { type: String }, // 长边128访问URL
+  url256: { type: String }, // 长边256访问URL
+  url512: { type: String }, // 长边512访问URL
   width: { type: Number }, // 宽度
   height: { type: Number }, // 高度
 

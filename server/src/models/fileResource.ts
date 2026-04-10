@@ -7,6 +7,15 @@ export interface IFileResource extends Document {
   size: number; // 文件大小
   path: string; // MinIO路径
   url?: string; // 访问URL(预签名)
+  size128?: number; // 长边128文件大小
+  path128?: string; // 长边128 MinIO路径
+  url128?: string; // 长边128访问URL
+  size256?: number; // 长边256文件大小
+  path256?: string; // 长边256 MinIO路径
+  url256?: string; // 长边256访问URL
+  size512?: number; // 长边512文件大小
+  path512?: string; // 长边512 MinIO路径
+  url512?: string; // 长边512访问URL
   bucket: string; // 存储桶
   userId?: string; // 上传用户ID
   type?: string; // 文件类型分类(如 UNDER_IMAGE)
@@ -21,6 +30,15 @@ const FileResourceSchema: Schema = new Schema({
   size: { type: Number, required: true }, // 文件大小
   path: { type: String, required: true }, // MinIO路径
   url: { type: String }, // 访问URL
+  size128: { type: Number }, // 长边128文件大小
+  path128: { type: String }, // 长边128 MinIO路径
+  url128: { type: String }, // 长边128访问URL
+  size256: { type: Number }, // 长边256文件大小
+  path256: { type: String }, // 长边256 MinIO路径
+  url256: { type: String }, // 长边256访问URL
+  size512: { type: Number }, // 长边512文件大小
+  path512: { type: String }, // 长边512 MinIO路径
+  url512: { type: String }, // 长边512访问URL
   bucket: { type: String, required: true }, // 存储桶
   userId: { type: String }, // 上传用户ID
   type: { type: String }, // 文件类型

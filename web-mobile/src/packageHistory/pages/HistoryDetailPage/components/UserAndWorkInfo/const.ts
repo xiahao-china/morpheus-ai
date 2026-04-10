@@ -1,5 +1,4 @@
-import { STATIC_ASSETS_URL } from '@/constants'
-import defaultAvatar from '@/assest/image/logo.png';
+import defaultAvatar from '@/assest/image/default-head-image.png';
 
 export interface UserInfo {
   /** 用户头像URL */

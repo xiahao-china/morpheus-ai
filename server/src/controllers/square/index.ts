@@ -42,33 +42,82 @@ export const getSquareList = async (ctx: Context) => {
   const imageMap = imageList.reduce((map, image) => {
     map[String(image._id)] = image;
     return map;
-  }, {} as Record<string, { _id: any; fileResourceId?: string; imageUrl?: string }>);
+  }, {} as Record<string, { _id: any; fileResourceId?: string; imageUrl?: string; url128?: string; url256?: string; url512?: string; }>);
 
   const avatarIds = Array.from(new Set(userList.map((user) => user.avatar).filter((avatar) => avatar && /^[0-9a-fA-F]{24}$/.test(avatar))));
   const fileResources = avatarIds.length ? await FileResource.find({ _id: { $in: avatarIds } }).lean() : [];
   const fileResourceMap = fileResources.reduce((map, file) => {
-    map[String(file._id)] = buildObjectPublicUrl(file.bucket || BUCKET_NAME, file.path);
+    map[String(file._id)] = {
+      url: buildObjectPublicUrl(file.bucket || BUCKET_NAME, file.path),
+      url128: file.url128,
+      url256: file.url256,
+      url512: file.url512
+    };
     return map;
-  }, {} as Record<string, string>);
+  }, {} as Record<string, any>);
+
+  // 针对 image 的 fileResourceId 有可能是 ObjectId 的情况
+  const imageFileResourceIds = imageList
+    .map(img => img.fileResourceId)
+    .filter(id => id && /^[0-9a-fA-F]{24}$/.test(id));
+  const imageFileResources = imageFileResourceIds.length ? await FileResource.find({ _id: { $in: imageFileResourceIds } }).lean() : [];
+  const imageFileResourceMap = imageFileResources.reduce((map, file) => {
+    map[String(file._id)] = {
+      url: buildObjectPublicUrl(file.bucket || BUCKET_NAME, file.path),
+      url128: file.url128,
+      url256: file.url256,
+      url512: file.url512
+    };
+    return map;
+  }, {} as Record<string, any>);
 
   const list = rawList.map((item) => {
     const user = userMap[String(item.userId || "")];
     const image = imageMap[String(item.imageId || "")];
-    const imageUrl = image?.fileResourceId
-      ? buildObjectPublicUrl(BUCKET_NAME, image.fileResourceId)
-      : (image?.imageUrl || item.imageUrl || "");
-    let avatar = user?.avatar || "";
-    if (avatar && fileResourceMap[avatar]) {
-      avatar = fileResourceMap[avatar];
+    let imageUrl = image?.imageUrl || item.imageUrl || "";
+    let url128 = image?.url128 || "";
+    let url256 = image?.url256 || "";
+    let url512 = image?.url512 || "";
+
+    if (image?.fileResourceId) {
+      if (/^[0-9a-fA-F]{24}$/.test(image.fileResourceId)) {
+        const fileInfo = imageFileResourceMap[image.fileResourceId];
+        if (fileInfo) {
+          imageUrl = fileInfo.url;
+          url128 = fileInfo.url128 || url128;
+          url256 = fileInfo.url256 || url256;
+          url512 = fileInfo.url512 || url512;
+        }
+      } else {
+        imageUrl = buildObjectPublicUrl(BUCKET_NAME, image.fileResourceId);
+      }
     }
-    const { _id, userId: authorId, imageId: imgId, ...rest } = item;
+
+    let avatar = user?.avatar || "";
+    let avatar128 = "";
+    let avatar256 = "";
+    let avatar512 = "";
+    if (avatar && fileResourceMap[avatar]) {
+      const avatarInfo = fileResourceMap[avatar];
+      avatar = avatarInfo.url;
+      avatar128 = avatarInfo.url128 || "";
+      avatar256 = avatarInfo.url256 || "";
+      avatar512 = avatarInfo.url512 || "";
+    }
+    const authorId = item.userId;
     return {
-      ...rest,
-      id: String(_id),
+      ...item,
+      id: String(item._id),
       imageUrl,
+      url128,
+      url256,
+      url512,
       username: user?.nickname || user?.username || "匿名用户",
       avatar,
-      isCollected: userCollectionSet.has(String(_id)),
+      avatar128,
+      avatar256,
+      avatar512,
+      isCollected: userCollectionSet.has(String(item._id)),
       isOwner: currentUserId === String(authorId),
     };
   });
@@ -81,7 +130,7 @@ export const getSquareList = async (ctx: Context) => {
 export const getSquareDetail = async (ctx: Context) => {
   try {
     const { id } = ctx.params;
-    if (!id) {
+    if (!id || id === 'undefined') {
       ctx.body = { code: 400, msg: "id is required" };
       return;
     }
@@ -103,9 +152,25 @@ export const getSquareDetail = async (ctx: Context) => {
     const generationTask = imageGenTaskId
       ? await GenerationTask.findById(imageGenTaskId).lean()
       : null;
-    const currentImageUrl = imageInfo?.fileResourceId
-      ? buildObjectPublicUrl(BUCKET_NAME, imageInfo.fileResourceId)
-      : (imageInfo?.imageUrl || square.imageUrl || "");
+
+    let currentImageUrl = imageInfo?.imageUrl || square.imageUrl || "";
+    let url128 = imageInfo?.url128 || "";
+    let url256 = imageInfo?.url256 || "";
+    let url512 = imageInfo?.url512 || "";
+
+    if (imageInfo?.fileResourceId) {
+      if (/^[0-9a-fA-F]{24}$/.test(imageInfo.fileResourceId)) {
+        const file = await FileResource.findById(imageInfo.fileResourceId).lean();
+        if (file) {
+          currentImageUrl = buildObjectPublicUrl(file.bucket || BUCKET_NAME, file.path);
+          url128 = file.url128 || url128;
+          url256 = file.url256 || url256;
+          url512 = file.url512 || url512;
+        }
+      } else {
+        currentImageUrl = buildObjectPublicUrl(BUCKET_NAME, imageInfo.fileResourceId);
+      }
+    }
 
     let underImageUrl = generationTask?.params?.underImage?.url || generationTask?.params?.underImage?.id || generationTask?.params?.baseImages?.[0] || "";
     if (underImageUrl && /^[0-9a-fA-F]{24}$/.test(underImageUrl)) {
@@ -140,13 +205,22 @@ export const getSquareDetail = async (ctx: Context) => {
     } : null;
 
     let avatar = userInfo?.avatar || "";
+    let avatar128 = "";
+    let avatar256 = "";
+    let avatar512 = "";
     if (avatar && /^[0-9a-fA-F]{24}$/.test(avatar)) {
       const file = await FileResource.findById(avatar).lean();
-      if (file) avatar = buildObjectPublicUrl(file.bucket || BUCKET_NAME, file.path);
+      if (file) {
+        avatar = buildObjectPublicUrl(file.bucket || BUCKET_NAME, file.path);
+        avatar128 = file.url128 || "";
+        avatar256 = file.url256 || "";
+        avatar512 = file.url512 || "";
+      }
     }
 
     sendResponse.success(ctx, {
       id: square._id?.toString(),
+      userId: square.userId || null,
       isOwner: userId === String(square.userId),
       username: userInfo?.nickname || userInfo?.username || "匿名用户",
       title: square.title || "",
@@ -159,6 +233,9 @@ export const getSquareDetail = async (ctx: Context) => {
         id: imageInfo?._id?.toString() || square.imageId?.toString() || "",
         fileResourceId: imageInfo?.fileResourceId || "",
         imageUrl: currentImageUrl,
+        url128,
+        url256,
+        url512,
       },
       publishedTime: square.publishedTime,
       updateTime: square.publishedTime,
@@ -166,6 +243,9 @@ export const getSquareDetail = async (ctx: Context) => {
       collectCount: square.collectCount || 0,
       isCollected: !!isCollected,
       avatar: avatar,
+      avatar128,
+      avatar256,
+      avatar512,
     });
   } catch (error: any) {
     sendResponse.error(ctx, "Internal server error");
@@ -183,6 +263,11 @@ export const publishSquare = async (ctx: Context) => {
 
   if (!imageId) {
       ctx.body = { code: 400, msg: "imageId is required" };
+      return;
+  }
+
+  if (!title) {
+      ctx.body = { code: 400, msg: "title is required" };
       return;
   }
 
@@ -237,6 +322,11 @@ export const deleteSquare = async (ctx: Context) => {
   const userId = user?._id;
   const { id } = ctx.params;
 
+  if (!id || id === 'undefined') {
+    ctx.body = { code: 400, msg: 'id is required' };
+    return;
+  }
+
   const square = await Square.findById(id);
   if (!square) {
     ctx.body = { code: 404, msg: 'Not found' };
@@ -267,6 +357,11 @@ export const likeSquare = async (ctx: Context) => {
   if (!userId) {
     ctx.status = 401;
     ctx.body = { code: 401, msg: 'Please login first' };
+    return;
+  }
+
+  if (!id || id === 'undefined') {
+    ctx.body = { code: 400, msg: 'id is required' };
     return;
   }
 

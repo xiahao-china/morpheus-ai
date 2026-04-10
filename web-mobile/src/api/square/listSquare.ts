@@ -32,8 +32,12 @@ export interface ISquareItem {
   likeCount: number;
   collectCount: number;
   imageUrl?: string;
+  url128?: string;
+  url256?: string;
+  url512?: string;
   username?: string;
   avatar?: string;
+  isCollected?: boolean;
 }
 
 export interface ISquareListResponse {

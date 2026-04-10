@@ -3,6 +3,7 @@ import { MINIO_CONFIG } from "@/config";
 import FileResource from "@/models/fileResource";
 import { sendResponse } from "@/utils/const";
 import { buildFilename, buildObjectPath, Context } from "./const";
+import { processAndUploadCompressedImages } from "@/utils/image";
 
 const buildAccessibleUrl = (ctx: Context, objectPath: string) => {
   const rawUrl = buildObjectPublicUrl(BUCKET_NAME, objectPath);
@@ -45,6 +46,23 @@ export const uploadFile = async (ctx: Context) => {
 
   const url = buildAccessibleUrl(ctx, filename);
 
+  // 图片压缩
+  let compressInfo = {};
+  if (file.mimetype && file.mimetype.startsWith('image/')) {
+    const compressedImages = await processAndUploadCompressedImages(file.buffer, filename);
+    compressInfo = {
+      size128: compressedImages.size128?.size,
+      path128: compressedImages.size128?.path,
+      url128: compressedImages.size128 ? buildAccessibleUrl(ctx, compressedImages.size128.path) : undefined,
+      size256: compressedImages.size256?.size,
+      path256: compressedImages.size256?.path,
+      url256: compressedImages.size256 ? buildAccessibleUrl(ctx, compressedImages.size256.path) : undefined,
+      size512: compressedImages.size512?.size,
+      path512: compressedImages.size512?.path,
+      url512: compressedImages.size512 ? buildAccessibleUrl(ctx, compressedImages.size512.path) : undefined,
+    };
+  }
+
   // 保存到数据库
   const fileResource = new FileResource({
     filename,
@@ -54,11 +72,19 @@ export const uploadFile = async (ctx: Context) => {
     path: filename,
     bucket: BUCKET_NAME,
     url,
-    userId: (ctx.state.user as any)?._id
+    userId: (ctx.state.user as any)?._id,
+    ...compressInfo
   });
   await fileResource.save();
 
-  sendResponse.success(ctx, { filename, url, id: fileResource._id });
+  sendResponse.success(ctx, {
+    filename,
+    url,
+    id: fileResource._id,
+    url128: fileResource.url128,
+    url256: fileResource.url256,
+    url512: fileResource.url512
+  });
 };
 
 /**
@@ -93,6 +119,23 @@ export const uploadGeneralFile = async (ctx: Context) => {
 
   const url = buildAccessibleUrl(ctx, objectPath);
 
+  // 图片压缩
+  let compressInfo = {};
+  if (file.mimetype && file.mimetype.startsWith('image/')) {
+    const compressedImages = await processAndUploadCompressedImages(file.buffer, objectPath);
+    compressInfo = {
+      size128: compressedImages.size128?.size,
+      path128: compressedImages.size128?.path,
+      url128: compressedImages.size128 ? buildAccessibleUrl(ctx, compressedImages.size128.path) : undefined,
+      size256: compressedImages.size256?.size,
+      path256: compressedImages.size256?.path,
+      url256: compressedImages.size256 ? buildAccessibleUrl(ctx, compressedImages.size256.path) : undefined,
+      size512: compressedImages.size512?.size,
+      path512: compressedImages.size512?.path,
+      url512: compressedImages.size512 ? buildAccessibleUrl(ctx, compressedImages.size512.path) : undefined,
+    };
+  }
+
   // 保存到数据库
   const fileResource = new FileResource({
     filename,
@@ -103,7 +146,8 @@ export const uploadGeneralFile = async (ctx: Context) => {
     bucket: BUCKET_NAME,
     url,
     type: fileType,
-    userId: user?._id
+    userId: user?._id,
+    ...compressInfo
   });
   await fileResource.save();
 
@@ -113,6 +157,9 @@ export const uploadGeneralFile = async (ctx: Context) => {
     fileUrl: url,
     fileType: fileType,
     downloadName: file.originalname,
-    minioPath: objectPath
+    minioPath: objectPath,
+    url128: fileResource.url128,
+    url256: fileResource.url256,
+    url512: fileResource.url512
   });
 };

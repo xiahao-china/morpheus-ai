@@ -24,8 +24,6 @@ declare module 'vue' {
     NutImagePreview: typeof import('@nutui/nutui-taro')['ImagePreview']
     NutInput: typeof import('@nutui/nutui-taro')['Input']
     NutPopup: typeof import('@nutui/nutui-taro')['Popup']
-    NutTag: typeof import('@nutui/nutui-taro')['Tag']
-    NutTextarea: typeof import('@nutui/nutui-taro')['Textarea']
     PublishWork: typeof import('./src/components/HistoryDetail/components/PublishWork/index.vue')['default']
     RootPortalEl: typeof import('./src/components/RootPortalEl/index.vue')['default']
     UserAndWorkInfo: typeof import('./src/components/HistoryDetail/components/UserAndWorkInfo/index.vue')['default']

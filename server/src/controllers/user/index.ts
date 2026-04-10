@@ -18,6 +18,8 @@ import {
   VERIFY_CODE_TYPE_USERNAME
 } from "./const";
 import { sendResponse } from "@/utils/const";
+import FileResource from "@/models/fileResource";
+import { BUCKET_NAME, buildObjectPublicUrl } from "@/lib/minio";
 
 /**
  * 发送验证码
@@ -100,8 +102,19 @@ export const login = async (ctx: Context) => {
  */
 export const getUserInfo = async (ctx: Context) => {
     const user = ctx.state.user;
-    const dbUser = await User.findById(user._id);
-    sendResponse.success(ctx, dbUser as any);
+    const dbUser = await User.findById(user._id).lean() as any;
+    
+    if (dbUser?.avatar && /^[0-9a-fA-F]{24}$/.test(dbUser.avatar)) {
+        const file = await FileResource.findById(dbUser.avatar).lean();
+        if (file) {
+            dbUser.avatar = buildObjectPublicUrl(file.bucket || BUCKET_NAME, file.path);
+            dbUser.avatar128 = file.url128;
+            dbUser.avatar256 = file.url256;
+            dbUser.avatar512 = file.url512;
+        }
+    }
+    
+    sendResponse.success(ctx, dbUser);
 }
 
 /**

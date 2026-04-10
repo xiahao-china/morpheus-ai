@@ -1,6 +1,7 @@
 import { getSquareDetail } from '@/api/square/squareDetail';
 import type { IWorkBaseInfo } from './components/WorkCard/const';
-import {STATIC_ASSETS_URL} from "@/constants";
+import defaultAvatar from '@/assest/image/default-head-image.png';
+import { makeUrlAbsolute } from '@/util/url';
 
 export const getWorkInfo = async (workId: string): Promise<IWorkBaseInfo | null> => {
   const response = await getSquareDetail(workId);
@@ -9,11 +10,13 @@ export const getWorkInfo = async (workId: string): Promise<IWorkBaseInfo | null>
     return null;
   }
   const {data} = response;
+  // 优先使用压缩图
+  const workImg = data.squareImage.url256 || data.squareImage.imageUrl || '';
   return {
     workId,
     title: data.title,
-    workImg: data.squareImage.imageUrl,
-    avatar: response.data.avatar || `${STATIC_ASSETS_URL}/default-head-image.png`,
+    workImg: makeUrlAbsolute(workImg),
+    avatar: makeUrlAbsolute(data.avatar || defaultAvatar),
     name: data.username,
     likeCount: data.collectCount,
     hasLike: data.isCollected,

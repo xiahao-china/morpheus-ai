@@ -37,7 +37,7 @@
 import styles from "./index.module.less";
 import type { getUserInfoResponse } from "@/api/users/getUserInfo";
 import { Edit, Service } from '@nutui/icons-vue-taro';
-import defaultAvatar from '@/assest/image/logo.png';
+import defaultAvatar from '@/assest/image/default-head-image.png';
 
 defineOptions({
   name: "UserInfo",

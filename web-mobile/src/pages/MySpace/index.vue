@@ -19,7 +19,7 @@
     >
       <view class="contact-modal-content">
         <image
-          :src="`${STATIC_ASSETS_URL}/navbar/customerServiceQrCodeImg.png`"
+          :src="customerServiceQrCodeImg"
           class="qr-code-img"
           :show-menu-by-longpress="true"
         />
@@ -36,7 +36,7 @@ import UserTabs from "./components/UserTabs/index.vue";
 import { ref, onMounted } from "vue";
 import { getUserInfo, type getUserInfoResponse } from "@/api/users/getUserInfo";
 import Taro, { useReachBottom, useDidShow } from "@tarojs/taro";
-import { STATIC_ASSETS_URL } from "@/constants";
+import customerServiceQrCodeImg from "@/assest/image/navbar/customerServiceQrCodeImg.png";
 import { makeUrlAbsolute } from "@/util/url";
 
 const userInfo = ref<getUserInfoResponse>({

@@ -196,6 +196,21 @@ export const getMyImageCollections = async (ctx: Context) => {
       ? await ImageGenInfo.find({ _id: { $in: imageIds } }).lean()
       : [];
 
+    // 针对 fileResourceId 可能是 ObjectId 的情况
+    const imageFileResourceIds = images
+      .map(img => img.fileResourceId)
+      .filter(id => id && /^[0-9a-fA-F]{24}$/.test(id));
+    const imageFileResources = imageFileResourceIds.length ? await FileResource.find({ _id: { $in: imageFileResourceIds } }).lean() : [];
+    const imageFileResourceMap = imageFileResources.reduce((map, file) => {
+      map[String(file._id)] = {
+        url: buildObjectPublicUrl(file.bucket || BUCKET_NAME, file.path),
+        url128: file.url128,
+        url256: file.url256,
+        url512: file.url512
+      };
+      return map;
+    }, {} as Record<string, any>);
+
     const imageMap = images.reduce((map, image) => {
       map[String(image._id)] = image;
       return map;
@@ -203,11 +218,32 @@ export const getMyImageCollections = async (ctx: Context) => {
 
     const mappedList = collections.map((item) => {
       const image = imageMap[item.imageId];
-      const imageUrl = image?.imageUrl || "";
+      let imageUrl = image?.imageUrl || "";
+      let url128 = image?.url128 || "";
+      let url256 = image?.url256 || "";
+      let url512 = image?.url512 || "";
+
+      if (image?.fileResourceId) {
+        if (/^[0-9a-fA-F]{24}$/.test(image.fileResourceId)) {
+          const fileInfo = imageFileResourceMap[image.fileResourceId];
+          if (fileInfo) {
+            imageUrl = fileInfo.url;
+            url128 = fileInfo.url128 || url128;
+            url256 = fileInfo.url256 || url256;
+            url512 = fileInfo.url512 || url512;
+          }
+        } else {
+          imageUrl = buildObjectPublicUrl(BUCKET_NAME, image.fileResourceId);
+        }
+      }
+
       return {
         imageId: item.imageId,
         imageGenTaskId: item.imageGenTaskId,
         imageUrl,
+        url128,
+        url256,
+        url512,
         fileResourceId: image?.fileResourceId || "",
         width: image?.width || 0,
         height: image?.height || 0,
@@ -504,13 +540,34 @@ export const getGenerationStatus = async (ctx: Context) => {
             progress: 0
         });
     } else if (task.status === TaskStatusEnum.COMPLETED) {
-        const result = await ImageGenInfo.findOne({ imageGenTaskId: taskId });
-        const imageUrl = result?.imageUrl || "";
+        const result = await ImageGenInfo.findOne({ imageGenTaskId: taskId }).lean();
+        let imageUrl = result?.imageUrl || "";
+        let url128 = result?.url128 || "";
+        let url256 = result?.url256 || "";
+        let url512 = result?.url512 || "";
+
+        if (result?.fileResourceId) {
+            if (/^[0-9a-fA-F]{24}$/.test(result.fileResourceId)) {
+                const file = await FileResource.findById(result.fileResourceId).lean();
+                if (file) {
+                    imageUrl = buildObjectPublicUrl(file.bucket || BUCKET_NAME, file.path);
+                    url128 = file.url128 || url128;
+                    url256 = file.url256 || url256;
+                    url512 = file.url512 || url512;
+                }
+            } else {
+                imageUrl = buildObjectPublicUrl(BUCKET_NAME, result.fileResourceId);
+            }
+        }
+
         sseService.send(sseId, "complete", {
             taskId,
             status: 'completed',
             progress: 100,
             imageUrl,
+            url128,
+            url256,
+            url512,
             imageId: result?._id
         });
     } else if (task.status === TaskStatusEnum.FAILED) {
@@ -562,19 +619,81 @@ export const getTaskDetail = async (ctx: Context) => {
       }
     } else if (task.status === TaskStatusEnum.COMPLETED) {
       result.progress = 100;
-      const imageInfo = await ImageGenInfo.findOne({ imageGenTaskId: taskId }).lean();
-      if (imageInfo) {
-        result.imageUrl = imageInfo.imageUrl || "";
+      const images = await ImageGenInfo.find({ imageGenTaskId: taskId }).lean();
+      
+      const imageFileResourceIds = images
+        .map(img => img.fileResourceId)
+        .filter(id => id && /^[0-9a-fA-F]{24}$/.test(id));
+      const imageFileResources = imageFileResourceIds.length ? await FileResource.find({ _id: { $in: imageFileResourceIds } }).lean() : [];
+      const imageFileResourceMap = imageFileResources.reduce((map, file) => {
+        map[String(file._id)] = {
+          url: buildObjectPublicUrl(file.bucket || BUCKET_NAME, file.path),
+          url128: file.url128,
+          url256: file.url256,
+          url512: file.url512
+        };
+        return map;
+      }, {} as Record<string, any>);
+
+      if (images.length > 0) {
+        const imageInfo = images[0];
+        let imageUrl = imageInfo.imageUrl || "";
+        let url128 = imageInfo.url128 || "";
+        let url256 = imageInfo.url256 || "";
+        let url512 = imageInfo.url512 || "";
+        
+        if (imageInfo.fileResourceId) {
+          if (/^[0-9a-fA-F]{24}$/.test(imageInfo.fileResourceId)) {
+            const fileInfo = imageFileResourceMap[imageInfo.fileResourceId];
+            if (fileInfo) {
+              imageUrl = fileInfo.url;
+              url128 = fileInfo.url128 || url128;
+              url256 = fileInfo.url256 || url256;
+              url512 = fileInfo.url512 || url512;
+            }
+          } else {
+            imageUrl = buildObjectPublicUrl(BUCKET_NAME, imageInfo.fileResourceId);
+          }
+        }
+        
+        result.imageUrl = imageUrl;
+        result.url128 = url128;
+        result.url256 = url256;
+        result.url512 = url512;
         result.imageId = imageInfo._id;
         result.width = imageInfo.width;
         result.height = imageInfo.height;
       }
-      // 保留 images 数组以防新版前端使用
-      const images = await ImageGenInfo.find({ imageGenTaskId: taskId }).lean();
-      result.images = images.map((image) => ({
-        ...image,
-        imageUrl: image.imageUrl || ""
-      }));
+
+      result.images = images.map((image) => {
+        let imageUrl = image.imageUrl || "";
+        let url128 = image.url128 || "";
+        let url256 = image.url256 || "";
+        let url512 = image.url512 || "";
+        
+        if (image.fileResourceId) {
+          if (/^[0-9a-fA-F]{24}$/.test(image.fileResourceId)) {
+            const fileInfo = imageFileResourceMap[image.fileResourceId];
+            if (fileInfo) {
+              imageUrl = fileInfo.url;
+              url128 = fileInfo.url128 || url128;
+              url256 = fileInfo.url256 || url256;
+              url512 = fileInfo.url512 || url512;
+            }
+          } else {
+            imageUrl = buildObjectPublicUrl(BUCKET_NAME, image.fileResourceId);
+          }
+        }
+        
+        return {
+          ...image,
+          imageUrl,
+          url128,
+          url256,
+          url512
+        };
+      });
+
       if (task.textGenText) {
         result.content = task.textGenText;
       }
@@ -646,12 +765,48 @@ export const getGenerationHistory = async (ctx: Context) => {
       : [];
     const collectedImageSet = new Set(collectedImageList.map((item) => String(item.imageId)));
 
-    const imageListWithUrl = imageList.map((image) => ({
-      image,
-      imageUrl: image.fileResourceId
-        ? buildObjectPublicUrl(BUCKET_NAME, image.fileResourceId)
-        : (image.imageUrl || "")
-    }));
+    const imageFileResourceIds = imageList
+      .map(img => img.fileResourceId)
+      .filter(id => id && /^[0-9a-fA-F]{24}$/.test(id));
+    const imageFileResources = imageFileResourceIds.length ? await FileResource.find({ _id: { $in: imageFileResourceIds } }).lean() : [];
+    const imageFileResourceMap = imageFileResources.reduce((map, file) => {
+      map[String(file._id)] = {
+        url: buildObjectPublicUrl(file.bucket || BUCKET_NAME, file.path),
+        url128: file.url128,
+        url256: file.url256,
+        url512: file.url512
+      };
+      return map;
+    }, {} as Record<string, any>);
+
+    const imageListWithUrl = imageList.map((image) => {
+      let imageUrl = image.imageUrl || "";
+      let url128 = image.url128 || "";
+      let url256 = image.url256 || "";
+      let url512 = image.url512 || "";
+      
+      if (image.fileResourceId) {
+        if (/^[0-9a-fA-F]{24}$/.test(image.fileResourceId)) {
+          const fileInfo = imageFileResourceMap[image.fileResourceId];
+          if (fileInfo) {
+            imageUrl = fileInfo.url;
+            url128 = fileInfo.url128 || url128;
+            url256 = fileInfo.url256 || url256;
+            url512 = fileInfo.url512 || url512;
+          }
+        } else {
+          imageUrl = buildObjectPublicUrl(BUCKET_NAME, image.fileResourceId);
+        }
+      }
+      
+      return {
+        image,
+        imageUrl,
+        url128,
+        url256,
+        url512
+      };
+    });
 
     const imageMap = imageListWithUrl.reduce((map, item) => {
       const image = item.image;
@@ -664,6 +819,9 @@ export const getGenerationHistory = async (ctx: Context) => {
         id: imageId, // 兼容前端字段
         imageId,
         imageUrl: item.imageUrl,
+        url128: item.url128,
+        url256: item.url256,
+        url512: item.url512,
         recordThumbnailUrl: item.imageUrl, // 兼容前端字段
         fileResourceId: image.fileResourceId,
         width: image.width,
@@ -678,6 +836,9 @@ export const getGenerationHistory = async (ctx: Context) => {
       id: string;
       imageId: string;
       imageUrl: string;
+      url128?: string;
+      url256?: string;
+      url512?: string;
       recordThumbnailUrl: string;
       fileResourceId: string;
       width?: number;
@@ -694,6 +855,7 @@ export const getGenerationHistory = async (ctx: Context) => {
       const firstImage = images[0];
       const rawUrl = task.params?.baseImages?.[0] || "";
       let underImageUrl = rawUrl;
+      let underImageId = rawUrl;
       if (rawUrl && /^[0-9a-fA-F]{24}$/.test(rawUrl)) {
         const file = await FileResource.findById(rawUrl).lean();
         if (file) underImageUrl = buildObjectPublicUrl(file.bucket || BUCKET_NAME, file.path);
@@ -708,6 +870,7 @@ export const getGenerationHistory = async (ctx: Context) => {
         prompt: task.params?.prompt || "",
         negativePrompt: task.params?.negativePrompt || "",
         underImageUrl: underImageUrl,
+        underImageId: underImageId,
         type: task.purpose,
         status: task.status,
         progress: task.status === TaskStatusEnum.COMPLETED

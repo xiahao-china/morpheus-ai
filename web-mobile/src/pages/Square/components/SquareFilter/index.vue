@@ -194,6 +194,14 @@ const handleArrowClick = (direction: 'left' | 'right') => {
   }
 }
 
+const refreshData = () => {
+  handleSearch();
+};
+
+defineExpose({
+  refreshData
+});
+
 onMounted(() => {
   handleSearch();
   initSpaceOptions();

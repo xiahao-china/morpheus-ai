@@ -25,7 +25,7 @@
         <Edit :class="styles.icon" />
         <text>编辑资料</text>
       </view>
-      <view :class="styles.actionButton" @click="handleContactClick">
+      <view :class="[styles.actionButton, styles.disabledButton]">
         <Service :class="styles.icon" />
         <text>联系客服</text>
       </view>
@@ -45,7 +45,7 @@
 import styles from "./index.module.less";
 import type { getUserInfoResponse } from "@/api/users/getUserInfo";
 import { Edit, Service } from '@nutui/icons-vue-taro';
-import defaultAvatar from '@/assest/image/logo.png';
+import defaultAvatar from '@/assest/image/default-head-image.png';
 
 defineOptions({
   name: "UserInfo",

@@ -16,6 +16,9 @@ export interface ISquareDetailResponse {
     id: number,
     fileResourceId: number,
     imageUrl: string;
+    url128?: string;
+    url256?: string;
+    url512?: string;
   },
   publishedTime: string;
   updateTime: string;
