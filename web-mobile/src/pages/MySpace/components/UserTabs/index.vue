@@ -88,7 +88,7 @@
             />
           </view>
         </view>
-        <view :class="styles.collectionGrid" v-else>
+        <view :class="styles.collectionGrid" v-else-if="tab === ETabType.SquareCollection">
           <view
             v-for="item in collectionList"
             :key="`collection-${item.id}`"
@@ -114,12 +114,38 @@
             />
           </view>
         </view>
+        <view :class="styles.publicationGrid" v-else-if="tab === ETabType.MyPublication">
+          <view
+            v-for="item in publicationList"
+            :key="`publication-${item.id}`"
+            :class="styles.imageItem"
+            @click="handlePublicationImageClick(item)"
+          >
+            <view
+              v-if="isBatchMode"
+              :class="[
+                styles.checkboxOverlay,
+                { [styles.checked]: selectedItems.has(item.id) },
+              ]"
+              :key="`checkbox-${item.id}-${selectedItemsUpdateKey}`"
+            >
+              <Check v-if="selectedItems.has(item.id)" size="12" color="#fff" />
+            </view>
+            <image
+              :src="item.url"
+              mode="aspectFill"
+              :class="styles.image"
+              lazy-load
+              @error="handleImageError"
+            />
+          </view>
+        </view>
       </view>
       <view v-if="loading" :class="styles.loadingText">加载中...</view>
       <view
         v-if="
           !loading &&
-          (tab === ETabType.History ? historyFinished : collectionFinished)
+          (tab === ETabType.History ? historyFinished : tab === ETabType.SquareCollection ? collectionFinished : publicationFinished)
         "
         :class="styles.noMoreText"
       >
@@ -138,11 +164,11 @@
         <Download size="16" color="#333" />
       </view>
 
-      <!-- Batch Delete - 只在历史记录页面显示 -->
+      <!-- Batch Delete - 只在历史记录页面和我的发布页面显示 -->
       <view
         :class="styles.floatingBtn"
         @click="toggleBatchMode('delete')"
-        v-if="!isBatchMode && tab === ETabType.History"
+        v-if="!isBatchMode && (tab === ETabType.History || tab === ETabType.MyPublication)"
       >
         <Del size="16" color="#333" />
       </view>
@@ -186,7 +212,9 @@ import {
   SCROLL_THRESHOLD
 } from "./const";
 import { getMyHistory, EHistoryFilterTime } from "@/api/images/getMyHistory";
-import { getSquareCollections } from "@/api/square/getSquareCollections";
+import { getMyCollections } from "@/api/square/myCollections";
+import { getMyPublishedRecords } from "@/api/square/myPublished";
+import { deleteSquareRecord } from "@/api/square/deleteSquareRecord";
 import { makeUrlAbsolute } from "@/util/url";
 import { onMounted, ref, computed } from "vue";
 import {
@@ -197,6 +225,7 @@ import {
   Del,
   Download,
   Check,
+  Edit,
 } from "@nutui/icons-vue-taro";
 import styles from "./index.module.less";
 import Taro, { usePageScroll } from "@tarojs/taro";
@@ -246,18 +275,31 @@ const collectionList = ref<
   }[]
 >([]);
 
+const publicationList = ref<
+  {
+    id: string;
+    url: string;
+    originalUrl?: string;
+    recordId?: string;
+    type?: string;
+    fileResourceId?: string;
+  }[]
+>([]);
+
 // Pagination States
 const historyPage = ref(1);
 const collectionPage = ref(1);
+const publicationPage = ref(1);
 const historyFinished = ref(false);
 const collectionFinished = ref(false);
+const publicationFinished = ref(false);
 const loading = ref(false);
 // 使用从 const.ts 导入的分页大小常量
 
 const tabsList = computed(() => {
   return TABS.map((t) => ({
     ...t,
-    icon: t.id === ETabType.History ? Clock : Heart,
+    icon: t.id === ETabType.History ? Clock : t.id === ETabType.MyPublication ? Edit : Heart,
   }));
 });
 
@@ -267,7 +309,8 @@ const handleTabChange = (id: string) => {
   tab.value = id as ETabType;
   if (
     (id === ETabType.History && historyList.value.length === 0) ||
-    (id === ETabType.SquareCollection && collectionList.value.length === 0)
+    (id === ETabType.SquareCollection && collectionList.value.length === 0) ||
+    (id === ETabType.MyPublication && publicationList.value.length === 0)
   ) {
     loadData();
   }
@@ -388,10 +431,10 @@ const loadData = async () => {
       } else {
         historyFinished.value = true;
       }
-    } else {
+    } else if (tab.value === ETabType.SquareCollection) {
       if (collectionFinished.value) return;
-      const res = await getSquareCollections({
-        page: collectionPage.value,
+      const res = await getMyCollections({
+        pageNo: collectionPage.value,
         pageSize: PAGE_SIZE,
       });
 
@@ -400,31 +443,66 @@ const loadData = async () => {
         return;
       }
 
-      if (res.data.list && res.data.list.length > 0) {
-        const newItems = res.data.list
+      if (res.data.records && res.data.records.length > 0) {
+        const newItems = res.data.records
           .map((record) => {
             // @ts-ignore
             const imgUrl = record.url256 || record.imageUrl || record.scaleThumbnailUrl || "";
             // @ts-ignore
             const originalUrl = record.imageUrl || record.scaleThumbnailUrl || "";
             return {
-              id: record.squareId || record.imageId, // 使用 squareId 作为跳转 ID
+              id: record.squareId.toString(),
               url: makeUrlAbsolute(imgUrl),
               originalUrl: makeUrlAbsolute(originalUrl),
-              recordId: record.imageGenTaskId,
-              fileResourceId: record.fileResourceId,
+              recordId: record.imageId ? record.imageId.toString() : "",
+              fileResourceId: record.fileResourceId?.toString() || "",
             };
           })
           .filter((item) => item.url);
 
         collectionList.value = [...collectionList.value, ...newItems];
-        if (res.data.list.length < PAGE_SIZE) {
+        if (res.data.records.length < PAGE_SIZE) {
           collectionFinished.value = true;
         } else {
           collectionPage.value++;
         }
       } else {
         collectionFinished.value = true;
+      }
+    } else if (tab.value === ETabType.MyPublication) {
+      if (publicationFinished.value) return;
+      const res = await getMyPublishedRecords({
+        pageNo: publicationPage.value,
+        pageSize: PAGE_SIZE,
+      });
+
+      if (res instanceof Error) {
+        console.error("请求我的发布列表失败", res);
+        return;
+      }
+
+      if (res.data.records && res.data.records.length > 0) {
+        const newItems = res.data.records
+          .map((record) => {
+            const imgUrl = record.squareImage?.scaleThumbnailUrl || record.squareImage?.imageUrl || "";
+            const originalUrl = record.squareImage?.imageUrl || "";
+            return {
+              id: record.id.toString(),
+              url: makeUrlAbsolute(imgUrl),
+              originalUrl: makeUrlAbsolute(originalUrl),
+              fileResourceId: record.squareImage?.fileResourceId?.toString() || "",
+            };
+          })
+          .filter((item) => item.url);
+
+        publicationList.value = [...publicationList.value, ...newItems];
+        if (res.data.records.length < PAGE_SIZE) {
+          publicationFinished.value = true;
+        } else {
+          publicationPage.value++;
+        }
+      } else {
+        publicationFinished.value = true;
       }
     }
   } catch (error) {
@@ -494,7 +572,7 @@ const batchDownloadImages = async (selectedIds: Set<string>) => {
 
   // 获取当前页面的图片列表
   const currentList =
-    tab.value === ETabType.History ? historyList.value : collectionList.value;
+    tab.value === ETabType.History ? historyList.value : tab.value === ETabType.SquareCollection ? collectionList.value : publicationList.value;
 
   // 过滤出选中的图片
   const selectedImages = currentList.filter((item) => selectedIds.has(item.id));
@@ -522,36 +600,54 @@ const batchDeleteImages = async (selectedIds: Set<string>) => {
     return;
   }
 
+  if (tab.value === ETabType.MyPublication) {
+    try {
+      Taro.showLoading({ title: "删除中...", mask: true });
+
+      // 删除发布的广场内容
+      const deletePromises = Array.from(selectedIds).map(id => deleteSquareRecord(id));
+      await Promise.all(deletePromises);
+
+      Taro.hideLoading();
+
+      // 从列表中移除已删除的图片
+      publicationList.value = publicationList.value.filter(
+        (item) => !selectedIds.has(item.id)
+      );
+
+      Taro.showToast({
+        title: `成功删除${selectedIds.size}项发布`,
+        icon: "success",
+      });
+
+      // 删除完成后退出批量模式
+      exitBatchMode();
+    } catch (error) {
+      Taro.hideLoading();
+      console.error("删除发布出错:", error);
+      Taro.showToast({
+        title: "删除失败，请重试",
+        icon: "error",
+      });
+    }
+    return;
+  }
+
   // 获取当前页面的图片列表
-  const currentList =
-    tab.value === ETabType.History ? historyList.value : collectionList.value;
+  const currentList = historyList.value;
 
   // 过滤出选中的图片
   const selectedImages = currentList.filter((item) => selectedIds.has(item.id));
 
-  // 根据type分类图片
-  const editedImageIds: string[] = [];
-  const drawImageIds: string[] = [];
-
-  selectedImages.forEach((item) => {
-    // 判断是否是生图：type为DRAWING或者是生图类型
-    if (
-      item.type === "DRAWING" ||
-      SUPPORTED_TYPES.includes(item.type as EDrawingType)
-    ) {
-      drawImageIds.push(item.id.toString());
-    } else {
-      editedImageIds.push(item.id.toString());
-    }
-  });
+  // 提取所有选中的图片 ID
+  const imageIds: string[] = selectedImages.map((item) => item.id.toString());
 
   try {
     Taro.showLoading({ title: "删除中...", mask: true });
 
     // 调用删除API
     const result = await deleteBatchImage({
-      editedImageIds,
-      drawImageIds,
+      imageIds,
     });
 
     Taro.hideLoading();
@@ -660,6 +756,35 @@ const handleCollectionImageClick = async (item: {
         }
       }
     }
+  });
+};
+
+// 处理我的发布图片点击
+const handlePublicationImageClick = async (item: {
+  id: string;
+  url: string;
+  originalUrl?: string;
+  recordId?: string;
+  type?: string;
+  fileResourceId?: string;
+}) => {
+  if (isBatchMode.value) {
+    const id = item.id;
+    const newSelectedItems = new Set(selectedItems.value);
+    if (newSelectedItems.has(id)) {
+      newSelectedItems.delete(id);
+    } else {
+      newSelectedItems.add(id);
+    }
+    selectedItems.value = newSelectedItems;
+    // 强制更新视图
+    selectedItemsUpdateKey.value++;
+    return;
+  }
+
+  // 导航到详情页面，传递作品ID
+  Taro.navigateTo({
+    url: `/packageHistory/pages/HistoryDetailPage/index?id=${item.id}&type=square`
   });
 };
 

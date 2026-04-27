@@ -37,7 +37,7 @@ export interface ImageGenerationResponse {
   createdTime?: string;
   startedTime?: string;
   completedTime?: string;
-  
+
   // 兼容旧字段
   images?: { imageUrl: string, id: number }[];
 }

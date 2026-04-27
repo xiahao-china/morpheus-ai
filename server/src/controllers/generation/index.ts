@@ -3,6 +3,8 @@ import GenerationTask, { TaskPurposeEnum, TaskStatusEnum } from "@/models/genera
 import ImageGenInfo from "@/models/imageGenInfo";
 import UserImageCollect from "@/models/userImageCollect";
 import FileResource from "@/models/fileResource";
+import Square from "@/models/square";
+import UserSquareCollect from "@/models/userSquareCollect";
 import { BUCKET_NAME, buildObjectPublicUrl } from "@/lib/minio";
 import { sseService } from "@/services/sse-service";
 import { generationScheduler } from "@/services/generation-scheduler";
@@ -913,5 +915,69 @@ export const getGenerationHistory = async (ctx: Context) => {
   } catch (error: any) {
     logger.error(`Error getting history for user:`, error);
     sendResponse.error(ctx, "Internal server error");
+  }
+};
+
+/**
+ * 批量删除生成的图片及其关联任务（仅当任务无其它图片时删除）
+ */
+export const deleteBatchImage = async (ctx: Context) => {
+  try {
+    const user = ctx.state.user as any;
+    const { imageIds = [] } = ctx.request.body as any;
+
+    if (!imageIds || imageIds.length === 0) {
+      sendResponse.error(ctx, "No image IDs provided");
+      return;
+    }
+
+    // 查找所有的图片信息
+    const images = await ImageGenInfo.find({ _id: { $in: imageIds } });
+    if (images.length === 0) {
+      sendResponse.success(ctx, { deletedCount: 0 });
+      return;
+    }
+
+    // 确认图片关联的任务归属于当前用户
+    const taskIds = Array.from(new Set(images.map(img => img.imageGenTaskId)));
+    const tasks = await GenerationTask.find({ _id: { $in: taskIds }, userId: user.uid });
+    const ownedTaskIds = new Set(tasks.map(t => t._id.toString()));
+
+    const validImages = images.filter(img => ownedTaskIds.has(img.imageGenTaskId));
+    const validImageIds = validImages.map(img => img._id.toString());
+    const validTaskIds = Array.from(new Set(validImages.map(img => img.imageGenTaskId)));
+
+    if (validImageIds.length === 0) {
+      sendResponse.success(ctx, { deletedCount: 0 });
+      return;
+    }
+
+    // 删除关联的图片记录
+    await ImageGenInfo.deleteMany({ _id: { $in: validImageIds } });
+
+    // 删除该图片的收藏记录
+    await UserImageCollect.deleteMany({ imageId: { $in: validImageIds } });
+
+    // 删除该图片的广场发布记录及关联的广场收藏记录
+    const squares = await Square.find({ imageId: { $in: validImageIds } });
+    if (squares.length > 0) {
+      const squareIds = squares.map(s => s._id);
+      await Square.deleteMany({ _id: { $in: squareIds } });
+      await UserSquareCollect.deleteMany({ squareId: { $in: squareIds } });
+    }
+
+    // 检查并删除没有剩余图片的任务
+    for (const taskId of validTaskIds) {
+      const remainingImages = await ImageGenInfo.countDocuments({ imageGenTaskId: taskId });
+      if (remainingImages === 0) {
+        await GenerationTask.deleteOne({ _id: taskId });
+        await GenerationQueue.deleteMany({ taskId });
+      }
+    }
+
+    sendResponse.success(ctx, { deletedCount: validImageIds.length });
+  } catch (error: any) {
+    logger.error("Error deleting batch images:", error);
+    sendResponse.error(ctx, "Failed to delete batch images");
   }
 };

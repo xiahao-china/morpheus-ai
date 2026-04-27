@@ -159,7 +159,8 @@ async function buildAndRunDocker(config, REMOTE_DIR, TAR_FILE_NAME) {
 
   // 构建清理命令
   const cleanByNameCmd = `docker rm -f morpheus-server-${serverPort} || true`;
-  const cleanDeployFilesCmd = `find . -mindepth 1 -maxdepth 1 ! -name "${TAR_FILE_NAME}" -exec rm -rf {} +`;
+  // 添加忽略 mongodb/redis/minio 等挂载数据目录的排除条件，并屏蔽权限错误
+  const cleanDeployFilesCmd = `find . -mindepth 1 -maxdepth 1 ! -name "${TAR_FILE_NAME}" ! -name "mongodb" ! -name "redis" ! -name "minio" ! -name "data" -exec rm -rf {} + 2>/dev/null || true`;
   const ensureDockerNetworkCmd = `docker network inspect ${dockerNetworkName} >/dev/null 2>&1 || docker network create ${dockerNetworkName}`;
   const connectDependenciesCmd = `for svc in mongodb redis minio; do docker inspect "$svc" >/dev/null 2>&1 && docker network connect ${dockerNetworkName} "$svc" >/dev/null 2>&1 || true; done`;
 
@@ -172,12 +173,11 @@ async function buildAndRunDocker(config, REMOTE_DIR, TAR_FILE_NAME) {
     npm install --registry=https://registry.npmjs.org/ --no-audit --no-fund &&
     ${ensureDockerNetworkCmd} &&
     ${connectDependenciesCmd} &&
-    docker network inspect ${dockerNetworkName} >/dev/null 2>&1 ||
-    (echo "缺少 Docker 网络 ${dockerNetworkName}，请先执行 publish:env" && exit 1) &&
+    if ! docker network inspect ${dockerNetworkName} >/dev/null 2>&1; then echo "缺少 Docker 网络 ${dockerNetworkName}，请先执行 publish:env"; exit 1; fi &&
     DOCKER_BUILDKIT=1 docker build --network=host -t morpheus-server:${serverPort} . --build-arg APP_ENV=${projectName} --build-arg SERVER_PORT=${serverPort} &&
-    (${cleanByNameCmd}) &&
+    ${cleanByNameCmd} &&
     docker run -d --name morpheus-server-${serverPort} -e PORT=3000 -p ${serverPort}:3000 --network ${dockerNetworkName} morpheus-server:${serverPort} &&
-    rm -rf server-dist-temp
+    cd .. && rm -rf server-dist-temp
   `;
 
   const result = await ssh.execCommand(deployCommand, {

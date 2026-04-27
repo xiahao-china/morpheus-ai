@@ -12,6 +12,7 @@ import { ScheduledTasks } from "@/lib/scheduled-tasks";
 import { generationQueueCheckTask } from "@/tasks/index";
 
 const app = new Koa();
+app.proxy = true; // 信任代理服务器的头信息（如 X-Forwarded-Proto），允许 HTTPS 下设置 secure cookie
 const router = new RouterClass();
 
 // Middlewares

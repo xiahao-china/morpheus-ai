@@ -204,17 +204,29 @@ export const miniProgramLogin = async (ctx: Context) => {
     }
 
     // --- 步骤 3: 用户绑定/创建逻辑 ---
-    let user: IUser | null = null;
+    let user: any = null;
 
     // 1. 如果提供了 userId，则直接绑定到该用户
-    if (userId && userId.length === 24) { // 检查是否为有效的 MongoDB ObjectId 长度
+    if (userId && typeof userId === 'string' && userId.length === 24) { // 检查是否为有效的 MongoDB ObjectId 长度
         user = await User.findById(userId);
         if (user) {
-            if (phone) user.phone = phone;
-            if (openid) user.appOpenid = openid;
-            if (unionid) user.unionId = unionid;
-            await user.save();
-            logger.info(`[Wechat Mini Login] Bound phone/openid to existing user: ${userId}`);
+            let changed = false;
+            if (phone && user.phone !== phone) {
+                user.phone = phone;
+                changed = true;
+            }
+            if (openid && user.appOpenid !== openid) {
+                user.appOpenid = openid;
+                changed = true;
+            }
+            if (unionid && user.unionId !== unionid) {
+                user.unionId = unionid;
+                changed = true;
+            }
+            if (changed) {
+                await user.save();
+                logger.info(`[Wechat Mini Login] Bound phone/openid to existing user: ${userId}`);
+            }
         }
     }
 
@@ -231,7 +243,7 @@ export const miniProgramLogin = async (ctx: Context) => {
         }
     }
 
-    // 3. 更新现有用户信息
+    // 3. 更新现有用户信息或创建新用户
     if (user) {
         let changed = false;
         if (openid && user.appOpenid !== openid) {
@@ -246,11 +258,11 @@ export const miniProgramLogin = async (ctx: Context) => {
             user.phone = phone;
             changed = true;
         }
-        if (changed) await user.save();
-    }
-
-    // 4. 创建新用户
-    if (!user) {
+        if (changed) {
+            await user.save();
+        }
+    } else {
+      // 4. 创建新用户
       user = new User({
         username: `Mini_${Date.now()}`,
         appOpenid: openid,

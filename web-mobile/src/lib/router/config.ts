@@ -65,7 +65,7 @@ export const ROUTER_INFO = {
     needBottomBar: false
   },
   '/pages/PersonalSpace/index': {
-    pageName: '个人空间',
+    pageName: '我的',
     needLogin: true,
     needNavBar: false,
     needMobileNav: false,

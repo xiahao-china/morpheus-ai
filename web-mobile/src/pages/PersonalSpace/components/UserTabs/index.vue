@@ -213,8 +213,6 @@ import { makeUrlAbsolute } from "@/util/url";
 const tab = ref(ETabType.History);
 const selectedType = ref<string>("");
 const showBackToTop = ref(false);
-const showAllTags = ref(false);
-
 // Batch Operation States
 const isBatchMode = ref(false);
 const batchAction = ref<"delete" | "download" | "">("");
@@ -224,7 +222,6 @@ const selectedItems = ref<Set<number>>(new Set());
 const selectedItemsUpdateKey = ref(0);
 
 // 使用从 const.ts 导入的筛选选项常量
-
 const historyList = ref<
   {
     id: number;
@@ -276,24 +273,11 @@ const handleTabChange = (id: string) => {
 
 const handleTypeChange = (type: string) => {
   if (selectedType.value === type) return;
-  selectedType.value = type;
-  historyList.value = [];
-  historyPage.value = 1;
-  historyFinished.value = false;
-  loadData();
-};
-
-const toggleBatchMode = (action: "delete" | "download") => {
-  isBatchMode.value = true;
-  batchAction.value = action;
-  selectedItems.value = new Set();
   // 强制更新视图
   selectedItemsUpdateKey.value++;
 };
-
 const exitBatchMode = () => {
   isBatchMode.value = false;
-  batchAction.value = "";
   selectedItems.value = new Set();
   // 强制更新视图
   selectedItemsUpdateKey.value++;
@@ -311,7 +295,6 @@ const handleBatchConfirm = () => {
     return;
   }
 
-  // 如果是删除操作，执行批量删除
   if (batchAction.value === "delete") {
     Taro.showModal({
       title: "确认删除",
@@ -441,10 +424,10 @@ const handleImageError = (e: any) => {
 
 // 下载单个图片
 const downloadImage = async (item: {
-  id: number;
+  id: string | number;
   url: string;
   originalUrl?: string;
-  fileResourceId?: number;
+  fileResourceId?: string | number;
 }) => {
   if (!item.url && !item.originalUrl) {
     Taro.showToast({ title: "图片URL不存在", icon: "none" });
@@ -486,7 +469,7 @@ const downloadImage = async (item: {
 };
 
 // 批量下载图片
-const batchDownloadImages = async (selectedIds: Set<number>) => {
+const batchDownloadImages = async (selectedIds: Set<string | number>) => {
   if (selectedIds.size === 0) {
     Taro.showToast({ title: "请至少选择一张图片", icon: "none" });
     return;
@@ -497,7 +480,7 @@ const batchDownloadImages = async (selectedIds: Set<number>) => {
     tab.value === ETabType.History ? historyList.value : collectionList.value;
 
   // 过滤出选中的图片
-  const selectedImages = currentList.filter((item) => selectedIds.has(item.id));
+  const selectedImages = currentList.filter((item) => selectedIds.has(item.id.toString()));
 
   // 检查所有图片是否有url
   const imagesWithoutUrl = selectedImages.filter(
@@ -516,7 +499,7 @@ const batchDownloadImages = async (selectedIds: Set<number>) => {
 };
 
 // 批量删除图片
-const batchDeleteImages = async (selectedIds: Set<number>) => {
+const batchDeleteImages = async (selectedIds: Set<string | number>) => {
   if (selectedIds.size === 0) {
     Taro.showToast({ title: "请至少选择一张图片", icon: "none" });
     return;
@@ -527,31 +510,17 @@ const batchDeleteImages = async (selectedIds: Set<number>) => {
     tab.value === ETabType.History ? historyList.value : collectionList.value;
 
   // 过滤出选中的图片
-  const selectedImages = currentList.filter((item) => selectedIds.has(item.id));
+  const selectedImages = currentList.filter((item) => selectedIds.has(item.id.toString()) || selectedIds.has(Number(item.id)));
 
-  // 根据type分类图片
-  const editedImageIds: string[] = [];
-  const drawImageIds: string[] = [];
-
-  selectedImages.forEach((item) => {
-    // 判断是否是生图：type为DRAWING或者是生图类型
-    if (
-      item.type === "DRAWING" ||
-      SUPPORTED_TYPES.includes(item.type as EDrawingType)
-    ) {
-      drawImageIds.push(item.id.toString());
-    } else {
-      editedImageIds.push(item.id.toString());
-    }
-  });
+  // 提取所有选中的图片 ID
+  const imageIds: string[] = selectedImages.map((item) => item.id.toString());
 
   try {
     Taro.showLoading({ title: "删除中...", mask: true });
 
     // 调用删除API
     const result = await deleteBatchImage({
-      editedImageIds,
-      drawImageIds,
+      imageIds,
     });
 
     Taro.hideLoading();
@@ -561,11 +530,11 @@ const batchDeleteImages = async (selectedIds: Set<number>) => {
       // 从列表中移除已删除的图片
       if (tab.value === ETabType.History) {
         historyList.value = historyList.value.filter(
-          (item) => !selectedIds.has(item.id)
+          (item) => !selectedIds.has(item.id.toString()) && !selectedIds.has(Number(item.id))
         );
       } else {
         collectionList.value = collectionList.value.filter(
-          (item) => !selectedIds.has(item.id)
+          (item) => !selectedIds.has(item.id.toString()) && !selectedIds.has(Number(item.id))
         );
       }
 
@@ -593,49 +562,16 @@ const batchDeleteImages = async (selectedIds: Set<number>) => {
 
 // 处理历史记录图片点击
 const handleImageClick = (item: {
-  id: number;
+  id: string;
   url: string;
-  recordId: number;
-  type: string;
-  fileResourceId: number;
+  recordId?: string | number;
+  type?: string;
+  fileResourceId?: string | number;
 }) => {
   console.log(item);
 
   if (isBatchMode.value) {
-    const id = item.id;
-    const newSelectedItems = new Set(selectedItems.value);
-    if (newSelectedItems.has(id)) {
-      newSelectedItems.delete(id);
-    } else {
-      newSelectedItems.add(id);
-    }
-    selectedItems.value = newSelectedItems;
-    // 强制更新视图
-    selectedItemsUpdateKey.value++;
-    return;
-  }
-
-  // 和广场那边一样进入历史详情页
-  Taro.navigateTo({
-    url: `/packageHistory/pages/HistoryDetailPage/index?taskId=${item.recordId}&defaultImgId=${item.id}&type=history`,
-    events: {
-      likeStatusChange: (status: boolean) => {
-        // do nothing for history list or handle if needed
-      }
-    }
-  });
-};
-
-// 处理广场收藏图片点击
-const handleCollectionImageClick = async (item: {
-  id: number;
-  url: string;
-  recordId?: number;
-  type?: string;
-  fileResourceId?: number;
-}) => {
-  if (isBatchMode.value) {
-    const id = item.id;
+    const id = item.id.toString();
     const newSelectedItems = new Set(selectedItems.value);
     if (newSelectedItems.has(id)) {
       newSelectedItems.delete(id);

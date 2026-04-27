@@ -131,6 +131,108 @@ export const getSquareList = async (ctx: Context) => {
 };
 
 /**
+ * 获取用户的广场作品发布列表
+ */
+export const getMyPublished = async (ctx: Context) => {
+  try {
+    const userId = ctx.state.user?._id;
+    const page = parsePositiveInt(ctx.query.pageNo || ctx.query.page, 1);
+    const pageSize = parsePositiveInt(ctx.query.pageSize, 20);
+    const skip = (page - 1) * pageSize;
+
+    const [rawList, total] = await Promise.all([
+      Square.find({ userId })
+        .sort({ publishedTime: -1 })
+        .skip(skip)
+        .limit(pageSize)
+        .lean(),
+      Square.countDocuments({ userId })
+    ]);
+
+    const imageIds = rawList.map((item) => item.imageId).filter(Boolean);
+    const images = imageIds.length
+      ? await ImageGenInfo.find({ _id: { $in: imageIds } }).lean()
+      : [];
+
+    const imageMap = images.reduce((map, image) => {
+      map[String(image._id)] = image;
+      return map;
+    }, {} as Record<string, any>);
+
+    // 处理文件资源(图片)
+    const imageFileResourceIds = images
+      .map(img => img.fileResourceId)
+      .filter(id => id && /^[0-9a-fA-F]{24}$/.test(id));
+    const imageFileResources = imageFileResourceIds.length ? await FileResource.find({ _id: { $in: imageFileResourceIds } }).lean() : [];
+    const imageFileResourceMap = imageFileResources.reduce((map, file) => {
+      map[String(file._id)] = {
+        url: buildObjectPublicUrl(file.bucket || BUCKET_NAME, file.path),
+        url128: file.url128,
+        url256: file.url256,
+        url512: file.url512
+      };
+      return map;
+    }, {} as Record<string, any>);
+
+    // 获取用户基本信息用于头像和用户名
+    const user = await User.findById(userId).lean();
+    let avatarUrl = null;
+    if (user?.avatar && /^[0-9a-fA-F]{24}$/.test(user.avatar)) {
+      const file = await FileResource.findById(user.avatar).lean();
+      if (file) {
+        avatarUrl = buildObjectPublicUrl(file.bucket || BUCKET_NAME, file.path);
+      }
+    }
+
+    const records = rawList.map((item) => {
+      const image = imageMap[item.imageId];
+      let imageUrl = image?.imageUrl || item.imageUrl || "";
+      let scaleThumbnailUrl = image?.url256 || image?.url128 || "";
+
+      if (image?.fileResourceId) {
+        if (/^[0-9a-fA-F]{24}$/.test(image.fileResourceId)) {
+          const fileInfo = imageFileResourceMap[image.fileResourceId];
+          if (fileInfo) {
+            imageUrl = fileInfo.url;
+            scaleThumbnailUrl = fileInfo.url256 || fileInfo.url128 || fileInfo.url;
+          }
+        } else {
+          imageUrl = buildObjectPublicUrl(BUCKET_NAME, image.fileResourceId);
+          scaleThumbnailUrl = imageUrl;
+        }
+      }
+
+      return {
+        id: item._id, // 前端接收 id 为 number 或 string 均可
+        userId: item.userId,
+        avatar: avatarUrl,
+        username: user?.nickname || user?.username || "匿名用户",
+        collectCount: item.collectCount || 0,
+        isCollected: false, // 自己发布的，在我的发布列表中可以默认或另查
+        squareImage: {
+          id: image?._id || item.imageId,
+          fileResourceId: image?.fileResourceId || "",
+          imageUrl,
+          scaleThumbnailUrl,
+        },
+        publishedTime: item.publishedTime?.getTime() || Date.now(),
+      };
+    });
+
+    sendResponse.success(ctx, {
+      records,
+      total,
+      page,
+      size: pageSize,
+      totalPages: Math.ceil(total / pageSize)
+    });
+  } catch (error: any) {
+    console.error("Error in getMyPublished:", error);
+    sendResponse.error(ctx, "Internal server error");
+  }
+};
+
+/**
  * 获取用户的广场作品收藏列表
  */
 export const getMySquareCollections = async (ctx: Context) => {

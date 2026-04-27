@@ -1,18 +1,7 @@
 <template>
   <Layouts>
     <view :class="styles.container" :style="{ height: `${containerHeight}px`}">
-      <view :class="styles.progressCircle">
-        <svg :class="styles.circleSvg" viewBox="0 0 100 100">
-          <circle :class="styles.bg" cx="50" cy="50" r="44" />
-          <circle
-            :class="styles.progress"
-            cx="50"
-            cy="50"
-            r="44"
-            :stroke-dasharray="circumference"
-            :stroke-dashoffset="dashOffset"
-          />
-        </svg>
+      <view :class="styles.progressCircle" :style="{ '--progress': progress + '%' }">
         <view :class="styles.percentText">
           {{ progress }}<text :class="styles.symbol">%</text>
         </view>
@@ -42,13 +31,6 @@ const targetProgress = ref(0);
 const progressTimer = ref<number | null>(null);
 const polling = ref<number | null>(null);
 const containerHeight = ref(getRemainingHeight());
-
-// SVG 圆环参数
-const radius = 44;
-const circumference = 2 * Math.PI * radius;
-const dashOffset = computed(() => {
-  return circumference - (progress.value / 100) * circumference;
-});
 
 const stopTimers = () => {
   if (progressTimer.value !== null) {

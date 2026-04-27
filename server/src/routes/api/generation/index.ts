@@ -11,7 +11,8 @@ import {
   likeImage,
   collectImage,
   uncollectImage,
-  getMyImageCollections
+  getMyImageCollections,
+  deleteBatchImage
 } from "@/controllers/generation";
 // 导入认证中间件
 import { authMiddleware } from "@/middleware/auth";
@@ -56,4 +57,7 @@ export default (router: Router) => {
 
   // 查询我的收藏图片（分页，需要登录）
   router.get('/api/image/collections', authMiddleware, getMyImageCollections);
+
+  // 批量删除图片（需要登录）
+  router.post('/api/images/delete-batch', authMiddleware, deleteBatchImage);
 }

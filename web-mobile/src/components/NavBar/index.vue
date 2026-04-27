@@ -12,13 +12,13 @@
         <view :class="pageStyle['app-subtitle']">DISCOVER DESIGN FUTURE</view>
       </view>
 
-      <view :class="pageStyle['right-block']">
+      <!-- <view :class="pageStyle['right-block']">
         <view :class="pageStyle['avatar-wrapper']">
           <image mode="aspectFill" :src="NAVIGATION_ASSETS.appLogoImg" :class="pageStyle['avatar']"/>
           <view :class="pageStyle['avatar-ring']"></view>
           <view :class="pageStyle['status-dot']"></view>
         </view>
-      </view>
+      </view> -->
 
     </view>
     <view v-else :class="pageStyle['normal-bar']" :style="{ paddingTop: navTopPadding + 'px' }">

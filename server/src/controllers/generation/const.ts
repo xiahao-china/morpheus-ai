@@ -47,7 +47,7 @@ export const FENG_SHUI_SYSTEM_INSTRUCTION = `你是一位资深住宅风水分�
 7. 若为优势项，type用success，并在analysis中说明依据。
 8. 不允许返回null，不要省略items字段。`;
 export const DEFAULT_COMFYUI_WORKFLOW = "1_None";
-export const INSPIRATION_COMFYUI_WORKFLOW = "24_Inspiration_Super";
+export const INSPIRATION_COMFYUI_WORKFLOW = "1_None";
 export const INSPIRATION_PROMPT_SUFFIX = "No people, no text, no logos, no brand names, no titles, no watermarks, no captions—only spatial structure and material details are presented.";
 
 export enum DrawingTypeEnum {

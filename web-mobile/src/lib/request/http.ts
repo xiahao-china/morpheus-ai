@@ -153,10 +153,13 @@ export async function httpDelete<T = Record<string, unknown>, R = object>(
   params: T,
   options: Omit<RequestCustomOptions, "params"> = {}
 ): Promise<ApiResponse<R> | Error> {
+  // 如果 options 中有自定义的 API_URL，则临时修改 baseURL
+  const config = options.API_URL ? { ...options, baseURL: options.API_URL } : options;
+
   return http
-    .delete<ApiResponse<T>>(`${options.API_URL || API_URL}${url}`, {
+    .delete<ApiResponse<T>>(url, {
       params,
-      ...options,
+      ...config,
     })
     .then(
       (res) => {

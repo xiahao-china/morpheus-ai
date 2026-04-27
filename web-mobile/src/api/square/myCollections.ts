@@ -17,7 +17,7 @@ export interface IGetMyCollectionsParams {
 
 export const getMyCollections = async (params: IGetMyCollectionsParams) => {
   return httpGet<IGetMyCollectionsParams, IGetMyCollectionsResponse>(
-    "/square-collect/my-collections",
+    "/square/collections",
     params
   );
 };

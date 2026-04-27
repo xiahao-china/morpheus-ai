@@ -120,7 +120,7 @@ import Taro, { useDidShow } from "@tarojs/taro";
 import Layouts from "@/components/Layouts/index.vue";
 import { getUserInfo } from "@/api/users/getUserInfo";
 import customerServiceQrCodeImg from "@/assest/image/weixinqun.jpg";
-import defaultAvatar from '@/assest/image/default-head-image.png';
+import defaultAvatar from '@/assest/image/logo.png';
 import { useUserStore } from "@/store/user";
 import {
   Heart,

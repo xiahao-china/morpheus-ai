@@ -49,10 +49,10 @@
     <view :class="pageStyle['login-auxiliary']">
 
       <view :class="pageStyle['login-switch']" v-if="!isBindPhone">
-        <Refresh :class="pageStyle['refresh-icon']" />
+        <!-- <Refresh :class="pageStyle['refresh-icon']" />
         <view @click="changeLoginType" :class="pageStyle['active']">
           使用{{currentPhoneLoginType === EPhoneLoginType.verificationCode ? '密码' : '验证码'}}登录
-        </view>
+        </view> -->
       </view>
     </view>
     <nut-button

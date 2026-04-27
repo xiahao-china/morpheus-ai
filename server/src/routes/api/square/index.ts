@@ -1,6 +1,6 @@
 import Router from "koa-router";
 // 导入广场控制器函数
-import { getSquareList, getSquareDetail, publishSquare, likeSquare, deleteSquare, getMySquareCollections } from "@/controllers/square";
+import { getSquareList, getSquareDetail, publishSquare, likeSquare, deleteSquare, getMySquareCollections, getMyPublished } from "@/controllers/square";
 // 导入认证中间件
 import { authMiddleware, optionalAuthMiddleware } from "@/middleware/auth";
 
@@ -11,6 +11,8 @@ import { authMiddleware, optionalAuthMiddleware } from "@/middleware/auth";
 export default (router: Router) => {
   // 获取广场作品列表（公开接口，携带 Token 则显示收藏状态）
   router.get('/api/square/list', optionalAuthMiddleware, getSquareList);
+  // 获取我的广场发布（需要登录）
+  router.get('/api/square/my-published', authMiddleware, getMyPublished);
   // 获取我的广场收藏（需要登录）
   router.get('/api/square/collections', authMiddleware, getMySquareCollections);
   // 获取广场详情（公开接口，携带 Token 则显示收藏状态）

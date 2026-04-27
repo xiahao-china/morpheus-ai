@@ -1,0 +1,19 @@
+{
+  "name": "auto-gen-square",
+  "version": "1.0.0",
+  "description": "自动生图及发布到广场测试工具",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "list": "node index.js --list",
+    "help": "node index.js --help",
+    "test": "node index.js --dry-run"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "sharp": "^0.34.5"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

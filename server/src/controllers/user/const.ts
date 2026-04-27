@@ -68,7 +68,8 @@ export const sendSMS = async (phone: string, code: string) => {
     const response = await axios.post(SMS_CONFIG.baseUrl, qs.stringify(data), {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
-      }
+      },
+      proxy: false
     });
 
     logger.info(`SMS Response: ${JSON.stringify(response.data)}`);

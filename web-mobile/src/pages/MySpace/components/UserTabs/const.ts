@@ -6,6 +6,7 @@ import { EDrawingType } from "@/api/generate/workStream";
 export enum ETabType {
   History = "history", // 历史记录标签页
   SquareCollection = "squareCollection", // 广场收藏标签页
+  MyPublication = "myPublication", // 我的发布标签页
 }
 
 /**
@@ -25,6 +26,10 @@ export const TABS: ITabInfo[] = [
     id: ETabType.History,
     name: "我的历史",
     disabled: false,
+  },
+  {
+    id: ETabType.MyPublication,
+    name: "我的发布",
   },
   {
     id: ETabType.SquareCollection,

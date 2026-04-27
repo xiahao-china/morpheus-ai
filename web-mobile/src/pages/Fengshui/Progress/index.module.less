@@ -15,29 +15,18 @@
     align-items: center;
     justify-content: center;
     margin-bottom: 60rpx;
+    border-radius: 50%;
+    background: conic-gradient(#000 var(--progress, 0%), #F2F3F5 0%);
 
-    .circleSvg {
+    &::before {
+      content: '';
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      transform: rotate(-90deg);
-
-      circle {
-        fill: none;
-        stroke-width: 12;
-        stroke-linecap: round;
-
-        &.bg {
-          stroke: #F2F3F5;
-        }
-
-        &.progress {
-          stroke: #000;
-          transition: stroke-dashoffset 0.1s linear;
-        }
-      }
+      top: 38rpx;
+      left: 38rpx;
+      right: 38rpx;
+      bottom: 38rpx;
+      background: #fff;
+      border-radius: 50%;
     }
 
     .percentText {

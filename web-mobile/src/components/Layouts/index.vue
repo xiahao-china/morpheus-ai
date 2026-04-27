@@ -73,7 +73,8 @@ Taro.useShareAppMessage((res) => {
   }
   return {
     title: '暖界-让设计更合心意',
-    path: '/page/Square/index',
+    path: '/pages/Square/index',
+    imageUrl: drawBanner
   }
 })
 

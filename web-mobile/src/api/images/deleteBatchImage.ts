@@ -1,8 +1,7 @@
 import { httpPost } from "@/lib/request/http";
 
 interface IDeleteBatchImageParams {
-  editedImageIds: string[];
-  drawImageIds: string[];
+  imageIds: string[];
 }
 
 export const deleteBatchImage = async (params: IDeleteBatchImageParams) => {
